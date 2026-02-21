@@ -1,0 +1,30 @@
+# Rust
+target*/
+**/*.rs.bk
+Cargo.lock
+
+# Node
+node_modules/
+dist/
+build/
+.env
+.env.local
+.DS_Store
+Thumbs.db
+
+# Tauri specific
+src-tauri/target/
+src-tauri/target_final_attempt/
+src-tauri/gen/schemas/
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Agent artifacts
+.gemini/
+artifacts/
+*.webm
+*.mp4
+*.log

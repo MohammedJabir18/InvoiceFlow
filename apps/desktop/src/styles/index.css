@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian-void: #020617;
+  --color-glass-navy: #0F172A;
+  --color-electric-teal: #2DD4BF;
+  --color-cyber-violet: #7C3AED;
+  --color-starlight: #F8FAFC;
+
+  --color-ceramic-white: #FAFAFA;
+  --color-vapor-grey: #F1F5F9;
+  --color-deep-ocean: #0F172A;
+  --color-soft-coral: #F43F5E;
+  --color-ink-black: #1E293B;
+
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+
+@layer base {
+  :root {
+    /* Default to Midnight Mode */
+    --background: var(--color-obsidian-void);
+    --surface: var(--color-glass-navy);
+    --primary: var(--color-electric-teal);
+    --secondary: var(--color-cyber-violet);
+    --foreground: var(--color-starlight);
+
+    --radius: var(--radius-xl);
+  }
+
+  .daylight {
+    --background: var(--color-ceramic-white);
+    --surface: var(--color-vapor-grey);
+    --primary: var(--color-deep-ocean);
+    --secondary: var(--color-soft-coral);
+    --foreground: var(--color-ink-black);
+  }
+
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen font-sans transition-colors duration-500;
+  }
+}
+
+@layer components {
+  .app-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .main-content {
+    margin-left: 16rem;
+    /* matches sidebar w-64 = 256px = 16rem */
+    flex: 1;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.5rem;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-[var(--surface)]/5 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px var(--primary);
+  }
+
+  /* Aurora Glow Effect */
+  .aurora-bg {
+    background: radial-gradient(circle at 50% 0%, var(--secondary) 0%, transparent 60%);
+    opacity: 0.15;
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  .mask-linear-fade {
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical 20s linear infinite;
+}

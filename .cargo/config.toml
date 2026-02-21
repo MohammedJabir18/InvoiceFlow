@@ -1,0 +1,5 @@
+[build]
+jobs = 2
+
+[env]
+# Separate target dir for manual builds vs rust-analyzer

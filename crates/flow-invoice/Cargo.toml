@@ -1,0 +1,12 @@
+[package]
+name = "flow-invoice"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+flow-core = { path = "../flow-core" }
+serde = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+rust_decimal = { workspace = true }

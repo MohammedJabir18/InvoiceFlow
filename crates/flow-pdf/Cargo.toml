@@ -1,0 +1,13 @@
+[package]
+name = "flow-pdf"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+flow-core = { path = "../flow-core" }
+anyhow = "1"
+headless_chrome = { version = "1", features = ["fetch"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

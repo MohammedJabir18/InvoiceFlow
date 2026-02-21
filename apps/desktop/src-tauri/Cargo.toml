@@ -1,0 +1,27 @@
+[package]
+name = "invoice-flow-desktop"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[build-dependencies]
+tauri-build = { workspace = true }
+
+[dependencies]
+tauri = { workspace = true }
+tauri-plugin-shell = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+flow-core = { path = "../../../crates/flow-core" }
+flow-db = { path = "../../../crates/flow-db" }
+flow-invoice = { path = "../../../crates/flow-invoice" }
+flow-analytics = { path = "../../../crates/flow-analytics" }
+flow-pdf = { path = "../../../crates/flow-pdf" }
+chrono = { workspace = true }
+uuid = { workspace = true }
+rust_decimal = { workspace = true }
+
+[lib]
+name = "invoice_flow_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
