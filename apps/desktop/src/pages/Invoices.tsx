@@ -9,6 +9,12 @@ import {
     X,
     Loader2,
     Download,
+    ArrowRight,
+    TrendingUp,
+    Clock,
+    CheckCircle2,
+    AlertCircle,
+    FilePlus2
 } from "lucide-react";
 import {
     getInvoices,
@@ -26,8 +32,14 @@ const containerVariants = {
 };
 
 const rowVariants = {
-    hidden: { opacity: 0, x: -8 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
+    hidden: { opacity: 0, x: -10, filter: 'blur(4px)' },
+    visible: { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const slideOverVariants = {
+    hidden: { x: '100%', opacity: 0.5 },
+    visible: { x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } },
+    exit: { x: '100%', opacity: 0.5, transition: { duration: 0.3, ease: 'easeIn' } }
 };
 
 export function Invoices() {
@@ -113,6 +125,7 @@ export function Invoices() {
         try {
             const path = await generatePdf(id);
             alert(`PDF saved to: ${path}`);
+            setMenuId(null);
         } catch (err) {
             console.error("PDF generation failed:", err);
             alert("PDF generation failed. Chrome may not be available.");
@@ -122,7 +135,7 @@ export function Invoices() {
     const formatCurrency = (total: string) => {
         const num = parseFloat(total);
         if (isNaN(num)) return total;
-        return `$${num.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+        return `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const filtered = invoices.filter((inv) => {
@@ -133,284 +146,446 @@ export function Invoices() {
         return matchesSearch && matchesFilter;
     });
 
-    const statuses = ["all", "draft", "pending", "sent", "paid", "overdue"];
+    const statuses = [
+        { id: "all", label: "All Invoices", icon: FileText },
+        { id: "paid", label: "Paid", icon: CheckCircle2 },
+        { id: "sent", label: "Sent", icon: ArrowRight },
+        { id: "pending", label: "Pending", icon: Clock },
+        { id: "overdue", label: "Overdue", icon: AlertCircle },
+        { id: "draft", label: "Draft", icon: FilePlus2 },
+    ];
 
-    const statusColor = (status: string) => {
+    const statusConfig = (status: string) => {
         switch (status.toLowerCase()) {
-            case "paid": return { bg: "rgba(16, 185, 129, 0.1)", color: "#10b981" };
-            case "pending": return { bg: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" };
-            case "sent": return { bg: "rgba(59, 130, 246, 0.1)", color: "#3b82f6" };
-            case "overdue": return { bg: "rgba(239, 68, 68, 0.1)", color: "#ef4444" };
-            case "draft": return { bg: "rgba(107, 114, 128, 0.1)", color: "#6b7280" };
-            default: return { bg: "rgba(107, 114, 128, 0.1)", color: "#6b7280" };
+            case "paid": return { bg: "rgba(16, 185, 129, 0.15)", border: "rgba(16, 185, 129, 0.3)", color: "#34d399", glow: "0 0 10px rgba(16, 185, 129, 0.4)" };
+            case "pending": return { bg: "rgba(245, 158, 11, 0.15)", border: "rgba(245, 158, 11, 0.3)", color: "#fbbf24", glow: "0 0 10px rgba(245, 158, 11, 0.4)" };
+            case "sent": return { bg: "rgba(59, 130, 246, 0.15)", border: "rgba(59, 130, 246, 0.3)", color: "#60a5fa", glow: "0 0 10px rgba(59, 130, 246, 0.4)" };
+            case "overdue": return { bg: "rgba(239, 68, 68, 0.15)", border: "rgba(239, 68, 68, 0.3)", color: "#f87171", glow: "0 0 10px rgba(239, 68, 68, 0.4)" };
+            case "draft": return { bg: "rgba(107, 114, 128, 0.15)", border: "rgba(107, 114, 128, 0.3)", color: "#9ca3af", glow: "none" };
+            default: return { bg: "rgba(107, 114, 128, 0.1)", border: "transparent", color: "#6b7280", glow: "none" };
         }
     };
 
+    // Calculate sum of visible invoices
+    const totalAmount = filtered.reduce((sum, inv) => sum + parseFloat(inv.total || "0"), 0);
+
     return (
-        <>
-            {/* Header */}
-            <div className="page-header">
+        <div style={{ paddingBottom: '4rem', maxWidth: '1400px', margin: '0 auto' }}>
+            {/* Premium Dashboard Header */}
+            <motion.div
+                className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+            >
                 <div>
-                    <h1>Invoices</h1>
-                    <p className="page-header-subtitle">{invoices.length} total invoices</p>
+                    <h1 className="text-gradient" style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>Financials</h1>
+                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        <p style={{ color: 'var(--text-tertiary)', fontSize: '1.1rem', margin: 0 }}>
+                            Track and manage your revenue stream.
+                        </p>
+                        {!loading && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(45,212,191,0.1)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(45,212,191,0.2)' }}>
+                                <TrendingUp size={14} style={{ color: 'var(--primary)' }} />
+                                <span style={{ color: 'var(--foreground)', fontWeight: 600, fontSize: '0.9rem' }}>
+                                    {formatCurrency(totalAmount.toString())}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className="page-header-actions">
-                    <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-                        <Plus size={16} /> New Invoice
-                    </button>
+                    <motion.button
+                        className="btn btn-primary glass-panel"
+                        onClick={() => setShowCreate(true)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ height: '3rem', padding: '0 1.5rem', borderRadius: 'var(--radius-xl)' }}
+                    >
+                        <Plus size={18} /> Generate Invoice
+                    </motion.button>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* Content */}
+            {/* Dashboard Controls */}
             <div className="page-content">
-                {/* Toolbar */}
-                <div style={{ display: "flex", gap: "var(--space-3)", marginBottom: "var(--space-6)", alignItems: "center" }}>
-                    <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
+                <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-2xl)', marginBottom: '2rem', display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Search Component */}
+                    <div style={{ position: "relative", flex: '1 1 300px', minWidth: '250px' }}>
                         <Search
-                            size={16}
+                            size={18}
                             style={{
                                 position: "absolute",
-                                left: 12,
+                                left: 16,
                                 top: "50%",
                                 transform: "translateY(-50%)",
-                                color: "var(--text-tertiary)",
+                                color: "var(--foreground)",
+                                opacity: 0.5
                             }}
                         />
                         <input
                             className="form-input"
-                            placeholder="Search invoices..."
+                            placeholder="Search by invoice number or client name..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            style={{ paddingLeft: 36 }}
+                            style={{ paddingLeft: '44px', borderRadius: 'var(--radius-xl)' }}
                         />
                     </div>
 
-                    <div style={{ display: "flex", gap: "var(--space-1)" }}>
-                        {statuses.map((s) => (
-                            <button
-                                key={s}
-                                className="btn btn-ghost"
-                                style={{
-                                    fontSize: "var(--text-xs)",
-                                    textTransform: "capitalize",
-                                    height: 32,
-                                    padding: "0 var(--space-3)",
-                                    background:
-                                        (s === "all" && !filterStatus) || filterStatus === s
-                                            ? "rgba(99, 102, 241, 0.1)"
-                                            : undefined,
-                                    color:
-                                        (s === "all" && !filterStatus) || filterStatus === s
-                                            ? "var(--accent-primary)"
-                                            : undefined,
-                                }}
-                                onClick={() => setFilterStatus(s === "all" ? null : s)}
-                            >
-                                {s}
-                            </button>
-                        ))}
+                    {/* Filter Pills */}
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", flex: '2 1 auto', justifyContent: 'flex-end' }}>
+                        {statuses.map((s) => {
+                            const Icon = s.icon;
+                            const isActive = (s.id === "all" && !filterStatus) || filterStatus === s.id;
+                            return (
+                                <motion.button
+                                    key={s.id}
+                                    className="btn btn-ghost"
+                                    whileHover={{ scale: 1.05, background: 'color-mix(in srgb, var(--foreground) 8%, transparent)' }}
+                                    whileTap={{ scale: 0.95 }}
+                                    style={{
+                                        fontSize: "0.9rem",
+                                        fontWeight: isActive ? 600 : 500,
+                                        height: '2.5rem',
+                                        padding: "0 1rem",
+                                        borderRadius: '20px',
+                                        background: isActive ? "linear-gradient(135deg, var(--primary), var(--secondary))" : "color-mix(in srgb, var(--foreground) 3%, transparent)",
+                                        color: isActive ? "#fff" : "var(--foreground)",
+                                        opacity: isActive ? 1 : 0.7,
+                                        border: `1px solid ${isActive ? 'transparent' : 'color-mix(in srgb, var(--foreground) 5%, transparent)'}`,
+                                        boxShadow: isActive ? '0 4px 15px rgba(124, 58, 237, 0.3)' : 'none',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        gap: '6px',
+                                        alignItems: 'center'
+                                    }}
+                                    onClick={() => setFilterStatus(s.id === "all" ? null : s.id)}
+                                >
+                                    {s.id !== 'all' && <Icon size={14} />}
+                                    {s.label}
+                                </motion.button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Loading */}
-                {loading && (
-                    <div className="empty-state">
-                        <Loader2 size={28} className="animate-spin" style={{ color: "var(--accent-primary)" }} />
-                        <p className="empty-state-desc">Loading invoices...</p>
-                    </div>
-                )}
+                {/* Loading State */}
+                <AnimatePresence mode="wait">
+                    {loading && (
+                        <motion.div
+                            key="loading"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                                <Loader2 size={36} style={{ color: "var(--secondary)" }} />
+                            </motion.div>
+                            <p style={{ marginTop: '1.5rem', color: 'var(--text-tertiary)', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Fetching Financials</p>
+                        </motion.div>
+                    )}
 
-                {/* Table */}
-                {!loading && (
-                    <motion.div className="card" style={{ padding: 0 }} variants={containerVariants} initial="hidden" animate="visible">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Invoice</th>
-                                    <th>Client</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Issue Date</th>
-                                    <th>Due Date</th>
-                                    <th style={{ width: 48 }}></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.map((inv) => (
-                                    <motion.tr key={inv.id} variants={rowVariants}>
-                                        <td style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--text-primary)" }}>
-                                            {inv.number}
-                                        </td>
-                                        <td>
-                                            <div style={{ fontWeight: 500, color: "var(--text-primary)" }}>
-                                                {clientName(inv.client_id)}
-                                            </div>
-                                        </td>
-                                        <td style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--text-primary)" }}>
-                                            {formatCurrency(inv.total)}
-                                        </td>
-                                        <td>
-                                            <span
-                                                style={{
-                                                    display: "inline-flex",
-                                                    alignItems: "center",
-                                                    gap: 6,
-                                                    padding: "2px 10px",
-                                                    borderRadius: 999,
-                                                    fontSize: "var(--text-xs)",
-                                                    fontWeight: 600,
-                                                    textTransform: "capitalize",
-                                                    background: statusColor(inv.status).bg,
-                                                    color: statusColor(inv.status).color,
-                                                }}
+                    {/* Premium Data Table */}
+                    {!loading && filtered.length > 0 && (
+                        <motion.div
+                            key="table"
+                            className="glass-panel w-full overflow-x-auto"
+                            style={{ padding: 0, borderRadius: 'var(--radius-2xl)', border: '1px solid rgba(255,255,255,0.08)' }}
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            <table className="data-table min-w-[800px]" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice ID</th>
+                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client</th>
+                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timeline</th>
+                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
+                                        <th style={{ padding: '1.25rem 1.5rem', width: 80 }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filtered.map((inv) => {
+                                        const config = statusConfig(inv.status);
+                                        return (
+                                            <motion.tr
+                                                key={inv.id}
+                                                variants={rowVariants}
+                                                style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s ease' }}
+                                                whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
                                             >
-                                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor(inv.status).color }} />
-                                                {inv.status}
-                                            </span>
-                                        </td>
-                                        <td>{inv.issue_date}</td>
-                                        <td>{inv.due_date}</td>
-                                        <td>
-                                            <div style={{ position: "relative" }}>
-                                                <button
-                                                    className="btn btn-ghost btn-icon"
-                                                    style={{ height: 32, width: 32 }}
-                                                    onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
-                                                >
-                                                    <MoreHorizontal size={16} />
-                                                </button>
-                                                <AnimatePresence>
-                                                    {menuId === inv.id && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, scale: 0.95 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            exit={{ opacity: 0, scale: 0.95 }}
-                                                            style={{
-                                                                position: "absolute",
-                                                                right: 0,
-                                                                top: "100%",
-                                                                marginTop: 4,
-                                                                background: "var(--bg-primary)",
-                                                                border: "1px solid var(--border-subtle)",
-                                                                borderRadius: "var(--radius-md)",
-                                                                padding: "var(--space-1)",
-                                                                minWidth: 160,
-                                                                zIndex: 50,
-                                                                boxShadow: "0 8px 30px rgba(0,0,0,0.3)",
-                                                            }}
-                                                        >
-                                                            <button
-                                                                className="btn btn-ghost"
-                                                                style={{ width: "100%", justifyContent: "flex-start", fontSize: "var(--text-sm)", height: 36 }}
-                                                                onClick={() => handleDownload(inv.id)}
+                                                <td style={{ padding: '1.25rem 1.5rem', fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--foreground)", fontSize: '0.95rem' }}>
+                                                    {inv.number}
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>
+                                                            {clientName(inv.client_id).charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <span style={{ fontWeight: 600, color: "var(--foreground)", fontSize: '1rem' }}>
+                                                            {clientName(inv.client_id)}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ display: 'inline-block', width: '40px' }}>Issued:</span>
+                                                            <span style={{ color: 'var(--text-primary)' }}>{inv.issue_date}</span>
+                                                        </span>
+                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ display: 'inline-block', width: '40px' }}>Due:</span>
+                                                            <span style={{ color: inv.status.toLowerCase() === 'overdue' ? 'var(--danger)' : 'var(--text-primary)' }}>{inv.due_date}</span>
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+                                                    <span
+                                                        style={{
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            gap: 6,
+                                                            padding: "6px 14px",
+                                                            borderRadius: "20px",
+                                                            fontSize: "0.8rem",
+                                                            fontWeight: 700,
+                                                            textTransform: "uppercase",
+                                                            letterSpacing: "0.05em",
+                                                            background: config.bg,
+                                                            color: config.color,
+                                                            border: `1px solid ${config.border}`,
+                                                            boxShadow: config.glow,
+                                                        }}
+                                                    >
+                                                        {inv.status}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right', fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--foreground)", fontSize: '1.1rem' }}>
+                                                    {formatCurrency(inv.total)}
+                                                </td>
+                                                <td style={{ padding: '1.25rem 1.5rem', position: "relative" }}>
+                                                    <motion.button
+                                                        className="btn btn-ghost btn-icon"
+                                                        style={{ height: 36, width: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}
+                                                        onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
+                                                        whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                                                    >
+                                                        <MoreHorizontal size={18} />
+                                                    </motion.button>
+                                                    <AnimatePresence>
+                                                        {menuId === inv.id && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                                transition={{ duration: 0.2, type: 'spring' }}
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    right: '2.5rem',
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    background: "rgba(15, 23, 42, 0.95)",
+                                                                    backdropFilter: "blur(20px)",
+                                                                    border: "1px solid rgba(255,255,255,0.1)",
+                                                                    borderRadius: "var(--radius-lg)",
+                                                                    padding: "0.5rem",
+                                                                    minWidth: 180,
+                                                                    zIndex: 50,
+                                                                    boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+                                                                }}
                                                             >
-                                                                <Download size={14} /> Download PDF
-                                                            </button>
-                                                            <button
-                                                                className="btn btn-ghost"
-                                                                style={{ width: "100%", justifyContent: "flex-start", color: "var(--danger)", fontSize: "var(--text-sm)", height: 36 }}
-                                                                onClick={() => handleDelete(inv.id)}
-                                                            >
-                                                                <Trash2 size={14} /> Delete
-                                                            </button>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                                                <button
+                                                                    className="btn btn-ghost"
+                                                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.9rem", height: 36, gap: '10px', color: 'var(--text-primary)' }}
+                                                                    onClick={() => handleDownload(inv.id)}
+                                                                >
+                                                                    <Download size={16} /> Download PDF
+                                                                </button>
+                                                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                                                                <button
+                                                                    className="btn btn-ghost"
+                                                                    style={{ width: "100%", justifyContent: "flex-start", color: "var(--color-soft-coral)", fontSize: "0.9rem", height: 36, gap: '10px' }}
+                                                                    onClick={() => handleDelete(inv.id)}
+                                                                >
+                                                                    <Trash2 size={16} /> Delete Invoice
+                                                                </button>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </motion.div>
+                    )}
 
-                        {filtered.length === 0 && (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">
-                                    <FileText size={28} />
-                                </div>
-                                <h3 className="empty-state-title">No invoices found</h3>
-                                <p className="empty-state-desc">
-                                    {invoices.length === 0
-                                        ? "Create your first invoice to get started."
-                                        : "Try adjusting your search or filter."}
-                                </p>
+                    {!loading && filtered.length === 0 && (
+                        <motion.div
+                            key="empty"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="glass-panel"
+                            style={{ padding: '6rem 2rem', textAlign: 'center', borderRadius: 'var(--radius-2xl)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(45,212,191,0.2), rgba(124,58,237,0.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <FileText size={48} style={{ color: 'var(--foreground)' }} />
                             </div>
-                        )}
-                    </motion.div>
-                )}
+                            <h3 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                {search || filterStatus ? "No matches found" : "No invoices yet"}
+                            </h3>
+                            <p style={{ color: 'var(--text-tertiary)', fontSize: '1.1rem', maxWidth: '400px', marginBottom: '2.5rem', lineHeight: 1.6 }}>
+                                {invoices.length === 0
+                                    ? "Start generating revenue. Create your first professional invoice to send to your clients."
+                                    : "Try adjusting your search criteria or modifying the active filters."}
+                            </p>
+                            {!search && !filterStatus && (
+                                <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '30px' }}>
+                                    <Plus size={20} /> Create First Invoice
+                                </button>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* Create Invoice Modal */}
+            {/* Premium Slide-Over Form for Creation */}
             <AnimatePresence>
                 {showCreate && (
                     <motion.div
-                        className="modal-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                        animate={{ opacity: 1, backdropFilter: 'blur(10px)' }}
+                        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                        style={{ position: 'fixed', inset: 0, background: 'color-mix(in srgb, var(--background) 70%, transparent)', zIndex: 100, display: 'flex', justifyContent: 'flex-end' }}
                         onClick={() => setShowCreate(false)}
                     >
                         <motion.div
-                            className="modal"
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                            variants={slideOverVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            style={{
+                                width: '100%',
+                                maxWidth: '600px',
+                                height: '100%',
+                                background: 'var(--surface)',
+                                borderLeft: '1px solid color-mix(in srgb, var(--foreground) 8%, transparent)',
+                                boxShadow: '-20px 0 50px rgba(0,0,0,0.5)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                position: 'relative'
+                            }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="modal-header">
-                                <h2>Create Invoice</h2>
-                                <button className="btn btn-ghost btn-icon" onClick={() => setShowCreate(false)}>
-                                    <X size={18} />
-                                </button>
-                            </div>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label">Client *</label>
-                                    <select ref={clientRef} className="form-input">
-                                        <option value="">Select a client...</option>
-                                        {clients.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.name} {c.company ? `(${c.company})` : ""}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {clients.length === 0 && (
-                                        <p style={{ fontSize: "var(--text-xs)", color: "var(--warning)", marginTop: 4 }}>
-                                            No clients yet. Add a client first.
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Item Description *</label>
-                                    <input ref={descRef} className="form-input" placeholder="What are you billing for?" />
-                                </div>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
-                                    <div className="form-group">
-                                        <label className="form-label">Quantity</label>
-                                        <input ref={qtyRef} className="form-input" type="number" placeholder="1" defaultValue={1} />
+                            {/* Slide-over Header */}
+                            <div style={{ padding: '2rem 2.5rem', borderBottom: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)', background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: 0, right: 0, width: '300px', height: '100%', background: 'radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 15%, transparent), transparent 70%)' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                                    <div>
+                                        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                            Draft New Invoice
+                                        </h2>
+                                        <p style={{ color: 'var(--foreground)', opacity: 0.7, fontSize: '0.95rem', marginTop: '0.5rem' }}>Configure details and generate a new billable item.</p>
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Unit Price ($) *</label>
-                                        <input ref={priceRef} className="form-input" type="number" placeholder="0.00" step="0.01" />
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Notes (optional)</label>
-                                    <input ref={notesRef} className="form-input" placeholder="Payment instructions, thank you note..." />
+                                    <button
+                                        onClick={() => setShowCreate(false)}
+                                        style={{ width: 40, height: 40, borderRadius: '50%', background: 'color-mix(in srgb, var(--foreground) 5%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--foreground)', opacity: 0.7, border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 10%, transparent)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 5%, transparent)'}
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
                             </div>
-                            <div className="modal-footer">
-                                <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
-                                <button className="btn btn-primary" onClick={handleCreate} disabled={creating}>
-                                    {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                                    {creating ? "Creating..." : "Create Invoice"}
+
+                            {/* Form Content */}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+                                    {/* Client Selection Section */}
+                                    <div style={{ background: 'color-mix(in srgb, var(--foreground) 3%, transparent)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)' }}>
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label" style={{ fontSize: '1rem', color: 'var(--foreground)' }}>Bill To <span style={{ color: 'var(--primary)' }}>*</span></label>
+                                            <select ref={clientRef} className="form-input glass-panel" style={{ height: '3.5rem', fontSize: '1.05rem', marginTop: '0.5rem' }}>
+                                                <option value="" style={{ background: 'var(--surface)' }}>Select a registered client...</option>
+                                                {clients.map((c) => (
+                                                    <option key={c.id} value={c.id} style={{ background: 'var(--surface)' }}>
+                                                        {c.name} {c.company ? `— ${c.company}` : ""}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {clients.length === 0 && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)', fontSize: '0.9rem', marginTop: '1rem', background: 'rgba(245,158,11,0.1)', padding: '10px 14px', borderRadius: '8px' }}>
+                                                    <AlertCircle size={16} /> Cannot create invoice. Please add a client in the Client Hub first.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Line Item Section */}
+                                    <div style={{ background: 'color-mix(in srgb, var(--foreground) 3%, transparent)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)' }}>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--foreground)', opacity: 0.8, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <FileText size={18} /> Primary Line Item
+                                        </h3>
+
+                                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                            <label className="form-label">Service / Product Description <span style={{ color: 'var(--primary)' }}>*</span></label>
+                                            <input ref={descRef} className="form-input" placeholder="e.g. Website Design - Phase 1" />
+                                        </div>
+
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                                <label className="form-label">Quantity</label>
+                                                <input ref={qtyRef} className="form-input" type="number" placeholder="1" defaultValue={1} />
+                                            </div>
+                                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                                <label className="form-label">Unit Rate ($) <span style={{ color: 'var(--primary)' }}>*</span></label>
+                                                <input ref={priceRef} className="form-input" type="number" placeholder="0.00" step="0.01" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Additional Info Section */}
+                                    <div style={{ background: 'color-mix(in srgb, var(--foreground) 3%, transparent)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)' }}>
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label">Additional Notes & Terms</label>
+                                            <input ref={notesRef} className="form-input" placeholder="Payment due within 30 days. Wire transfer details..." />
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {/* Slide-over Footer Actions */}
+                            <div style={{ padding: '1.5rem 2.5rem', borderTop: '1px solid color-mix(in srgb, var(--foreground) 10%, transparent)', background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowCreate(false)}
+                                    style={{ background: 'transparent', border: '1px solid color-mix(in srgb, var(--foreground) 15%, transparent)', color: 'var(--foreground)' }}
+                                >
+                                    Cancel
                                 </button>
+                                <motion.button
+                                    className="btn btn-primary"
+                                    onClick={handleCreate}
+                                    disabled={creating || clients.length === 0}
+                                    whileHover={clients.length > 0 ? { scale: 1.02, boxShadow: '0 0 20px rgba(124, 58, 237, 0.4)' } : {}}
+                                    whileTap={clients.length > 0 ? { scale: 0.98 } : {}}
+                                    style={{ padding: '0.75rem 2rem', borderRadius: '30px' }}
+                                >
+                                    {creating ? <Loader2 size={18} className="animate-spin" /> : <FilePlus2 size={18} />}
+                                    {creating ? "Generating Document..." : "Finalize & Draft Invoice"}
+                                </motion.button>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </>
+        </div>
     );
 }

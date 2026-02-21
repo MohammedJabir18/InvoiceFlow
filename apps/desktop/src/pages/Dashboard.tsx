@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { FileText, Loader2 } from "lucide-react";
+import { FilePlus2, Loader2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { RevenuePulse } from "../components/dashboard/RevenuePulse";
@@ -9,10 +9,7 @@ import { getInvoices, getClients, type InvoiceSummary, type ClientResponse } fro
 
 const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
 const itemVariants = {
@@ -42,107 +39,174 @@ export function Dashboard() {
 
     const clientName = (id: string) => clients.find((c) => c.id === id)?.name || "Unknown";
 
-    const totalRevenue = invoices.reduce((sum, inv) => sum + parseFloat(inv.total || "0"), 0);
+    const totalRevenue = invoices
+        .filter(inv => inv.status.toLowerCase() === 'paid')
+        .reduce((sum, inv) => sum + parseFloat(inv.total || "0"), 0);
 
     const recentInvoices = [...invoices]
         .sort((a, b) => b.issue_date.localeCompare(a.issue_date))
         .slice(0, 5);
 
     const formatCurrency = (num: number) =>
-        `$${num.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+        `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const statusStyle = (status: string) => {
+    const statusConfig = (status: string) => {
         switch (status.toLowerCase()) {
-            case "paid": return "bg-emerald-400/10 text-emerald-400 border-emerald-400/20";
-            case "pending": return "bg-amber-400/10 text-amber-400 border-amber-400/20";
-            case "sent": return "bg-blue-400/10 text-blue-400 border-blue-400/20";
-            case "overdue": return "bg-rose-400/10 text-rose-400 border-rose-400/20";
-            default: return "bg-gray-400/10 text-gray-400 border-gray-400/20";
+            case "paid": return { bg: "rgba(16, 185, 129, 0.15)", border: "rgba(16, 185, 129, 0.3)", color: "#34d399", glow: "0 0 10px rgba(16, 185, 129, 0.4)" };
+            case "pending": return { bg: "rgba(245, 158, 11, 0.15)", border: "rgba(245, 158, 11, 0.3)", color: "#fbbf24", glow: "0 0 10px rgba(245, 158, 11, 0.4)" };
+            case "sent": return { bg: "rgba(59, 130, 246, 0.15)", border: "rgba(59, 130, 246, 0.3)", color: "#60a5fa", glow: "0 0 10px rgba(59, 130, 246, 0.4)" };
+            case "overdue": return { bg: "rgba(239, 68, 68, 0.15)", border: "rgba(239, 68, 68, 0.3)", color: "#f87171", glow: "0 0 10px rgba(239, 68, 68, 0.4)" };
+            case "draft": return { bg: "rgba(107, 114, 128, 0.15)", border: "rgba(107, 114, 128, 0.3)", color: "#9ca3af", glow: "none" };
+            default: return { bg: "rgba(107, 114, 128, 0.1)", border: "transparent", color: "#6b7280", glow: "none" };
         }
     };
 
     return (
-        <motion.div
-            className="p-8 max-w-[1600px] mx-auto space-y-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div style={{ paddingBottom: '4rem', maxWidth: '1400px', margin: '0 auto' }}>
+            {/* Premium Dashboard Header */}
+            <motion.div
+                className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+            >
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">Dashboard</h1>
-                    <p className="text-[var(--foreground)] opacity-60 mt-1">
-                        {loading ? "Loading..." : `${invoices.length} invoices · ${clients.length} clients`}
+                    <h1 className="text-gradient" style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>Overview</h1>
+                    <p style={{ color: 'var(--text-tertiary)', fontSize: '1.1rem', margin: 0 }}>
+                        {loading ? "Syncing data..." : `Tracking ${invoices.length} invoices across ${clients.length} clients.`}
                     </p>
                 </div>
-                <div>
-                    <button
-                        onClick={() => navigate("/editor")}
-                        className="flex items-center gap-2 bg-[var(--primary)] text-white px-4 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                <div className="page-header-actions">
+                    <motion.button
+                        className="btn btn-primary glass-panel"
+                        onClick={() => navigate("/invoices")}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ height: '3rem', padding: '0 1.5rem', borderRadius: 'var(--radius-xl)' }}
                     >
-                        <FileText size={18} /> New Invoice
-                    </button>
+                        <FilePlus2 size={18} /> New Invoice
+                    </motion.button>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[500px]">
-                <motion.div className="md:col-span-2 h-full" variants={itemVariants}>
-                    <RevenuePulse totalRevenue={totalRevenue} invoices={invoices} />
-                </motion.div>
-                <div className="flex flex-col gap-6 h-full">
-                    <motion.div className="flex-1" variants={itemVariants}>
-                        <QuickActions />
+            <motion.div
+                className="page-content"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+            >
+                {/* Bento Grid layout */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '2rem', minHeight: '500px' }}>
+                    {/* Revenue Pulse spans 8 columns on large screens */}
+                    <motion.div variants={itemVariants} style={{ gridColumn: 'span 12', '@media (min-width: 1024px)': { gridColumn: 'span 8' } } as React.CSSProperties}>
+                        <RevenuePulse totalRevenue={totalRevenue} invoices={invoices} />
                     </motion.div>
-                    <motion.div className="flex-1" variants={itemVariants}>
-                        <LiveFeed invoices={invoices} clients={clients} />
-                    </motion.div>
-                </div>
-            </div>
 
-            {/* Recent Invoices Table */}
-            <motion.div className="glass-panel rounded-2xl p-6" variants={itemVariants}>
-                <h3 className="text-[var(--secondary)] text-xs font-bold uppercase tracking-widest mb-6">Recent Invoices</h3>
-                {loading ? (
-                    <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-                        <Loader2 size={24} className="animate-spin" style={{ color: "var(--primary)" }} />
+                    {/* Right column for Actions and Feed */}
+                    <div style={{ gridColumn: 'span 12', '@media (min-width: 1024px)': { gridColumn: 'span 4' }, display: 'flex', flexDirection: 'column', gap: '2rem' } as React.CSSProperties}>
+                        <motion.div variants={itemVariants} style={{ flex: '0 0 auto' }}>
+                            <QuickActions />
+                        </motion.div>
+                        <motion.div variants={itemVariants} style={{ flex: 1, minHeight: 0 }}>
+                            <LiveFeed invoices={invoices} clients={clients} />
+                        </motion.div>
                     </div>
-                ) : recentInvoices.length === 0 ? (
-                    <p style={{ textAlign: "center", padding: 40, opacity: 0.5 }}>No invoices yet. Create your first one!</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
+                </div>
+
+                {/* Recent Invoices Table (Premium styled) */}
+                <motion.div className="glass-panel w-full overflow-x-auto" style={{ padding: 0, borderRadius: 'var(--radius-2xl)', border: '1px solid rgba(255,255,255,0.08)' }} variants={itemVariants}>
+                    <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recent Invoices</h3>
+                        <button
+                            onClick={() => navigate("/invoices")}
+                            className="btn btn-ghost"
+                            style={{ padding: '4px 12px', fontSize: '0.9rem', color: 'var(--primary)', height: 'auto' }}
+                        >
+                            View All <ArrowRight size={14} />
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                                <Loader2 size={36} style={{ color: "var(--secondary)" }} />
+                            </motion.div>
+                            <p style={{ marginTop: '1.5rem', color: 'var(--text-tertiary)', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Fetching Data</p>
+                        </div>
+                    ) : recentInvoices.length === 0 ? (
+                        <div style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(45,212,191,0.1), rgba(124,58,237,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <FilePlus2 size={32} style={{ color: 'var(--text-tertiary)' }} />
+                            </div>
+                            <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--foreground)' }}>No invoices yet</h4>
+                            <p style={{ margin: '0.5rem 0 0', color: 'var(--text-tertiary)', fontSize: '0.95rem' }}>Create your first invoice to populate this list.</p>
+                        </div>
+                    ) : (
+                        <table className="data-table min-w-[600px]" style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                                <tr className="border-b border-white/5 text-left text-sm text-[var(--foreground)] opacity-50">
-                                    <th className="pb-4 font-medium pl-4">Invoice</th>
-                                    <th className="pb-4 font-medium">Client</th>
-                                    <th className="pb-4 font-medium">Amount</th>
-                                    <th className="pb-4 font-medium">Status</th>
-                                    <th className="pb-4 font-medium pr-4 text-right">Date</th>
+                                <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {recentInvoices.map((inv) => (
-                                    <tr key={inv.id} className="group hover:bg-white/5 transition-colors">
-                                        <td className="py-4 pl-4 font-mono font-medium text-[var(--primary)] group-hover:text-emerald-400 transition-colors">
-                                            {inv.number}
-                                        </td>
-                                        <td className="py-4 text-sm font-medium">{clientName(inv.client_id)}</td>
-                                        <td className="py-4 font-mono text-sm opacity-80">{formatCurrency(parseFloat(inv.total))}</td>
-                                        <td className="py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyle(inv.status)}`}>
-                                                {inv.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 pr-4 text-right text-sm opacity-60">{inv.issue_date}</td>
-                                    </tr>
-                                ))}
+                            <tbody>
+                                {recentInvoices.map((inv) => {
+                                    const config = statusConfig(inv.status);
+                                    return (
+                                        <motion.tr
+                                            key={inv.id}
+                                            style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                                            whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
+                                            onClick={() => navigate('/invoices')}
+                                            className="cursor-pointer"
+                                        >
+                                            <td style={{ padding: '1.25rem 1.5rem', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--foreground)', fontSize: '0.95rem' }}>
+                                                {inv.number}
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', color: '#fff' }}>
+                                                        {clientName(inv.client_id).charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span style={{ fontWeight: 500, color: 'var(--foreground)', fontSize: '0.95rem' }}>{clientName(inv.client_id)}</span>
+                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{inv.issue_date}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                <span style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    gap: 6,
+                                                    padding: "4px 10px",
+                                                    borderRadius: "12px",
+                                                    fontSize: "0.75rem",
+                                                    fontWeight: 700,
+                                                    textTransform: "uppercase",
+                                                    letterSpacing: "0.05em",
+                                                    background: config.bg,
+                                                    color: config.color,
+                                                    border: `1px solid ${config.border}`,
+                                                }}>
+                                                    {inv.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--foreground)', fontSize: '1.05rem' }}>
+                                                {formatCurrency(parseFloat(inv.total))}
+                                            </td>
+                                        </motion.tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
-                    </div>
-                )}
+                    )}
+                </motion.div>
             </motion.div>
-        </motion.div>
+        </div>
     );
 }
