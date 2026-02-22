@@ -78,6 +78,7 @@ pub async fn get_invoices(state: State<'_, AppState>) -> Result<Vec<InvoiceSumma
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateInvoiceRequest {
+    pub invoice_number: Option<String>,
     pub client_id: String,
     pub items: Vec<InvoiceItemRequest>,
     pub notes: Option<String>,
@@ -146,8 +147,19 @@ pub async fn create_invoice(
     // Generate invoice number
     let repo = InvoiceRepository::new(state.db.clone());
     let existing = repo.list_all().await.map_err(|e| e.to_string())?;
-    let gen = flow_invoice::number_generator::InvoiceNumberGenerator::default();
-    let number = gen.next(existing.len() as u64);
+    
+    let number = if let Some(nr) = request.invoice_number.filter(|s| !s.trim().is_empty()) {
+        nr.trim().to_string()
+    } else {
+        let gen = flow_invoice::number_generator::InvoiceNumberGenerator::default();
+        let mut offset = existing.len() as u64;
+        let mut n = gen.next(offset);
+        while existing.iter().any(|i| i.number == n) {
+            offset += 1;
+            n = gen.next(offset);
+        }
+        n
+    };
 
     // Get active business profile
     let profile_repo = flow_db::repositories::BusinessProfileRepository::new(state.db.clone());
@@ -169,7 +181,7 @@ pub async fn create_invoice(
         business_profile_id: profile.id,
         issue_date,
         due_date,
-        currency: Currency::USD,
+        currency: profile.default_currency.clone(),
         items,
         tax_rates: vec![],
         discount: None,
@@ -179,7 +191,7 @@ pub async fn create_invoice(
         total,
         amount_paid: Decimal::ZERO,
         amount_due: total,
-        payment_terms: PaymentTerms::Net30,
+        payment_terms: profile.default_payment_terms.clone(),
         notes: request.notes,
         terms_and_conditions: None,
         created_at: Utc::now(),
@@ -223,21 +235,42 @@ pub async fn get_analytics(state: State<'_, AppState>) -> Result<RevenueMetrics,
 
 #[tauri::command]
 pub async fn generate_pdf(state: State<'_, AppState>, invoice_id: String) -> Result<String, String> {
-    // Get the active profile to find the export directory
+    // Get the active profile
     let profile_repo = flow_db::repositories::BusinessProfileRepository::new(state.db.clone());
     let profile = profile_repo.get_profile().await.map_err(|e| e.to_string())?;
 
-    let output_dir = if let Some(dir) = profile.pdf_export_dir {
-        std::path::PathBuf::from(dir)
+    let output_dir = if let Some(dir) = profile.pdf_export_dir.clone() {
+        if dir.trim().is_empty() {
+            std::path::PathBuf::from(r#"C:\Users\jabir\Downloads"#)
+        } else {
+            std::path::PathBuf::from(dir)
+        }
     } else {
-        state.app_data_dir.join("pdfs")
+        std::path::PathBuf::from(r#"C:\Users\jabir\Downloads"#)
     };
+
+    // Get full Invoice and Client objects
+    let invoice_repo = flow_db::repositories::InvoiceRepository::new(state.db.clone());
+    let invoice = invoice_repo.get_by_id(&invoice_id).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "Invoice not found or deleted.".to_string())?;
+
+    let client_repo = flow_db::repositories::ClientRepository::new(state.db.clone());
+    let client = client_repo.get_by_id(&invoice.client_id.to_string()).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "Client not found or deleted.".to_string())?;
 
     let generator = flow_pdf::PdfGenerator::new(output_dir);
     
-    // In a real app, we'd pass a URL to the invoice view, e.g. http://localhost:1420/invoice/<id>/print
-    // Here we'll just use the invoice ID to generate a dummy PDF for demonstration
-    let path = generator.generate_invoice_pdf(&invoice_id).map_err(|e| e.to_string())?;
+    // Convert domain structs to raw semantic HTML using the edge-parser
+    let html = flow_pdf::template::render_invoice_html(&invoice, &client, &profile);
+    
+    // Save generated PDF headlessly via Edge OS commands
+    let filename = format!("Invoice_{}.pdf", invoice.number);
+    let path = tokio::task::spawn_blocking(move || {
+        generator.generate_from_html(&html, &filename)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
     
     Ok(path.to_string_lossy().into_owned())
 }

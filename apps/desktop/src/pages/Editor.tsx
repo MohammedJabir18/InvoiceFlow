@@ -34,6 +34,7 @@ export function Editor() {
         setSaving(true);
         try {
             const invoiceNumber = await createInvoice({
+                invoice_number: data.invoiceNumber,
                 client_id: data.clientId,
                 items: data.items,
                 notes: data.notes || null,

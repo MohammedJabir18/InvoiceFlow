@@ -681,8 +681,8 @@ export function Settings() {
                                                     <PremiumInput
                                                         label="Save Invoices To"
                                                         icon={HardDrive}
-                                                        placeholder="C:\Users\JohnDoe\Documents\Invoices"
-                                                        value={profile.pdf_export_dir || ''}
+                                                        placeholder="C:\Users\jabir\Downloads"
+                                                        value={profile.pdf_export_dir || 'C:\\Users\\jabir\\Downloads'}
                                                         onChange={(e) => handleUpdateField('pdf_export_dir', e.target.value)}
                                                     />
                                                 </div>
@@ -696,7 +696,7 @@ export function Settings() {
                                                 </button>
                                             </div>
                                             <p className="text-xs text-[var(--text-muted)] mt-2">
-                                                Leave blank to use the application's internal data directory.
+                                                Leave blank to default to your Downloads folder: <code>C:\Users\jabir\Downloads</code>.
                                             </p>
                                         </div>
 

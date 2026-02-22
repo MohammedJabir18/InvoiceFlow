@@ -5,6 +5,7 @@ import { useSettingsStore } from "../../store/settingsStore";
 import type { ClientResponse } from "../../lib/api";
 
 export interface InvoiceData {
+    invoiceNumber: string | null;
     clientId: string;
     items: { description: string; quantity: number; unit_price: number }[];
     notes: string;
@@ -204,6 +205,7 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
             };
 
             return {
+                invoiceNumber: invoiceNumber.trim() || null,
                 clientId: selectedClientId,
                 items: lineItems.map((li) => ({
                     description: li.description,

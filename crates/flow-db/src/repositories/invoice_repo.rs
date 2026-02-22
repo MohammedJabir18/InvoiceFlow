@@ -115,6 +115,31 @@ impl InvoiceRepository {
             .await?;
         Ok(())
     }
+
+    pub async fn get_by_id(&self, id: &str) -> Result<Option<Invoice>, sqlx::Error> {
+        let inv_row = sqlx::query_as::<_, FullInvoiceRow>(
+            r#"SELECT id, number, status, client_id, business_profile_id, issue_date, due_date, currency, subtotal, tax_total, discount_total, total, amount_paid, amount_due, payment_terms, notes, terms_and_conditions, created_at, updated_at
+               FROM invoices WHERE id = ?"#,
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if let Some(row) = inv_row {
+            let item_rows = sqlx::query_as::<_, InvoiceItemRow>(
+                r#"SELECT id, invoice_id, description, quantity, unit_price, amount, tax_rate_name, sort_order
+                   FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order ASC"#,
+            )
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await?;
+
+            let items = item_rows.into_iter().map(|r| r.into_item()).collect();
+            Ok(Some(row.into_invoice(items)))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 /// Lightweight invoice listing DTO
@@ -156,6 +181,107 @@ impl InvoiceSummaryRow {
             currency: self.currency,
             total: self.total,
             amount_due: self.amount_due,
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct FullInvoiceRow {
+    id: String,
+    number: String,
+    status: String,
+    client_id: String,
+    business_profile_id: String,
+    issue_date: String,
+    due_date: String,
+    currency: String,
+    subtotal: String,
+    tax_total: String,
+    discount_total: String,
+    total: String,
+    amount_paid: String,
+    amount_due: String,
+    payment_terms: String,
+    notes: Option<String>,
+    terms_and_conditions: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+impl FullInvoiceRow {
+    fn into_invoice(self, items: Vec<InvoiceItem>) -> Invoice {
+        use std::str::FromStr;
+        use rust_decimal::Decimal;
+        use flow_core::types::{Currency, InvoiceStatus, PaymentTerms};
+
+        let status = match self.status.as_str() {
+            "Draft" => InvoiceStatus::Draft,
+            "Pending" => InvoiceStatus::Pending,
+            "Sent" => InvoiceStatus::Sent,
+            "Viewed" => InvoiceStatus::Viewed,
+            "Paid" => InvoiceStatus::Paid,
+            "Overdue" => InvoiceStatus::Overdue,
+            "Cancelled" => InvoiceStatus::Cancelled,
+            _ => InvoiceStatus::Draft,
+        };
+
+        Invoice {
+            id: uuid::Uuid::parse_str(&self.id).unwrap_or_default(),
+            number: self.number,
+            status,
+            client_id: uuid::Uuid::parse_str(&self.client_id).unwrap_or_default(),
+            business_profile_id: uuid::Uuid::parse_str(&self.business_profile_id).unwrap_or_default(),
+            issue_date: chrono::NaiveDate::parse_from_str(&self.issue_date, "%Y-%m-%d").unwrap_or_default(),
+            due_date: chrono::NaiveDate::parse_from_str(&self.due_date, "%Y-%m-%d").unwrap_or_default(),
+            currency: Currency::from_str(&self.currency).unwrap_or_default(),
+            items,
+            tax_rates: vec![],
+            discount: None,
+            subtotal: Decimal::from_str(&self.subtotal).unwrap_or_default(),
+            tax_total: Decimal::from_str(&self.tax_total).unwrap_or_default(),
+            discount_total: Decimal::from_str(&self.discount_total).unwrap_or_default(),
+            total: Decimal::from_str(&self.total).unwrap_or_default(),
+            amount_paid: Decimal::from_str(&self.amount_paid).unwrap_or_default(),
+            amount_due: Decimal::from_str(&self.amount_due).unwrap_or_default(),
+            payment_terms: PaymentTerms::from_str(&self.payment_terms).unwrap_or_default(),
+            notes: self.notes,
+            terms_and_conditions: self.terms_and_conditions,
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
+                .map(|dt| dt.with_timezone(&Utc))
+                .unwrap_or_else(|_| Utc::now()),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at)
+                .map(|dt| dt.with_timezone(&Utc))
+                .unwrap_or_else(|_| Utc::now()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct InvoiceItemRow {
+    id: String,
+    invoice_id: String,
+    description: String,
+    quantity: String,
+    unit_price: String,
+    amount: String,
+    tax_rate_name: Option<String>,
+    sort_order: i32,
+}
+
+impl InvoiceItemRow {
+    fn into_item(self) -> InvoiceItem {
+        use std::str::FromStr;
+        use rust_decimal::Decimal;
+
+        InvoiceItem {
+            id: uuid::Uuid::parse_str(&self.id).unwrap_or_default(),
+            invoice_id: uuid::Uuid::parse_str(&self.invoice_id).unwrap_or_default(),
+            description: self.description,
+            quantity: Decimal::from_str(&self.quantity).unwrap_or_default(),
+            unit_price: Decimal::from_str(&self.unit_price).unwrap_or_default(),
+            amount: Decimal::from_str(&self.amount).unwrap_or_default(),
+            tax_rate_name: self.tax_rate_name,
+            sort_order: self.sort_order,
         }
     }
 }

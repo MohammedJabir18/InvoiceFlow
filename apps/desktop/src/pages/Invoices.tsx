@@ -27,8 +27,10 @@ import {
     openPdf,
     type InvoiceSummary,
     type ClientResponse,
+    type CreateInvoiceRequest,
 } from "../lib/api";
 import { useSettingsStore } from "../store/settingsStore";
+import { DownloadProgressModal } from "../components/ui/DownloadProgressModal";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -58,6 +60,21 @@ export function Invoices() {
     const [menuId, setMenuId] = useState<string | null>(null);
     const [previewInvoice, setPreviewInvoice] = useState<InvoiceSummary | null>(null);
     const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+
+    // Download Modal State
+    const [downloadState, setDownloadState] = useState<{
+        isOpen: boolean;
+        status: 'idle' | 'initializing' | 'rendering' | 'generating' | 'complete' | 'error';
+        invoiceNumber: string;
+        path: string | null;
+        error: string | null;
+    }>({
+        isOpen: false,
+        status: 'idle',
+        invoiceNumber: '',
+        path: null,
+        error: null
+    });
 
     // Form refs
     const clientRef = useRef<HTMLSelectElement>(null);
@@ -118,6 +135,7 @@ export function Invoices() {
         setCreating(true);
         try {
             await createInvoice({
+                invoice_number: null,
                 client_id: clientId,
                 items: [{ description: desc, quantity: qty, unit_price: price }],
                 notes: notesRef.current?.value?.trim() || null,
@@ -158,14 +176,31 @@ export function Invoices() {
         }
     };
 
-    const handleDownload = async (id: string) => {
+    const handleDownload = async (id: string, invoiceNumber: string) => {
+        setMenuId(null);
+        setDownloadState({ isOpen: true, status: 'initializing', invoiceNumber, path: null, error: null });
+
+        // Timeout promises to stagger the visual effects to look premium
+        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
         try {
+            // Stage 1
+            await delay(400);
+            setDownloadState(s => s.status === 'initializing' ? { ...s, status: 'rendering' } : s);
+
+            // Stage 2
+            await delay(400);
+            setDownloadState(s => s.status === 'rendering' ? { ...s, status: 'generating' } : s);
+
             const path = await generatePdf(id);
-            alert(`PDF saved to: ${path}`);
-            setMenuId(null);
+
+            // Minimum time in generating state so it doesn't flash too fast
+            await delay(600);
+
+            setDownloadState(s => ({ ...s, status: 'complete', path }));
         } catch (err) {
             console.error("PDF generation failed:", err);
-            alert("PDF generation failed. Chrome may not be available.");
+            setDownloadState(s => ({ ...s, status: 'error', error: "Failed to generate PDF. Make sure Chrome/Edge is installed." }));
         }
     };
 
@@ -247,6 +282,12 @@ export function Invoices() {
 
     return (
         <div style={{ paddingBottom: '4rem', maxWidth: '1400px', margin: '0 auto' }}>
+            {/* Download Progress Modal */}
+            <DownloadProgressModal
+                {...downloadState}
+                onClose={() => setDownloadState(s => ({ ...s, isOpen: false }))}
+            />
+
             {/* Premium Dashboard Header */}
             <motion.div
                 className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10"
@@ -481,7 +522,7 @@ export function Invoices() {
                                                                     <button
                                                                         className="btn btn-ghost"
                                                                         style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.9rem", height: 36, gap: '10px', color: 'var(--text-primary)' }}
-                                                                        onClick={() => handleDownload(inv.id)}
+                                                                        onClick={() => handleDownload(inv.id, inv.number)}
                                                                     >
                                                                         <Download size={16} /> Download PDF
                                                                     </button>
@@ -756,7 +797,7 @@ export function Invoices() {
                                 <button
                                     onClick={() => {
                                         setPreviewInvoice(null);
-                                        handleDownload(previewInvoice.id);
+                                        handleDownload(previewInvoice.id, previewInvoice.number);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors"
                                 >
@@ -767,6 +808,6 @@ export function Invoices() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }

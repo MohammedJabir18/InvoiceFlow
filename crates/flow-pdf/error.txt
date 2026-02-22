@@ -1,0 +1,133 @@
+    Checking flow-pdf v0.1.0 (D:\My Codings\My Projects\InvoiceFlow\crates\flow-pdf)
+error: 25 positional arguments in format string, but there are 24 arguments
+   --> crates\flow-pdf\src\template.rs:98:28
+    |
+ 98 |               <title>Invoice {}</title>
+    |                              ^^
+...
+403 |                           {}
+    |                           ^^
+...
+415 |                               <div class="info-value">{}</div>
+    |                                                       ^^
+...
+419 |                               <div class="info-value">{}</div>
+    |                                                       ^^
+...
+425 |                               <div class="info-value">{}</div>
+    |                                                       ^^
+...
+429 |                               <div class="info-value">{}</div>
+    |                                                       ^^
+...
+438 |                           <div class="client-name">{}</div>
+    |                                                    ^^
+439 |                           <div class="client-detail">
+440 |                               {}
+    |                               ^^
+441 |                               {}
+    |                               ^^
+...
+447 |                   {}
+    |                   ^^
+...
+456 |                                   <th class="th-amount">Amount ({})</th>
+    |                                                                 ^^
+...
+460 |                               {}
+    |                               ^^
+...
+463 |                                   <td>{}</td>
+    |                                       ^^
+...
+480 |                               <span class="bank-value">{}</span>
+    |                                                        ^^
+...
+484 |                               <span class="bank-value">{}</span>
+    |                                                        ^^
+...
+488 |                               <span class="bank-value text-blue">{}</span>
+    |                                                                  ^^
+...
+492 |                               <span class="bank-value">{}</span>
+    |                                                        ^^
+...
+496 |                               <span class="bank-value">{}</span>
+    |                                                        ^^
+...
+500 |                               <span class="bank-value text-blue">{}</span>
+    |                                                                  ^^
+...
+516 |                               {}
+    |                               ^^
+517 |                           </div>
+518 |                           <div style="margin-top: 8px; text-align: center; font-size: 12px; font-weight: 700; color: #111827;">{}</div>
+    |                                                                                                                                ^^
+519 |                           <div style="text-align: center; font-size: 10px; color: #6b7280;">{}</div>
+    |                                                                                             ^^
+...
+527 |                       <p style="margin: 0 0 8px 0;">• Please include Invoice Number ({}) in payment reference</p>
+    |                                                                                      ^^
+...
+530 |                           <span>{}</span>
+    |                                 ^^
+...
+537 |                       <p style="margin: 0; font-size: 14px; color: #1f2937;">For any queries regarding this invoice, please contact {}</p>
+    |                                                                                                                                     ^^
+...
+547 |           logo_html,
+    |           ---------
+548 |           invoice.number,
+    |           --------------
+549 |           invoice.issue_date.format("%d %b %Y"),
+    |           -------------------------------------
+550 |           developer,
+    |           ---------
+551 |           invoice.due_date.format("%d %b %Y"),
+    |           -----------------------------------
+552 |           client.name,
+    |           -----------
+553 |           if let Some(company) = &client.company { format!("<p>{}</p>", company) } else { String::new() },
+    |           -----------------------------------------------------------------------------------------------
+554 |           if let Some(email) = &client.email { format!(r#"<p>Website: <span class="client-email">{}</span></p>"#, email) } else { String::new() },
+    |           ---------------------------------------------------------------------------------------------------------------------------------------
+555 | /         if !project_details_html.is_empty() {
+556 | |             format!(
+557 | |                 r#"
+558 | |                 <div style="margin-bottom: 32px;">
+...   |
+567 | |             String::new()
+568 | |         },
+    | |_________-
+569 |           currency_symbol(&invoice.currency.to_string()),
+    |           ----------------------------------------------
+570 |           items_html,
+    |           ----------
+571 |           format_currency(&invoice.amount_due.to_string(), &invoice.currency.to_string()),
+    |           -------------------------------------------------------------------------------
+572 |           account_holder,
+    |           --------------
+573 |           account_number,
+    |           --------------
+574 |           ifsc_code,
+    |           ---------
+575 |           bank_name,
+    |           ---------
+576 |           branch,
+    |           ------
+577 |           upi_id,
+    |           ------
+578 |           qr_html,
+    |           -------
+579 |           developer,
+    |           ---------
+580 |           upi_id,
+    |           ------
+581 |           invoice.number,
+    |           --------------
+582 |           payment_terms_note.replace("\n", "<br>"),
+    |           ----------------------------------------
+583 |           if developer.is_empty() { "the developer" } else { &developer }
+    |           ---------------------------------------------------------------
+
+error: could not compile `flow-pdf` (lib) due to 1 previous error

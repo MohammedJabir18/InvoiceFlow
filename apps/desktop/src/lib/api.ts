@@ -34,6 +34,7 @@ export interface InvoiceItemRequest {
 }
 
 export interface CreateInvoiceRequest {
+    invoice_number: string | null;
     client_id: string;
     items: InvoiceItemRequest[];
     notes: string | null;

@@ -1,3 +1,5 @@
+pub mod template;
+
 use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::fs;
@@ -53,6 +55,7 @@ impl PdfGenerator {
                 "--headless=new",
                 "--disable-gpu",
                 "--no-sandbox",
+                "--no-pdf-header-footer",
                 "--disable-software-rasterizer",
                 "--run-all-compositor-stages-before-draw",
                 &format!("--print-to-pdf={}", output_path.display()),
@@ -73,6 +76,25 @@ impl PdfGenerator {
         }
 
         Ok(output_path)
+    }
+
+    pub fn generate_from_html(&self, html: &str, output_filename: &str) -> Result<PathBuf> {
+        let temp_dir = std::env::temp_dir();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_micros();
+        let temp_html_path = temp_dir.join(format!("invoice_flow_{}.html", timestamp));
+        
+        fs::write(&temp_html_path, html).context("Failed to write temporary HTML file")?;
+        
+        let url = format!("file:///{}", temp_html_path.to_string_lossy().replace("\\", "/"));
+        
+        let result = self.generate_from_url(&url, output_filename);
+        
+        let _ = fs::remove_file(temp_html_path);
+        
+        result
     }
 
     pub fn generate_invoice_pdf(&self, invoice_id: &str) -> Result<PathBuf> {
