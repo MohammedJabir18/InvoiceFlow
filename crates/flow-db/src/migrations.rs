@@ -20,6 +20,8 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
             logo_path TEXT,
             default_currency TEXT NOT NULL DEFAULT 'USD',
             default_payment_terms TEXT NOT NULL DEFAULT 'Net30',
+            theme_preference TEXT NOT NULL DEFAULT 'system',
+            pdf_export_dir TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
@@ -136,6 +138,22 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
     )
     .execute(pool)
     .await?;
+
+    // --- Backwards Compatibility Migrations ---
+    
+    // Add theme_preference column if not exists
+    let _ = sqlx::query(
+        "ALTER TABLE business_profiles ADD COLUMN theme_preference TEXT NOT NULL DEFAULT 'system';"
+    )
+    .execute(pool)
+    .await;
+
+    // Add pdf_export_dir column if not exists
+    let _ = sqlx::query(
+        "ALTER TABLE business_profiles ADD COLUMN pdf_export_dir TEXT;"
+    )
+    .execute(pool)
+    .await;
 
     Ok(())
 }

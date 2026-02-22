@@ -223,7 +223,16 @@ pub async fn get_analytics(state: State<'_, AppState>) -> Result<RevenueMetrics,
 
 #[tauri::command]
 pub async fn generate_pdf(state: State<'_, AppState>, invoice_id: String) -> Result<String, String> {
-    let output_dir = state.app_data_dir.join("pdfs");
+    // Get the active profile to find the export directory
+    let profile_repo = flow_db::repositories::BusinessProfileRepository::new(state.db.clone());
+    let profile = profile_repo.get_profile().await.map_err(|e| e.to_string())?;
+
+    let output_dir = if let Some(dir) = profile.pdf_export_dir {
+        std::path::PathBuf::from(dir)
+    } else {
+        state.app_data_dir.join("pdfs")
+    };
+
     let generator = flow_pdf::PdfGenerator::new(output_dir);
     
     // In a real app, we'd pass a URL to the invoice view, e.g. http://localhost:1420/invoice/<id>/print

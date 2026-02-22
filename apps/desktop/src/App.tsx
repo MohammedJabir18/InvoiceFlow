@@ -12,10 +12,37 @@ function App() {
     const fetchSettings = useSettingsStore(state => state.fetchSettings);
     const fetchBankDetails = useSettingsStore(state => state.fetchBankDetails);
 
+    // Global Settings
+    const profile = useSettingsStore(state => state.profile);
+
     useEffect(() => {
         fetchSettings();
         fetchBankDetails();
     }, [fetchSettings, fetchBankDetails]);
+
+    // Apply Global Theme
+    useEffect(() => {
+        if (!profile) return;
+
+        const applyTheme = (isLight: boolean) => {
+            if (isLight) {
+                document.body.classList.add('daylight');
+            } else {
+                document.body.classList.remove('daylight');
+            }
+        };
+
+        if (profile.theme_preference === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+            applyTheme(mediaQuery.matches);
+
+            const listener = (e: MediaQueryListEvent) => applyTheme(e.matches);
+            mediaQuery.addEventListener('change', listener);
+            return () => mediaQuery.removeEventListener('change', listener);
+        } else {
+            applyTheme(profile.theme_preference === 'light');
+        }
+    }, [profile?.theme_preference]);
 
     return (
         <BrowserRouter>

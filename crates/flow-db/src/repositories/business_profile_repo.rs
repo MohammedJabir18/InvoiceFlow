@@ -19,7 +19,8 @@ impl BusinessProfileRepository {
         let row = sqlx::query_as::<_, BusinessProfileRow>(
             "SELECT id, name, email, phone, address_line1, address_line2, address_city, 
                     address_state, address_postal_code, address_country, tax_id, logo_path, 
-                    default_currency, default_payment_terms, created_at, updated_at 
+                    default_currency, default_payment_terms, theme_preference, pdf_export_dir, 
+                    created_at, updated_at 
              FROM business_profiles ORDER BY updated_at DESC LIMIT 1"
         )
         .fetch_optional(&self.pool)
@@ -36,8 +37,8 @@ impl BusinessProfileRepository {
 
             sqlx::query(
                 r#"INSERT INTO business_profiles 
-                   (id, name, address_line1, address_city, address_postal_code, address_country, default_currency, default_payment_terms, created_at, updated_at)
-                   VALUES (?, 'My Company', '', '', '', '', 'USD', 'Net30', ?, ?)"#
+                   (id, name, address_line1, address_city, address_postal_code, address_country, default_currency, default_payment_terms, theme_preference, pdf_export_dir, created_at, updated_at)
+                   VALUES (?, 'My Company', '', '', '', '', 'USD', 'Net30', 'system', NULL, ?, ?)"#
             )
             .bind(&id_str)
             .bind(&now_str)
@@ -55,6 +56,8 @@ impl BusinessProfileRepository {
                 logo_path: None,
                 default_currency: Currency::USD,
                 default_payment_terms: PaymentTerms::Net30,
+                theme_preference: "system".to_string(),
+                pdf_export_dir: None,
                 created_at: now,
                 updated_at: now,
             })
@@ -71,7 +74,7 @@ impl BusinessProfileRepository {
                    address_line1 = ?, address_line2 = ?, address_city = ?, 
                    address_state = ?, address_postal_code = ?, address_country = ?, 
                    tax_id = ?, logo_path = ?, default_currency = ?, default_payment_terms = ?, 
-                   updated_at = ?
+                   theme_preference = ?, pdf_export_dir = ?, updated_at = ?
                WHERE id = ?"#
         )
         .bind(&profile.name)
@@ -87,6 +90,8 @@ impl BusinessProfileRepository {
         .bind(&profile.logo_path)
         .bind(profile.default_currency.to_string())
         .bind(profile.default_payment_terms.to_string())
+        .bind(&profile.theme_preference)
+        .bind(&profile.pdf_export_dir)
         .bind(&now)
         .bind(profile.id.to_string())
         .execute(&self.pool)
@@ -112,6 +117,8 @@ struct BusinessProfileRow {
     logo_path: Option<String>,
     default_currency: String,
     default_payment_terms: String,
+    theme_preference: String,
+    pdf_export_dir: Option<String>,
     created_at: String,
     updated_at: String,
 }
@@ -135,6 +142,8 @@ impl BusinessProfileRow {
             logo_path: self.logo_path,
             default_currency: Currency::from_str(&self.default_currency).unwrap_or(Currency::USD),
             default_payment_terms: PaymentTerms::from_str(&self.default_payment_terms).unwrap_or(PaymentTerms::Net30),
+            theme_preference: self.theme_preference,
+            pdf_export_dir: self.pdf_export_dir,
             created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
                 .map(|dt| dt.with_timezone(&Utc))
                 .unwrap_or_else(|_| Utc::now()),

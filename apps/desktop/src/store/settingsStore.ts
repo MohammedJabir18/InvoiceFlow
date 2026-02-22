@@ -20,6 +20,11 @@ export interface BusinessProfile {
     logo_path?: string | null;
     default_currency: string;
     default_payment_terms: string;
+
+    // Preferences
+    theme_preference: "system" | "dark" | "light";
+    pdf_export_dir?: string | null;
+
     created_at: string;
     updated_at: string;
 }

@@ -24,9 +24,15 @@ import {
     Wallet,
     Landmark,
     Hash,
-    UserCircle2
+    UserCircle2,
+    Settings as SettingsIcon,
+    Moon,
+    Sun,
+    Monitor,
+    FolderOpen
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
 
 // --- Types ---
@@ -403,6 +409,7 @@ function QRUpload() {
 // --- Main Page Component ---
 
 const sectionHeaders: SectionHeader[] = [
+    { id: 'preferences', icon: SettingsIcon, title: 'App Preferences', desc: 'Theme & Export' },
     { id: 'profile', icon: Building2, title: 'Business Profile', desc: 'Identity & Contact Info' },
     { id: 'invoicing', icon: CreditCard, title: 'Invoicing Data', desc: 'Currencies & Taxes' },
     { id: 'payments', icon: Wallet, title: 'Payments & Bank', desc: 'Accounts & QR Codes' },
@@ -410,7 +417,7 @@ const sectionHeaders: SectionHeader[] = [
 ];
 
 export function Settings() {
-    const [activeSection, setActiveSection] = useState('profile');
+    const [activeSection, setActiveSection] = useState('preferences');
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -459,6 +466,21 @@ export function Settings() {
     const handleUpdateBankField = (field: keyof BankDetails, value: string) => {
         const currentDetails = bankDetails || { accountHolder: "", accountNumber: "", ifscCode: "", bankName: "", branch: "", upiId: "" };
         useSettingsStore.setState({ bankDetails: { ...currentDetails, [field]: value } });
+    };
+
+    const handleSelectPdfExportDir = async () => {
+        try {
+            const selectedPath = await open({
+                directory: true,
+                multiple: false,
+                title: "Select PDF Export Location"
+            });
+            if (selectedPath) {
+                handleUpdateField('pdf_export_dir', selectedPath as string);
+            }
+        } catch (err) {
+            console.error("Failed to open dialog:", err);
+        }
     };
 
     if (!profile) {
@@ -593,6 +615,95 @@ export function Settings() {
                 {/* Content Area */}
                 <div className="min-h-[600px]">
                     <AnimatePresence mode="wait">
+                        {activeSection === 'preferences' && (
+                            <motion.div
+                                key="preferences"
+                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
+                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
+                                transition={{ duration: 0.4 }}
+                            >
+                                <SpotlightCard className="p-8 md:p-10 mb-8">
+                                    <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
+                                        <div className="p-3 bg-[var(--premium-bg)] rounded-xl border border-[var(--premium-border)]">
+                                            <SettingsIcon size={24} className="text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-[var(--foreground)]">Global Preferences</h2>
+                                            <p className="text-sm text-[var(--text-muted)]">Application appearance and behaviors</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="md:col-span-2">
+                                            <h4 className="font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                                                <Sun size={18} className="text-[var(--primary)]" />
+                                                Theme Interface
+                                            </h4>
+                                            <div className="flex bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl p-1 w-full max-w-md">
+                                                {[
+                                                    { id: 'system', icon: Monitor, label: 'System' },
+                                                    { id: 'dark', icon: Moon, label: 'Dark' },
+                                                    { id: 'light', icon: Sun, label: 'Light' }
+                                                ].map(theme => {
+                                                    const isActive = profile.theme_preference === theme.id;
+                                                    return (
+                                                        <button
+                                                            key={theme.id}
+                                                            onClick={() => handleUpdateField('theme_preference', theme.id)}
+                                                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden ${isActive ? 'text-[var(--background)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--premium-bg-hover)]'}`}
+                                                        >
+                                                            {isActive && (
+                                                                <motion.div
+                                                                    layoutId="theme-active"
+                                                                    className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-teal-500 rounded-lg shadow-md"
+                                                                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                                                                />
+                                                            )}
+                                                            <span className="relative z-10 flex items-center gap-2">
+                                                                <theme.icon size={16} />
+                                                                {theme.label}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div className="md:col-span-2 mt-4">
+                                            <h4 className="font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                                                <FolderOpen size={18} className="text-[var(--primary)]" />
+                                                Default PDF Export Location
+                                            </h4>
+
+                                            <div className="flex gap-4">
+                                                <div className="flex-1 relative">
+                                                    <PremiumInput
+                                                        label="Save Invoices To"
+                                                        icon={HardDrive}
+                                                        placeholder="C:\Users\JohnDoe\Documents\Invoices"
+                                                        value={profile.pdf_export_dir || ''}
+                                                        onChange={(e) => handleUpdateField('pdf_export_dir', e.target.value)}
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={handleSelectPdfExportDir}
+                                                    className="shrink-0 group relative overflow-hidden bg-[var(--premium-bg)] border border-[var(--premium-border)] hover:border-[var(--primary)] text-[var(--foreground)] font-bold py-3 px-6 rounded-xl shadow-sm transition-all h-[56px] mt-1 flex items-center gap-2"
+                                                >
+                                                    <FolderOpen size={18} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors" />
+                                                    Browse...
+                                                    <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-[var(--primary)]/10 to-transparent z-0" />
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                                Leave blank to use the application's internal data directory.
+                                            </p>
+                                        </div>
+
+                                    </div>
+                                </SpotlightCard>
+                            </motion.div>
+                        )}
                         {activeSection === 'profile' && (
                             <motion.div
                                 key="profile"

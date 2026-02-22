@@ -17,6 +17,11 @@ pub struct BusinessProfile {
     pub logo_path: Option<String>,
     pub default_currency: Currency,
     pub default_payment_terms: PaymentTerms,
+    
+    // Preferences
+    pub theme_preference: String, // "system", "dark", "light"
+    pub pdf_export_dir: Option<String>,
+    
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
