@@ -5,8 +5,18 @@ import { Invoices } from "./pages/Invoices";
 import { Clients } from "./pages/Clients";
 import { Editor } from "./pages/Editor";
 import { Settings } from "./pages/Settings";
+import { useEffect } from "react";
+import { useSettingsStore } from "./store/settingsStore";
 
 function App() {
+    const fetchSettings = useSettingsStore(state => state.fetchSettings);
+    const fetchBankDetails = useSettingsStore(state => state.fetchBankDetails);
+
+    useEffect(() => {
+        fetchSettings();
+        fetchBankDetails();
+    }, [fetchSettings, fetchBankDetails]);
+
     return (
         <BrowserRouter>
             <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>

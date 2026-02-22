@@ -39,8 +39,20 @@ pub fn run() {
             commands::get_invoices,
             commands::create_invoice,
             commands::delete_invoice,
+            commands::update_invoice_status,
             commands::get_analytics,
             commands::generate_pdf,
+            commands::open_pdf,
+            commands::save_logo,
+            commands::get_logo,
+            commands::delete_logo,
+            commands::save_qr,
+            commands::get_qr,
+            commands::delete_qr,
+            commands::save_bank_details,
+            commands::get_bank_details,
+            commands::get_settings,
+            commands::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

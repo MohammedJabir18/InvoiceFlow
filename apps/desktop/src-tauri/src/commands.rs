@@ -81,6 +81,9 @@ pub struct CreateInvoiceRequest {
     pub client_id: String,
     pub items: Vec<InvoiceItemRequest>,
     pub notes: Option<String>,
+    pub status: Option<String>,
+    pub issue_date: Option<String>,
+    pub due_date: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -103,9 +106,19 @@ pub async fn create_invoice(
     use std::str::FromStr;
     use uuid::Uuid;
 
+    use chrono::NaiveDate;
+
     let invoice_id = Uuid::new_v4();
+    
+    // Parse user-provided dates, fallback to today/today+30 if missing or invalid
     let today = Utc::now().date_naive();
-    let due_date = today + chrono::Duration::days(30);
+    let issue_date = request.issue_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
+        .unwrap_or(today);
+        
+    let due_date = request.due_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
+        .unwrap_or_else(|| issue_date + chrono::Duration::days(30));
 
     // Build items
     let items: Vec<InvoiceItem> = request
@@ -136,13 +149,25 @@ pub async fn create_invoice(
     let gen = flow_invoice::number_generator::InvoiceNumberGenerator::default();
     let number = gen.next(existing.len() as u64);
 
+    // Get active business profile
+    let profile_repo = flow_db::repositories::BusinessProfileRepository::new(state.db.clone());
+    let profile = profile_repo.get_profile().await.map_err(|e| e.to_string())?;
+
     let invoice = Invoice {
         id: invoice_id,
         number: number.clone(),
-        status: InvoiceStatus::Draft,
+        status: request.status.map(|s| {
+            match s.as_str() {
+                "Pending" => InvoiceStatus::Pending,
+                "Sent" => InvoiceStatus::Sent,
+                "Paid" => InvoiceStatus::Paid,
+                "Cancelled" => InvoiceStatus::Cancelled,
+                _ => InvoiceStatus::Draft,
+            }
+        }).unwrap_or(InvoiceStatus::Draft),
         client_id: Uuid::parse_str(&request.client_id).map_err(|e| e.to_string())?,
-        business_profile_id: Uuid::nil(),
-        issue_date: today,
+        business_profile_id: profile.id,
+        issue_date,
         due_date,
         currency: Currency::USD,
         items,
@@ -171,6 +196,23 @@ pub async fn delete_invoice(state: State<'_, AppState>, id: String) -> Result<()
     repo.delete(&id).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn update_invoice_status(state: State<'_, AppState>, id: String, status: String) -> Result<(), String> {
+    use flow_core::types::InvoiceStatus;
+    
+    // Validate status string matches enum variants
+    let valid_status = match status.as_str() {
+        "Pending" => "Pending",
+        "Sent" => "Sent",
+        "Paid" => "Paid",
+        "Cancelled" => "Cancelled",
+        _ => "Draft",
+    };
+
+    let repo = InvoiceRepository::new(state.db.clone());
+    repo.update_status(&id, valid_status).await.map_err(|e| e.to_string())
+}
+
 // ─── Analytics Commands ───────────────────────────────────────
 
 #[tauri::command]
@@ -190,3 +232,124 @@ pub async fn generate_pdf(state: State<'_, AppState>, invoice_id: String) -> Res
     
     Ok(path.to_string_lossy().into_owned())
 }
+
+#[tauri::command]
+pub async fn open_pdf(path: String) -> Result<(), String> {
+    open::that(&path).map_err(|e| e.to_string())
+}
+
+// ─── Logo Commands ─────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn save_logo(state: State<'_, AppState>, base64_data: String) -> Result<(), String> {
+    use std::fs;
+    let logo_path = state.app_data_dir.join("logo.txt");
+    fs::write(&logo_path, base64_data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_logo(state: State<'_, AppState>) -> Result<Option<String>, String> {
+    use std::fs;
+    let logo_path = state.app_data_dir.join("logo.txt");
+    if logo_path.exists() {
+        let content = fs::read_to_string(&logo_path).unwrap_or_default();
+        if content.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(content))
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub async fn delete_logo(state: State<'_, AppState>) -> Result<(), String> {
+    use std::fs;
+    let logo_path = state.app_data_dir.join("logo.txt");
+    if logo_path.exists() {
+        fs::remove_file(&logo_path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// ─── QR Code Commands ──────────────────────────────────────────
+
+#[tauri::command]
+pub async fn save_qr(state: State<'_, AppState>, base64_data: String) -> Result<(), String> {
+    use std::fs;
+    let qr_path = state.app_data_dir.join("qr_code.txt");
+    fs::write(&qr_path, base64_data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_qr(state: State<'_, AppState>) -> Result<Option<String>, String> {
+    use std::fs;
+    let qr_path = state.app_data_dir.join("qr_code.txt");
+    if qr_path.exists() {
+        let content = fs::read_to_string(&qr_path).unwrap_or_default();
+        if content.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(content))
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub async fn delete_qr(state: State<'_, AppState>) -> Result<(), String> {
+    use std::fs;
+    let qr_path = state.app_data_dir.join("qr_code.txt");
+    if qr_path.exists() {
+        fs::remove_file(&qr_path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// ─── Bank Details Commands ─────────────────────────────────────
+
+#[tauri::command]
+pub async fn save_bank_details(state: State<'_, AppState>, json_data: String) -> Result<(), String> {
+    use std::fs;
+    let bank_path = state.app_data_dir.join("bank_details.json");
+    fs::write(&bank_path, json_data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_bank_details(state: State<'_, AppState>) -> Result<Option<String>, String> {
+    use std::fs;
+    let bank_path = state.app_data_dir.join("bank_details.json");
+    if bank_path.exists() {
+        let content = fs::read_to_string(&bank_path).unwrap_or_default();
+        if content.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(content))
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+// ─── Settings / Business Profile Commands ──────────────────────
+
+use flow_core::models::BusinessProfile;
+use flow_db::repositories::BusinessProfileRepository;
+
+#[tauri::command]
+pub async fn get_settings(state: State<'_, AppState>) -> Result<BusinessProfile, String> {
+    let repo = BusinessProfileRepository::new(state.db.clone());
+    repo.get_profile().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_settings(
+    state: State<'_, AppState>,
+    profile: BusinessProfile,
+) -> Result<(), String> {
+    let repo = BusinessProfileRepository::new(state.db.clone());
+    repo.update_profile(&profile).await.map_err(|e| e.to_string())
+}
+

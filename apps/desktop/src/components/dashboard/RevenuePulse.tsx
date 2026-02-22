@@ -1,6 +1,7 @@
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { DollarSign, TrendingUp } from "lucide-react";
 import type { InvoiceSummary } from "../../lib/api";
+import { useSettingsStore } from "../../store/settingsStore";
 
 interface Props {
     totalRevenue: number;
@@ -8,6 +9,17 @@ interface Props {
 }
 
 export function RevenuePulse({ totalRevenue, invoices }: Props) {
+    const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+
+    const formatCurrency = (num: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(num);
+    };
+
     // Build monthly revenue data from real invoices
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlyMap: Record<string, number> = {};
@@ -43,7 +55,7 @@ export function RevenuePulse({ totalRevenue, invoices }: Props) {
                     </h3>
                     <div className="flex items-baseline gap-3">
                         <span className="text-4xl font-mono font-bold text-[var(--foreground)] tracking-tight">
-                            ${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                            {formatCurrency(totalRevenue)}
                         </span>
                         {growth !== 0 && (
                             <span className={`text-sm font-semibold flex items-center gap-1 px-2.5 py-1 rounded-full ${growth >= 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
@@ -76,7 +88,7 @@ export function RevenuePulse({ totalRevenue, invoices }: Props) {
                                 backdropFilter: "blur(10px)"
                             }}
                             itemStyle={{ color: "#fff", fontWeight: 600, fontSize: '1.1rem' }}
-                            formatter={(value: number) => [`$${value.toLocaleString()}`, "Collected"]}
+                            formatter={(value: number) => [formatCurrency(value), "Collected"]}
                             labelStyle={{ color: "var(--text-tertiary)", marginBottom: "4px", fontSize: '0.85rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                         />
                         <Area

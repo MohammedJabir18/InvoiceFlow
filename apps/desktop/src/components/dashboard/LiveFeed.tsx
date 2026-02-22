@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, FilePlus2, ArrowRight } from "lucide-react";
 import type { InvoiceSummary, ClientResponse } from "../../lib/api";
+import { useSettingsStore } from "../../store/settingsStore";
 
 interface Props {
     invoices: InvoiceSummary[];
@@ -8,11 +9,18 @@ interface Props {
 }
 
 export function LiveFeed({ invoices, clients }: Props) {
+    const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
     const clientName = (id: string) => clients.find((c) => c.id === id)?.name || "Unknown";
 
     const formatCurrency = (total: string) => {
         const num = parseFloat(total);
-        return isNaN(num) ? total : `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (isNaN(num)) return total;
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(num);
     };
 
     // Generate events from real invoice data

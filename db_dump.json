@@ -1,0 +1,38 @@
+[
+  {
+    "id": "dbb1d92e-4445-4268-8bf5-0e4d5fe354f0",
+    "name": "My Company",
+    "email": null,
+    "phone": null,
+    "address_line1": "",
+    "address_line2": null,
+    "address_city": "",
+    "address_state": null,
+    "address_postal_code": "",
+    "address_country": "",
+    "tax_id": null,
+    "logo_path": null,
+    "default_currency": "INR",
+    "default_payment_terms": "Net30",
+    "created_at": "2026-02-21T19:12:39.276404900+00:00",
+    "updated_at": "2026-02-22T01:30:44.748491800+00:00"
+  },
+  {
+    "id": "c40e0787-9e38-4bb0-bb67-b97dda368e48",
+    "name": "Bitbond IT",
+    "email": "info@bitbond@gmail.com",
+    "phone": "91+ 91913233",
+    "address_line1": "",
+    "address_line2": "mohammedjabir.me",
+    "address_city": "",
+    "address_state": null,
+    "address_postal_code": "",
+    "address_country": "",
+    "tax_id": null,
+    "logo_path": null,
+    "default_currency": "INR",
+    "default_payment_terms": "Net30",
+    "created_at": "2026-02-21T19:12:39.276980700+00:00",
+    "updated_at": "2026-02-21T19:19:17.268398200+00:00"
+  }
+]

@@ -18,8 +18,16 @@ import {
     Mail,
     Phone,
     MapPin,
-    ShieldCheck
+    ShieldCheck,
+    X,
+    QrCode,
+    Wallet,
+    Landmark,
+    Hash,
+    UserCircle2
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
 
 // --- Types ---
 interface SectionHeader {
@@ -67,12 +75,12 @@ function SpotlightCard({ children, className = "", spotlightColor = "var(--prima
     );
 }
 
-function PremiumInput({ label, type = "text", placeholder, defaultValue, rows, icon: Icon }: { label: string; type?: string; placeholder?: string; defaultValue?: string; rows?: number; icon?: any }) {
+function PremiumInput({ label, type = "text", placeholder, value, onChange, rows, icon: Icon }: { label: string; type?: string; placeholder?: string; value?: string; onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; rows?: number; icon?: any }) {
     const [focused, setFocused] = useState(false);
-    const [hasValue, setHasValue] = useState(!!defaultValue);
+    const hasValue = !!value;
 
     return (
-        <motion.div 
+        <motion.div
             className="premium-input-container group"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -83,11 +91,11 @@ function PremiumInput({ label, type = "text", placeholder, defaultValue, rows, i
                     <textarea
                         className="premium-input-field premium-textarea w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 pt-6 pb-2 text-[var(--foreground)] placeholder-transparent focus:outline-none focus:bg-[var(--premium-bg-hover)] transition-all resize-none"
                         placeholder={placeholder}
-                        defaultValue={defaultValue}
+                        value={value || ''}
+                        onChange={onChange}
                         rows={rows}
                         onFocus={() => setFocused(true)}
                         onBlur={() => setFocused(false)}
-                        onChange={(e) => setHasValue(e.target.value.length > 0)}
                         style={focused ? { borderColor: 'var(--primary)', boxShadow: '0 0 0 1px var(--primary), 0 0 15px color-mix(in srgb, var(--primary) 20%, transparent)' } : {}}
                     />
                 ) : (
@@ -96,26 +104,25 @@ function PremiumInput({ label, type = "text", placeholder, defaultValue, rows, i
                             type={type}
                             className={`premium-input-field w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 pt-6 pb-2 text-[var(--foreground)] placeholder-transparent focus:outline-none focus:bg-[var(--premium-bg-hover)] transition-all ${Icon ? 'pl-11' : ''}`}
                             placeholder={placeholder}
-                            defaultValue={defaultValue}
+                            value={value || ''}
+                            onChange={onChange}
                             onFocus={() => setFocused(true)}
                             onBlur={() => setFocused(false)}
-                            onChange={(e) => setHasValue(e.target.value.length > 0)}
                             style={focused ? { borderColor: 'var(--primary)', boxShadow: '0 0 0 1px var(--primary), 0 0 15px color-mix(in srgb, var(--primary) 20%, transparent)' } : {}}
                         />
                         {Icon && (
-                            <Icon 
-                                size={18} 
-                                className={`absolute left-3.5 top-1/2 -translate-y-[calc(50%-4px)] transition-colors duration-300 ${focused ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} 
+                            <Icon
+                                size={18}
+                                className={`absolute left-3.5 top-1/2 -translate-y-[calc(50%-4px)] transition-colors duration-300 ${focused ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
                             />
                         )}
                     </div>
                 )}
-                <label 
-                    className={`absolute left-4 transition-all duration-300 pointer-events-none ${
-                        focused || hasValue 
-                            ? `top-2 text-[10px] uppercase tracking-wider font-bold text-[var(--primary)] ${Icon ? 'left-11' : 'left-4'}` 
-                            : `top-4 text-sm text-[var(--text-muted)] ${Icon ? 'left-11' : 'left-4'}`
-                    }`}
+                <label
+                    className={`absolute left-4 transition-all duration-300 pointer-events-none ${focused || hasValue
+                        ? `top-2 text-[10px] uppercase tracking-wider font-bold text-[var(--primary)] ${Icon ? 'left-11' : 'left-4'}`
+                        : `top-4 text-sm text-[var(--text-muted)] ${Icon ? 'left-11' : 'left-4'}`
+                        }`}
                 >
                     {label}
                 </label>
@@ -124,12 +131,12 @@ function PremiumInput({ label, type = "text", placeholder, defaultValue, rows, i
     );
 }
 
-function PremiumSelect({ label, options, defaultValue, icon: Icon }: { label: string; options: { value: string; label: string }[]; defaultValue: string; icon?: any }) {
+function PremiumSelect({ label, options, value, onChange, icon: Icon }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; icon?: any }) {
     const [focused, setFocused] = useState(false);
-    const [hasValue, setHasValue] = useState(!!defaultValue);
+    const hasValue = !!value;
 
     return (
-        <motion.div 
+        <motion.div
             className="premium-input-container group"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -139,10 +146,10 @@ function PremiumSelect({ label, options, defaultValue, icon: Icon }: { label: st
                 <div className="relative flex items-center">
                     <select
                         className={`premium-input-field w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 pt-6 pb-2 text-[var(--foreground)] appearance-none focus:outline-none focus:bg-[var(--premium-bg-hover)] transition-all cursor-pointer ${Icon ? 'pl-11' : ''}`}
-                        defaultValue={defaultValue}
+                        value={value}
+                        onChange={onChange}
                         onFocus={() => setFocused(true)}
                         onBlur={() => setFocused(false)}
-                        onChange={(e) => setHasValue(e.target.value.length > 0)}
                         style={focused ? { borderColor: 'var(--primary)', boxShadow: '0 0 0 1px var(--primary), 0 0 15px color-mix(in srgb, var(--primary) 20%, transparent)' } : {}}
                     >
                         {options.map((opt) => (
@@ -152,22 +159,21 @@ function PremiumSelect({ label, options, defaultValue, icon: Icon }: { label: st
                         ))}
                     </select>
                     {Icon && (
-                        <Icon 
-                            size={18} 
-                            className={`absolute left-3.5 top-1/2 -translate-y-[calc(50%-4px)] transition-colors duration-300 ${focused ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} 
+                        <Icon
+                            size={18}
+                            className={`absolute left-3.5 top-1/2 -translate-y-[calc(50%-4px)] transition-colors duration-300 ${focused ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}
                         />
                     )}
-                    <ChevronRight 
-                        size={16} 
-                        className={`absolute right-4 top-1/2 -translate-y-[calc(50%-4px)] pointer-events-none transition-all duration-300 rotate-90 text-[var(--text-muted)] ${focused ? 'text-[var(--primary)]' : ''}`} 
+                    <ChevronRight
+                        size={16}
+                        className={`absolute right-4 top-1/2 -translate-y-[calc(50%-4px)] pointer-events-none transition-all duration-300 rotate-90 text-[var(--text-muted)] ${focused ? 'text-[var(--primary)]' : ''}`}
                     />
                 </div>
-                <label 
-                    className={`absolute left-4 transition-all duration-300 pointer-events-none ${
-                        focused || hasValue 
-                            ? `top-2 text-[10px] uppercase tracking-wider font-bold text-[var(--primary)] ${Icon ? 'left-11' : 'left-4'}` 
-                            : `top-4 text-sm text-[var(--text-muted)] ${Icon ? 'left-11' : 'left-4'}`
-                    }`}
+                <label
+                    className={`absolute left-4 transition-all duration-300 pointer-events-none ${focused || hasValue
+                        ? `top-2 text-[10px] uppercase tracking-wider font-bold text-[var(--primary)] ${Icon ? 'left-11' : 'left-4'}`
+                        : `top-4 text-sm text-[var(--text-muted)] ${Icon ? 'left-11' : 'left-4'}`
+                        }`}
                 >
                     {label}
                 </label>
@@ -178,32 +184,218 @@ function PremiumSelect({ label, options, defaultValue, icon: Icon }: { label: st
 
 function LogoUpload() {
     const [isHovered, setIsHovered] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Fetch existing logo on mount
+    useState(() => {
+        invoke<string | null>('get_logo').then((data) => {
+            if (data) setPreviewUrl(data);
+        }).catch(console.error);
+    });
+
+    const handleFile = async (file: File) => {
+        if (!file.type.startsWith('image/')) return;
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            setPreviewUrl(base64String);
+            try {
+                await invoke('save_logo', { base64Data: base64String });
+            } catch (error) {
+                console.error("Failed to save logo:", error);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleRemove = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setPreviewUrl(null);
+        try {
+            await invoke('delete_logo');
+        } catch (error) {
+            console.error("Failed to delete logo:", error);
+        }
+    };
 
     return (
-        <div 
-            className="group relative w-24 h-24 rounded-2xl overflow-hidden cursor-pointer bg-[var(--premium-bg)] border-2 border-dashed border-[var(--premium-border)] hover:border-[var(--primary)] hover:bg-[var(--premium-bg-hover)] transition-all duration-300"
-            onMouseEnter={() => setIsHovered(true)} 
+        <div
+            className={`group relative w-24 h-24 rounded-2xl overflow-hidden cursor-pointer bg-[var(--premium-bg)] border-2 border-dashed transition-all duration-300 ${isDragging ? 'border-[var(--primary)] bg-[var(--premium-bg-hover)] scale-105' : 'border-[var(--premium-border)] hover:border-[var(--primary)] hover:bg-[var(--premium-bg-hover)]'}`}
+            onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById('logo-upload-input')?.click()}
         >
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
-                <motion.div
-                    animate={{ y: isHovered ? -2 : 0 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    <Upload size={20} className={`transition-colors duration-300 ${isHovered ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} />
-                </motion.div>
-                <span className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${isHovered ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
-                    Upload
-                </span>
-            </div>
-            
-            {/* Animated background gradient on hover */}
-            <motion.div 
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{
-                    background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 70%)'
-                }}
+            <input
+                id="logo-upload-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
             />
+
+            {previewUrl ? (
+                <>
+                    <img src={previewUrl} alt="Logo" className="w-full h-full object-cover" />
+
+                    {/* Hover Overlay for Remove */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: isHovered ? 1 : 0 }}
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm"
+                    >
+                        <button
+                            onClick={handleRemove}
+                            className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                            <X size={16} strokeWidth={3} />
+                        </button>
+                    </motion.div>
+                </>
+            ) : (
+                <>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+                        <motion.div
+                            animate={{ y: isHovered || isDragging ? -2 : 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <Upload size={20} className={`transition-colors duration-300 ${(isHovered || isDragging) ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} />
+                        </motion.div>
+                        <span className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${(isHovered || isDragging) ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
+                            {isDragging ? 'Drop' : 'Upload'}
+                        </span>
+                    </div>
+
+                    {/* Animated background gradient on hover */}
+                    <motion.div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{
+                            background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 70%)'
+                        }}
+                    />
+                </>
+            )}
+        </div>
+    );
+}
+
+function QRUpload() {
+    const [isHovered, setIsHovered] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Fetch existing QR on mount
+    useState(() => {
+        invoke<string | null>('get_qr').then((data) => {
+            if (data) setPreviewUrl(data);
+        }).catch(console.error);
+    });
+
+    const handleFile = async (file: File) => {
+        if (!file.type.startsWith('image/')) return;
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            setPreviewUrl(base64String);
+            try {
+                await invoke('save_qr', { base64Data: base64String });
+            } catch (error) {
+                console.error("Failed to save QR:", error);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleRemove = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setPreviewUrl(null);
+        try {
+            await invoke('delete_qr');
+        } catch (error) {
+            console.error("Failed to delete QR:", error);
+        }
+    };
+
+    return (
+        <div
+            className={`group relative w-32 h-32 rounded-2xl overflow-hidden cursor-pointer bg-[var(--premium-bg)] border-2 border-dashed transition-all duration-300 ${isDragging ? 'border-[var(--primary)] bg-[var(--premium-bg-hover)] scale-105' : 'border-[var(--premium-border)] hover:border-[var(--primary)] hover:bg-[var(--premium-bg-hover)]'}`}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById('qr-upload-input')?.click()}
+        >
+            <input
+                id="qr-upload-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            />
+
+            {previewUrl ? (
+                <>
+                    <img src={previewUrl} alt="QR Code" className="w-full h-full object-cover" />
+
+                    {/* Hover Overlay for Remove */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: isHovered ? 1 : 0 }}
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm"
+                    >
+                        <button
+                            onClick={handleRemove}
+                            className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                            <X size={16} strokeWidth={3} />
+                        </button>
+                    </motion.div>
+                </>
+            ) : (
+                <>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+                        <motion.div
+                            animate={{ y: isHovered || isDragging ? -2 : 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <QrCode size={24} className={`transition-colors duration-300 ${(isHovered || isDragging) ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`} />
+                        </motion.div>
+                        <span className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${(isHovered || isDragging) ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}`}>
+                            {isDragging ? 'Drop QR' : 'Upload QR'}
+                        </span>
+                    </div>
+
+                    {/* Animated background gradient on hover */}
+                    <motion.div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{
+                            background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 70%)'
+                        }}
+                    />
+                </>
+            )}
         </div>
     );
 }
@@ -213,6 +405,7 @@ function LogoUpload() {
 const sectionHeaders: SectionHeader[] = [
     { id: 'profile', icon: Building2, title: 'Business Profile', desc: 'Identity & Contact Info' },
     { id: 'invoicing', icon: CreditCard, title: 'Invoicing Data', desc: 'Currencies & Taxes' },
+    { id: 'payments', icon: Wallet, title: 'Payments & Bank', desc: 'Accounts & QR Codes' },
     { id: 'system', icon: Database, title: 'System & Data', desc: 'Backup & Reset' },
 ];
 
@@ -221,14 +414,60 @@ export function Settings() {
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const handleSave = () => {
+    const profile = useSettingsStore(state => state.profile);
+    const bankDetails = useSettingsStore(state => state.bankDetails);
+    const updateSettings = useSettingsStore(state => state.updateSettings);
+    const updateBankDetails = useSettingsStore(state => state.updateBankDetails);
+
+    // Fetch initial data
+    useState(() => {
+        useSettingsStore.getState().fetchBankDetails();
+    });
+
+    const handleSave = async () => {
+        if (!profile) return;
         setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            await updateSettings(profile);
+            if (bankDetails) {
+                await updateBankDetails(bankDetails);
+            } else {
+                // Save empty bank details structure to signify no details initially
+                await updateBankDetails({
+                    accountHolder: "", accountNumber: "", ifscCode: "", bankName: "", branch: "", upiId: ""
+                });
+            }
             setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
-        }, 1500);
+            setTimeout(() => setShowSuccess(false), 2000);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    const handleUpdateField = (field: keyof BusinessProfile, value: string) => {
+        if (!profile) return;
+        useSettingsStore.setState({ profile: { ...profile, [field]: value } });
+    };
+
+    const handleUpdateAddress = (field: keyof BusinessProfile['address'], value: string) => {
+        if (!profile) return;
+        useSettingsStore.setState({ profile: { ...profile, address: { ...profile.address, [field]: value } } });
+    };
+
+    const handleUpdateBankField = (field: keyof BankDetails, value: string) => {
+        const currentDetails = bankDetails || { accountHolder: "", accountNumber: "", ifscCode: "", bankName: "", branch: "", upiId: "" };
+        useSettingsStore.setState({ bankDetails: { ...currentDetails, [field]: value } });
+    };
+
+    if (!profile) {
+        return (
+            <div className="flex-1 min-h-screen bg-[var(--background)] p-8 flex items-center justify-center">
+                <Loader2 className="animate-spin text-[var(--primary)]" size={48} />
+            </div>
+        );
+    }
 
     return (
         <div className="pb-20 max-w-7xl mx-auto px-6">
@@ -309,7 +548,7 @@ export function Settings() {
 
             {/* Main Layout Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 lg:gap-12 items-start">
-                
+
                 {/* Navigation Sidebar */}
                 <div className="sticky top-8 flex flex-col gap-2">
                     {sectionHeaders.map((sec, index) => (
@@ -319,17 +558,15 @@ export function Settings() {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 + index * 0.05 }}
-                            className={`group relative flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 ${
-                                activeSection === sec.id 
-                                    ? 'bg-[var(--premium-bg-hover)] border border-[var(--premium-border)]' 
-                                    : 'hover:bg-[var(--premium-bg)] border border-transparent'
-                            }`}
+                            className={`group relative flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 ${activeSection === sec.id
+                                ? 'bg-[var(--premium-bg-hover)] border border-[var(--premium-border)]'
+                                : 'hover:bg-[var(--premium-bg)] border border-transparent'
+                                }`}
                         >
-                            <div className={`p-2 rounded-lg transition-all duration-300 ${
-                                activeSection === sec.id 
-                                    ? 'bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-[0_0_15px_rgba(45,212,191,0.3)]' 
-                                    : 'bg-[var(--premium-bg)] text-[var(--text-muted)] group-hover:text-[var(--foreground)]'
-                            }`}>
+                            <div className={`p-2 rounded-lg transition-all duration-300 ${activeSection === sec.id
+                                ? 'bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-[0_0_15px_rgba(45,212,191,0.3)]'
+                                : 'bg-[var(--premium-bg)] text-[var(--text-muted)] group-hover:text-[var(--foreground)]'
+                                }`}>
                                 <sec.icon size={20} className={activeSection === sec.id ? 'text-[var(--background)]' : ''} />
                             </div>
                             <div className="flex-1">
@@ -340,10 +577,10 @@ export function Settings() {
                                     {sec.desc}
                                 </div>
                             </div>
-                            
+
                             {/* Active Indicator Pill */}
                             {activeSection === sec.id && (
-                                <motion.div 
+                                <motion.div
                                     layoutId="activePill"
                                     className="absolute left-0 w-1 h-8 bg-[var(--primary)] rounded-r-full"
                                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -381,9 +618,13 @@ export function Settings() {
                                             <div className="flex-1">
                                                 <h4 className="font-semibold text-[var(--foreground)] mb-1">Company Logo</h4>
                                                 <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">
-                                                    Upload your brand mark. <br/>Recommended: 400x400px transparent PNG.
+                                                    Upload your brand mark. <br />Recommended: 400x400px transparent PNG.
                                                 </p>
-                                                <button className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] hover:text-[var(--foreground)] transition-colors flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] hover:text-[var(--foreground)] transition-colors flex items-center gap-2"
+                                                    onClick={() => document.getElementById('logo-upload-input')?.click()}
+                                                >
                                                     <Upload size={12} />
                                                     Browse Files
                                                 </button>
@@ -391,16 +632,55 @@ export function Settings() {
                                         </div>
 
                                         <div className="md:col-span-2">
-                                            <PremiumInput label="Company Legal Name" icon={ShieldCheck} placeholder="e.g. Nexus Dynamics LLC" defaultValue="Nexus Dynamics" />
+                                            <PremiumInput
+                                                label="Company Legal Name"
+                                                icon={ShieldCheck}
+                                                placeholder="e.g. Nexus Dynamics LLC"
+                                                value={profile.name}
+                                                onChange={(e) => handleUpdateField('name', e.target.value)}
+                                            />
                                         </div>
-                                        
-                                        <PremiumInput label="Support Email" icon={Mail} type="email" placeholder="hello@company.com" />
-                                        <PremiumInput label="Business Phone" icon={Phone} type="tel" placeholder="+1 (555) 000-0000" />
-                                        <PremiumInput label="Website" icon={Globe} placeholder="https://example.com" />
-                                        <PremiumInput label="Tax ID / VAT" icon={FileText} placeholder="XX-XXXXXXX" />
-                                        
+
+                                        <PremiumInput
+                                            label="Support Email"
+                                            icon={Mail}
+                                            type="email"
+                                            placeholder="hello@company.com"
+                                            value={profile.email || ''}
+                                            onChange={(e) => handleUpdateField('email', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="Business Phone"
+                                            icon={Phone}
+                                            type="tel"
+                                            placeholder="+1 (555) 000-0000"
+                                            value={profile.phone || ''}
+                                            onChange={(e) => handleUpdateField('phone', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="Website / Address Line 2"
+                                            icon={Globe}
+                                            placeholder="Suite 100"
+                                            value={profile.address.line2 || ''}
+                                            onChange={(e) => handleUpdateAddress('line2', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="Tax ID / VAT"
+                                            icon={FileText}
+                                            placeholder="XX-XXXXXXX"
+                                            value={profile.tax_id || ''}
+                                            onChange={(e) => handleUpdateField('tax_id', e.target.value)}
+                                        />
+
                                         <div className="md:col-span-2">
-                                            <PremiumInput label="Headquarters Address" icon={MapPin} placeholder="123 Business Avenue&#10;Suite 400&#10;City, State, Zip" rows={3} />
+                                            <PremiumInput
+                                                label="Primary Address"
+                                                icon={MapPin}
+                                                placeholder="123 Business Avenue&#10;City, State, Zip"
+                                                rows={3}
+                                                value={profile.address.line1}
+                                                onChange={(e) => handleUpdateAddress('line1', e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                 </SpotlightCard>
@@ -434,8 +714,13 @@ export function Settings() {
                                                 { value: "USD", label: "USD - US Dollar ($)" },
                                                 { value: "EUR", label: "EUR - Euro (€)" },
                                                 { value: "GBP", label: "GBP - British Pound (£)" },
+                                                { value: "INR", label: "INR - Indian Rupee (₹)" },
+                                                { value: "JPY", label: "JPY - Japanese Yen (¥)" },
+                                                { value: "CAD", label: "CAD - Canadian Dollar ($)" },
+                                                { value: "AUD", label: "AUD - Australian Dollar ($)" },
                                             ]}
-                                            defaultValue="USD"
+                                            value={profile.default_currency}
+                                            onChange={(e) => handleUpdateField('default_currency', e.target.value)}
                                         />
                                         <PremiumSelect
                                             label="Payment Terms"
@@ -443,15 +728,96 @@ export function Settings() {
                                                 { value: "DueOnReceipt", label: "Due on Receipt" },
                                                 { value: "Net15", label: "Net 15 Days" },
                                                 { value: "Net30", label: "Net 30 Days" },
+                                                { value: "Net60", label: "Net 60 Days" },
                                             ]}
-                                            defaultValue="Net30"
+                                            value={profile.default_payment_terms}
+                                            onChange={(e) => handleUpdateField('default_payment_terms', e.target.value)}
                                         />
-                                        <PremiumInput label="Invoice Prefix" placeholder="INV-" defaultValue="INV-" />
-                                        <PremiumInput label="Next Number" type="number" placeholder="1001" defaultValue="1001" />
-                                        
-                                        <div className="md:col-span-2">
-                                            <PremiumInput label="Default Footnote" placeholder="Thank you for your business..." rows={2} />
+                                    </div>
+                                </SpotlightCard>
+                            </motion.div>
+                        )}
+
+                        {activeSection === 'payments' && (
+                            <motion.div
+                                key="payments"
+                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
+                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
+                                transition={{ duration: 0.4 }}
+                            >
+                                <SpotlightCard className="p-8 md:p-10">
+                                    <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
+                                        <div className="p-3 bg-[var(--premium-bg)] rounded-xl border border-[var(--premium-border)]">
+                                            <Landmark size={24} className="text-emerald-500" />
                                         </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-[var(--foreground)]">Bank Account Details</h2>
+                                            <p className="text-sm text-[var(--text-muted)]">Shown on your invoices</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="md:col-span-2 flex flex-col sm:flex-row gap-8 items-start sm:items-center p-4 rounded-2xl bg-[var(--premium-bg)] border border-[var(--premium-border)]">
+                                            <QRUpload />
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-[var(--foreground)] mb-1">Scan to Pay QR Code</h4>
+                                                <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">
+                                                    Upload your UPI or Bank QR Code. <br />Shown at the bottom of the invoice.
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] hover:text-[var(--foreground)] transition-colors flex items-center gap-2"
+                                                    onClick={() => document.getElementById('qr-upload-input')?.click()}
+                                                >
+                                                    <Upload size={12} />
+                                                    Browse Image
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <PremiumInput
+                                            label="Account Holder Name"
+                                            icon={UserCircle2}
+                                            placeholder="John Doe"
+                                            value={bankDetails?.accountHolder || ''}
+                                            onChange={(e) => handleUpdateBankField('accountHolder', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="Account Number"
+                                            icon={Hash}
+                                            placeholder="XXXX XXXX XXXX"
+                                            value={bankDetails?.accountNumber || ''}
+                                            onChange={(e) => handleUpdateBankField('accountNumber', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="IFSC Code / Routing Number"
+                                            icon={ShieldCheck}
+                                            placeholder="IFSC0001234"
+                                            value={bankDetails?.ifscCode || ''}
+                                            onChange={(e) => handleUpdateBankField('ifscCode', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="Bank Name"
+                                            icon={Landmark}
+                                            placeholder="Global Secure Bank"
+                                            value={bankDetails?.bankName || ''}
+                                            onChange={(e) => handleUpdateBankField('bankName', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="Branch Name"
+                                            icon={MapPin}
+                                            placeholder="Downtown Branch"
+                                            value={bankDetails?.branch || ''}
+                                            onChange={(e) => handleUpdateBankField('branch', e.target.value)}
+                                        />
+                                        <PremiumInput
+                                            label="UPI ID"
+                                            icon={Phone}
+                                            placeholder="username@bank"
+                                            value={bankDetails?.upiId || ''}
+                                            onChange={(e) => handleUpdateBankField('upiId', e.target.value)}
+                                        />
                                     </div>
                                 </SpotlightCard>
                             </motion.div>

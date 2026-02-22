@@ -10,6 +10,7 @@ export function Editor() {
     const [clients, setClients] = useState<ClientResponse[]>([]);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [status, setStatus] = useState("Draft");
 
     useEffect(() => {
         getClients()
@@ -36,6 +37,9 @@ export function Editor() {
                 client_id: data.clientId,
                 items: data.items,
                 notes: data.notes || null,
+                status: status,
+                issue_date: data.issueDate,
+                due_date: data.dueDate
             });
             setSaved(true);
             setTimeout(() => {
@@ -50,7 +54,7 @@ export function Editor() {
     };
 
     return (
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen w-full">
             {/* Toolbar */}
             <div className="h-16 border-b border-white/5 bg-[var(--surface)]/50 backdrop-blur-md flex items-center justify-between px-6 z-50">
                 <div className="flex items-center gap-4">
@@ -62,9 +66,32 @@ export function Editor() {
                     </button>
                     <div className="h-6 w-[1px] bg-white/10" />
                     <span className="font-semibold text-[var(--foreground)]">New Invoice</span>
-                    <span className="text-xs px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 font-mono">
-                        {saved ? "Saved ✓" : "Draft"}
-                    </span>
+
+                    {/* Status Selector Badge */}
+                    <div className="flex items-center gap-2 bg-white/5 rounded-full px-1 py-1 border border-white/10 ml-2">
+                        <select
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                            disabled={saved}
+                            className={`text-xs font-bold px-3 py-1 rounded-full transition-all cursor-pointer outline-none appearance-none ${status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' :
+                                status === 'Pending' ? 'bg-amber-500/20 text-amber-400' :
+                                    status === 'Cancelled' ? 'bg-red-500/20 text-red-400' :
+                                        'bg-gray-500/20 text-gray-300'
+                                }`}
+                        >
+                            <option value="Draft" className="bg-[#1e293b] text-white">Draft</option>
+                            <option value="Pending" className="bg-[#1e293b] text-white">Pending</option>
+                            <option value="Sent" className="bg-[#1e293b] text-white">Sent</option>
+                            <option value="Paid" className="bg-[#1e293b] text-white">Paid</option>
+                            <option value="Cancelled" className="bg-[#1e293b] text-white">Cancelled</option>
+                        </select>
+                    </div>
+
+                    {saved && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 font-mono ml-2">
+                            Saved ✓
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
     Plus,
     Search,
@@ -21,10 +22,13 @@ import {
     getClients,
     createInvoice,
     deleteInvoice,
+    updateInvoiceStatus,
     generatePdf,
+    openPdf,
     type InvoiceSummary,
     type ClientResponse,
 } from "../lib/api";
+import { useSettingsStore } from "../store/settingsStore";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -43,6 +47,7 @@ const slideOverVariants = {
 };
 
 export function Invoices() {
+    const navigate = useNavigate();
     const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
     const [clients, setClients] = useState<ClientResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -51,6 +56,8 @@ export function Invoices() {
     const [showCreate, setShowCreate] = useState(false);
     const [creating, setCreating] = useState(false);
     const [menuId, setMenuId] = useState<string | null>(null);
+    const [previewInvoice, setPreviewInvoice] = useState<InvoiceSummary | null>(null);
+    const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
 
     // Form refs
     const clientRef = useRef<HTMLSelectElement>(null);
@@ -75,6 +82,22 @@ export function Invoices() {
         fetchData();
     }, []);
 
+    // Click outside handler for more options menu
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // If menu is open and we click outside the menu container and outside the toggle button
+            if (menuId && !target.closest('.aurora-menu') && !target.closest('.btn-icon')) {
+                setMenuId(null);
+            }
+        };
+
+        if (menuId) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [menuId]);
+
     // Find client name by ID
     const clientName = (id: string) => {
         const c = clients.find((cl) => cl.id === id);
@@ -98,6 +121,9 @@ export function Invoices() {
                 client_id: clientId,
                 items: [{ description: desc, quantity: qty, unit_price: price }],
                 notes: notesRef.current?.value?.trim() || null,
+                status: "Draft",
+                issue_date: null,
+                due_date: null
             });
             setShowCreate(false);
             await fetchData();
@@ -121,6 +147,17 @@ export function Invoices() {
         }
     };
 
+    const handleStatusChange = async (id: string, newStatus: string) => {
+        try {
+            await updateInvoiceStatus(id, newStatus);
+            await fetchData();
+            setMenuId(null);
+        } catch (err) {
+            console.error("Failed to update status:", err);
+            alert("Failed to update status.");
+        }
+    };
+
     const handleDownload = async (id: string) => {
         try {
             const path = await generatePdf(id);
@@ -132,17 +169,56 @@ export function Invoices() {
         }
     };
 
+    const getDisplayStatus = (inv: InvoiceSummary) => {
+        if (inv.status !== 'Paid' && inv.status !== 'Cancelled') {
+            if (inv.due_date) {
+                const dueDate = new Date(inv.due_date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (!isNaN(dueDate.getTime()) && dueDate < today) {
+                    return 'Overdue';
+                }
+            }
+        }
+        return inv.status;
+    };
+
+    const handlePreview = (id: string, e?: React.MouseEvent) => {
+        console.log("handlePreview triggered for:", id);
+        if (e) {
+            const target = e.target as HTMLElement;
+            console.log("Clicked element:", target.tagName, target.className);
+            if (target.closest('button') || target.closest('.aurora-menu')) {
+                console.log("Click was on/inside a button or menu, ignoring preview");
+                return;
+            }
+        }
+
+        const inv = invoices.find(i => i.id === id);
+        if (inv) {
+            console.log("Setting previewInvoice:", inv.number);
+            setPreviewInvoice(inv);
+        } else {
+            console.warn("Invoice not found in state for ID:", id);
+        }
+    };
+
     const formatCurrency = (total: string) => {
         const num = parseFloat(total);
         if (isNaN(num)) return total;
-        return `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(num);
     };
 
     const filtered = invoices.filter((inv) => {
         const matchesSearch =
             inv.number.toLowerCase().includes(search.toLowerCase()) ||
             clientName(inv.client_id).toLowerCase().includes(search.toLowerCase());
-        const matchesFilter = !filterStatus || inv.status.toLowerCase() === filterStatus;
+        const matchesFilter = !filterStatus || getDisplayStatus(inv).toLowerCase() === filterStatus;
         return matchesSearch && matchesFilter;
     });
 
@@ -197,7 +273,7 @@ export function Invoices() {
                 <div className="page-header-actions">
                     <motion.button
                         className="btn btn-primary glass-panel"
-                        onClick={() => setShowCreate(true)}
+                        onClick={() => navigate('/editor')}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         style={{ height: '3rem', padding: '0 1.5rem', borderRadius: 'var(--radius-xl)' }}
@@ -290,138 +366,163 @@ export function Invoices() {
                     {!loading && filtered.length > 0 && (
                         <motion.div
                             key="table"
-                            className="glass-panel w-full overflow-x-auto"
-                            style={{ padding: 0, borderRadius: 'var(--radius-2xl)', border: '1px solid rgba(255,255,255,0.08)' }}
+                            className="glass-panel w-full"
+                            style={{ padding: 0, borderRadius: 'var(--radius-2xl)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'visible' }}
                             variants={containerVariants}
                             initial="hidden"
                             animate="visible"
                         >
-                            <table className="data-table min-w-[800px]" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice ID</th>
-                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client</th>
-                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timeline</th>
-                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                                        <th style={{ padding: '1.25rem 1.5rem', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
-                                        <th style={{ padding: '1.25rem 1.5rem', width: 80 }}></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtered.map((inv) => {
-                                        const config = statusConfig(inv.status);
-                                        return (
-                                            <motion.tr
-                                                key={inv.id}
-                                                variants={rowVariants}
-                                                style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s ease' }}
-                                                whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
-                                            >
-                                                <td style={{ padding: '1.25rem 1.5rem', fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--foreground)", fontSize: '0.95rem' }}>
-                                                    {inv.number}
-                                                </td>
-                                                <td style={{ padding: '1.25rem 1.5rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>
-                                                            {clientName(inv.client_id).charAt(0).toUpperCase()}
+                            <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: menuId ? '150px' : '0' }}>
+                                <table className="data-table min-w-[800px]" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice ID</th>
+                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client</th>
+                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timeline</th>
+                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
+                                            <th style={{ padding: '1.25rem 1.5rem', width: 80 }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filtered.map((inv) => {
+                                            const displayStatus = getDisplayStatus(inv);
+                                            const config = statusConfig(displayStatus);
+                                            return (
+                                                <motion.tr
+                                                    key={inv.id}
+                                                    variants={rowVariants}
+                                                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s ease', position: 'relative', zIndex: menuId === inv.id ? 20 : 1, cursor: 'pointer' }}
+                                                    whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
+                                                    onClick={(e) => handlePreview(inv.id, e)}
+                                                >
+                                                    <td style={{ padding: '1.25rem 1.5rem', fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--foreground)", fontSize: '0.95rem' }}>
+                                                        {inv.number}
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                            <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>
+                                                                {clientName(inv.client_id).charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span style={{ fontWeight: 600, color: "var(--foreground)", fontSize: '1rem' }}>
+                                                                {clientName(inv.client_id)}
+                                                            </span>
                                                         </div>
-                                                        <span style={{ fontWeight: 600, color: "var(--foreground)", fontSize: '1rem' }}>
-                                                            {clientName(inv.client_id)}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td style={{ padding: '1.25rem 1.5rem' }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <span style={{ display: 'inline-block', width: '40px' }}>Issued:</span>
-                                                            <span style={{ color: 'var(--text-primary)' }}>{inv.issue_date}</span>
-                                                        </span>
-                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <span style={{ display: 'inline-block', width: '40px' }}>Due:</span>
-                                                            <span style={{ color: inv.status.toLowerCase() === 'overdue' ? 'var(--danger)' : 'var(--text-primary)' }}>{inv.due_date}</span>
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
-                                                    <span
-                                                        style={{
-                                                            display: "inline-flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            gap: 6,
-                                                            padding: "6px 14px",
-                                                            borderRadius: "20px",
-                                                            fontSize: "0.8rem",
-                                                            fontWeight: 700,
-                                                            textTransform: "uppercase",
-                                                            letterSpacing: "0.05em",
-                                                            background: config.bg,
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <span style={{ display: 'inline-block', width: '40px' }}>Issued:</span>
+                                                                <span style={{ color: 'var(--text-primary)' }}>
+                                                                    {inv.issue_date && !isNaN(new Date(inv.issue_date).getTime())
+                                                                        ? new Date(inv.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                                                        : 'N/A'}
+                                                                </span>
+                                                            </span>
+                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <span style={{ display: 'inline-block', width: '40px' }}>Due:</span>
+                                                                <span style={{ color: displayStatus === 'Overdue' ? 'var(--danger)' : 'var(--text-primary)' }}>
+                                                                    {inv.due_date && !isNaN(new Date(inv.due_date).getTime())
+                                                                        ? new Date(inv.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                                                        : 'N/A'}
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+                                                        <span style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            padding: '0.25rem 0.75rem',
+                                                            borderRadius: '20px',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 600,
                                                             color: config.color,
-                                                            border: `1px solid ${config.border}`,
-                                                            boxShadow: config.glow,
-                                                        }}
-                                                    >
-                                                        {inv.status}
-                                                    </span>
-                                                </td>
-                                                <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right', fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--foreground)", fontSize: '1.1rem' }}>
-                                                    {formatCurrency(inv.total)}
-                                                </td>
-                                                <td style={{ padding: '1.25rem 1.5rem', position: "relative" }}>
-                                                    <motion.button
-                                                        className="btn btn-ghost btn-icon"
-                                                        style={{ height: 36, width: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}
-                                                        onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
-                                                        whileHover={{ background: 'rgba(255,255,255,0.1)' }}
-                                                    >
-                                                        <MoreHorizontal size={18} />
-                                                    </motion.button>
-                                                    <AnimatePresence>
-                                                        {menuId === inv.id && (
-                                                            <motion.div
-                                                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                                transition={{ duration: 0.2, type: 'spring' }}
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    right: '2.5rem',
-                                                                    top: '50%',
-                                                                    transform: 'translateY(-50%)',
-                                                                    background: "rgba(15, 23, 42, 0.95)",
-                                                                    backdropFilter: "blur(20px)",
-                                                                    border: "1px solid rgba(255,255,255,0.1)",
-                                                                    borderRadius: "var(--radius-lg)",
-                                                                    padding: "0.5rem",
-                                                                    minWidth: 180,
-                                                                    zIndex: 50,
-                                                                    boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-                                                                }}
-                                                            >
-                                                                <button
-                                                                    className="btn btn-ghost"
-                                                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.9rem", height: 36, gap: '10px', color: 'var(--text-primary)' }}
-                                                                    onClick={() => handleDownload(inv.id)}
+                                                            background: config.bg,
+                                                            border: `1px solid ${config.color}20`
+                                                        }}>
+                                                            {displayStatus}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right', fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--foreground)", fontSize: '1.1rem' }}>
+                                                        {formatCurrency(inv.total)}
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem', position: "relative", zIndex: menuId === inv.id ? 50 : 1 }}>
+                                                        <motion.button
+                                                            className="btn btn-ghost btn-icon"
+                                                            style={{ height: 36, width: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}
+                                                            onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
+                                                            whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                                                        >
+                                                            <MoreHorizontal size={18} />
+                                                        </motion.button>
+                                                        <AnimatePresence>
+                                                            {menuId === inv.id && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                                    transition={{ duration: 0.2, type: 'spring' }}
+                                                                    className="aurora-menu"
+                                                                    style={{
+                                                                        position: "absolute",
+                                                                        right: '2.5rem',
+                                                                        top: 'calc(100% - 10px)',
+                                                                        background: "rgba(15, 23, 42, 0.95)",
+                                                                        backdropFilter: "blur(20px)",
+                                                                        border: "1px solid rgba(255,255,255,0.2)",
+                                                                        borderRadius: "var(--radius-lg)",
+                                                                        padding: "0.5rem",
+                                                                        minWidth: 180,
+                                                                        zIndex: 9999,
+                                                                        boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+                                                                    }}
                                                                 >
-                                                                    <Download size={16} /> Download PDF
-                                                                </button>
-                                                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
-                                                                <button
-                                                                    className="btn btn-ghost"
-                                                                    style={{ width: "100%", justifyContent: "flex-start", color: "var(--color-soft-coral)", fontSize: "0.9rem", height: 36, gap: '10px' }}
-                                                                    onClick={() => handleDelete(inv.id)}
-                                                                >
-                                                                    <Trash2 size={16} /> Delete Invoice
-                                                                </button>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                                                    <button
+                                                                        className="btn btn-ghost"
+                                                                        style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.9rem", height: 36, gap: '10px', color: 'var(--text-primary)' }}
+                                                                        onClick={() => handleDownload(inv.id)}
+                                                                    >
+                                                                        <Download size={16} /> Download PDF
+                                                                    </button>
+
+                                                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+
+                                                                    {/* Status sub-menu / options */}
+                                                                    <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Set Status</div>
+                                                                    <div className="flex flex-col gap-1 px-1">
+                                                                        {['Draft', 'Pending', 'Sent', 'Paid', 'Cancelled'].map((s) => (
+                                                                            <button
+                                                                                key={s}
+                                                                                className="btn btn-ghost"
+                                                                                style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.85rem", height: 28, color: inv.status === s ? 'var(--primary)' : 'var(--text-secondary)' }}
+                                                                                onClick={() => handleStatusChange(inv.id, s)}
+                                                                            >
+                                                                                <span className="w-4">{inv.status === s && "✓"}</span>
+                                                                                {s}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+
+                                                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+
+                                                                    <button
+                                                                        className="btn btn-ghost"
+                                                                        style={{ width: "100%", justifyContent: "flex-start", color: "var(--color-soft-coral)", fontSize: "0.9rem", height: 36, gap: '10px' }}
+                                                                        onClick={() => handleDelete(inv.id)}
+                                                                    >
+                                                                        <Trash2 size={16} /> Delete Invoice
+                                                                    </button>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </td>
+                                                </motion.tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </motion.div>
                     )}
 
@@ -445,7 +546,7 @@ export function Invoices() {
                                     : "Try adjusting your search criteria or modifying the active filters."}
                             </p>
                             {!search && !filterStatus && (
-                                <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '30px' }}>
+                                <button className="btn btn-primary" onClick={() => navigate('/editor')} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '30px' }}>
                                     <Plus size={20} /> Create First Invoice
                                 </button>
                             )}
@@ -581,6 +682,86 @@ export function Invoices() {
                                     {creating ? <Loader2 size={18} className="animate-spin" /> : <FilePlus2 size={18} />}
                                     {creating ? "Generating Document..." : "Finalize & Draft Invoice"}
                                 </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {previewInvoice && (
+                    <motion.div
+                        key="invoice-preview-modal"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+                        style={{ zIndex: 100000 }}
+                        onClick={() => setPreviewInvoice(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col relative"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] to-emerald-400" />
+
+                            <div className="p-6 pb-0 flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">{previewInvoice.number}</h2>
+                                    <p className="text-[var(--text-secondary)] mt-1">{clientName(previewInvoice.client_id)}</p>
+                                </div>
+                                <button
+                                    onClick={() => setPreviewInvoice(null)}
+                                    className="p-2 -mr-2 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 flex-1 text-sm text-[var(--text-secondary)]">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
+                                        <span className="flex items-center gap-2"><Clock size={16} className="text-emerald-400" /> Issued</span>
+                                        <span className="text-white font-medium">
+                                            {previewInvoice.issue_date && !isNaN(new Date(previewInvoice.issue_date).getTime())
+                                                ? new Date(previewInvoice.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                                : 'N/A'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
+                                        <span className="flex items-center gap-2"><AlertCircle size={16} className="text-amber-400" /> Due</span>
+                                        <span className="text-white font-medium">
+                                            {previewInvoice.due_date && !isNaN(new Date(previewInvoice.due_date).getTime())
+                                                ? new Date(previewInvoice.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                                : 'N/A'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
+                                        <span className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[var(--primary)]" /> Status</span>
+                                        <span className="text-white font-medium">{getDisplayStatus(previewInvoice)}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 p-4 bg-white/5 rounded-xl flex justify-between items-center">
+                                    <span className="uppercase tracking-wider text-xs font-bold text-white/50">Total Amount</span>
+                                    <span className="text-xl font-bold text-emerald-400">
+                                        {formatCurrency(previewInvoice.total)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="p-6 pt-0 flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setPreviewInvoice(null);
+                                        handleDownload(previewInvoice.id);
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors"
+                                >
+                                    <Download size={18} /> Export PDF
+                                </button>
                             </div>
                         </motion.div>
                     </motion.div>

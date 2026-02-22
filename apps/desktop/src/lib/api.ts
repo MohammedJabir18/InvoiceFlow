@@ -37,6 +37,9 @@ export interface CreateInvoiceRequest {
     client_id: string;
     items: InvoiceItemRequest[];
     notes: string | null;
+    status: string | null;
+    issue_date: string | null;
+    due_date: string | null;
 }
 
 export interface RevenueMetrics {
@@ -74,6 +77,10 @@ export async function deleteInvoice(id: string): Promise<void> {
     return invoke<void>("delete_invoice", { id });
 }
 
+export async function updateInvoiceStatus(id: string, status: string): Promise<void> {
+    return invoke<void>("update_invoice_status", { id, status });
+}
+
 // ─── Analytics API ───────────────────────────────────────────
 
 export async function getAnalytics(): Promise<RevenueMetrics> {
@@ -82,6 +89,10 @@ export async function getAnalytics(): Promise<RevenueMetrics> {
 
 // ─── PDF API ─────────────────────────────────────────────────
 
-export async function generatePdf(invoiceId: string): Promise<string> {
-    return invoke<string>("generate_pdf", { invoiceId });
+export async function generatePdf(id: string): Promise<string> {
+    return invoke<string>("generate_pdf", { invoiceId: id });
+}
+
+export async function openPdf(path: string): Promise<void> {
+    return invoke<void>("open_pdf", { path });
 }

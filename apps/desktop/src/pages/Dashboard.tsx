@@ -6,6 +6,7 @@ import { RevenuePulse } from "../components/dashboard/RevenuePulse";
 import { QuickActions } from "../components/dashboard/QuickActions";
 import { LiveFeed } from "../components/dashboard/LiveFeed";
 import { getInvoices, getClients, type InvoiceSummary, type ClientResponse } from "../lib/api";
+import { useSettingsStore } from "../store/settingsStore";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -22,6 +23,7 @@ export function Dashboard() {
     const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
     const [clients, setClients] = useState<ClientResponse[]>([]);
     const [loading, setLoading] = useState(true);
+    const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
 
     useEffect(() => {
         (async () => {
@@ -47,8 +49,14 @@ export function Dashboard() {
         .sort((a, b) => b.issue_date.localeCompare(a.issue_date))
         .slice(0, 5);
 
-    const formatCurrency = (num: number) =>
-        `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatCurrency = (num: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(num);
+    };
 
     const statusConfig = (status: string) => {
         switch (status.toLowerCase()) {
