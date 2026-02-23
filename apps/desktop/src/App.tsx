@@ -5,6 +5,7 @@ import { Invoices } from "./pages/Invoices";
 import { Clients } from "./pages/Clients";
 import { Editor } from "./pages/Editor";
 import { Settings } from "./pages/Settings";
+import { About } from "./pages/About";
 import { useEffect } from "react";
 import { useSettingsStore } from "./store/settingsStore";
 
@@ -60,6 +61,7 @@ function App() {
                                     <Route path="/invoices" element={<Invoices />} />
                                     <Route path="/clients" element={<Clients />} />
                                     <Route path="/settings" element={<Settings />} />
+                                    <Route path="/about" element={<About />} />
                                 </Routes>
                             </main>
                         </>

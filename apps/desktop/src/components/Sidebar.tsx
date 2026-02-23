@@ -7,7 +7,8 @@ import {
     Settings,
     TrendingUp,
     Bell,
-    CheckCircle
+    CheckCircle,
+    User
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -27,6 +28,7 @@ const navItems = [
     {
         label: "System", items: [
             { icon: Settings, label: "Settings", path: "/settings" },
+            { icon: User, label: "About", path: "/about" },
         ]
     },
 ];
