@@ -68,6 +68,25 @@ pub async fn delete_client(state: State<'_, AppState>, id: String) -> Result<(),
     repo.delete(&id).await.map_err(|e| e.to_string())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateClientRequest {
+    pub id: String,
+    pub name: String,
+    pub email: Option<String>,
+    pub company: Option<String>,
+}
+
+#[tauri::command]
+pub async fn update_client(
+    state: State<'_, AppState>,
+    request: UpdateClientRequest,
+) -> Result<(), String> {
+    let repo = ClientRepository::new(state.db.clone());
+    repo.update(&request.id, &request.name, request.email.as_deref(), request.company.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
 // ─── Invoice Commands ─────────────────────────────────────────
 
 #[tauri::command]
@@ -101,7 +120,7 @@ pub async fn create_invoice(
 ) -> Result<String, String> {
     use chrono::Utc;
     use flow_core::models::{Invoice, InvoiceItem};
-    use flow_core::types::{Currency, InvoiceStatus, PaymentTerms};
+    use flow_core::types::InvoiceStatus;
     use flow_invoice::calculator::InvoiceCalculator;
     use rust_decimal::Decimal;
     use std::str::FromStr;
@@ -210,7 +229,7 @@ pub async fn delete_invoice(state: State<'_, AppState>, id: String) -> Result<()
 
 #[tauri::command]
 pub async fn update_invoice_status(state: State<'_, AppState>, id: String, status: String) -> Result<(), String> {
-    use flow_core::types::InvoiceStatus;
+
     
     // Validate status string matches enum variants
     let valid_status = match status.as_str() {
@@ -393,5 +412,63 @@ pub async fn save_settings(
 ) -> Result<(), String> {
     let repo = BusinessProfileRepository::new(state.db.clone());
     repo.update_profile(&profile).await.map_err(|e| e.to_string())
+}
+
+// ─── Reset Command ─────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn reset_database(state: State<'_, AppState>) -> Result<(), String> {
+    use flow_db::repositories::BusinessProfileRepository;
+    use std::fs;
+
+    // 1. Delete all invoices and clients
+    sqlx::query("DELETE FROM invoice_items")
+        .execute(&state.db)
+        .await
+        .map_err(|e| format!("Failed to delete invoice items: {}", e))?;
+
+    sqlx::query("DELETE FROM invoices")
+        .execute(&state.db)
+        .await
+        .map_err(|e| format!("Failed to delete invoices: {}", e))?;
+
+    sqlx::query("DELETE FROM clients")
+        .execute(&state.db)
+        .await
+        .map_err(|e| format!("Failed to delete clients: {}", e))?;
+
+    // 2. Reset the business profile to the default "My Company" state without deleting the ID wrapper
+    let profile_repo = BusinessProfileRepository::new(state.db.clone());
+    let mut profile = profile_repo.get_profile().await.map_err(|e| e.to_string())?;
+    
+    // Wipe profile fields back to the "first-run" state
+    profile.name = "My Company".to_string();
+    profile.email = None;
+    profile.phone = None;
+    profile.address = flow_core::models::Address::default();
+    profile.tax_id = None;
+    profile.logo_path = None;
+    profile.default_currency = flow_core::types::Currency::USD;
+    profile.default_payment_terms = flow_core::types::PaymentTerms::Net30;
+    
+    profile_repo.update_profile(&profile).await.map_err(|e| e.to_string())?;
+
+    // 3. Clear stored files
+    let logo_path = state.app_data_dir.join("logo.txt");
+    if logo_path.exists() {
+        fs::remove_file(&logo_path).ok();
+    }
+    
+    let qr_path = state.app_data_dir.join("qr_code.txt");
+    if qr_path.exists() {
+        fs::remove_file(&qr_path).ok();
+    }
+
+    let bank_path = state.app_data_dir.join("bank_details.json");
+    if bank_path.exists() {
+        fs::remove_file(&bank_path).ok();
+    }
+
+    Ok(())
 }
 

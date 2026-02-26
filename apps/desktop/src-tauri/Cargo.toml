@@ -13,6 +13,7 @@ tauri-plugin-shell = "2"
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+sqlx = { workspace = true }
 flow-core = { path = "../../../crates/flow-core" }
 flow-db = { path = "../../../crates/flow-db" }
 flow-invoice = { path = "../../../crates/flow-invoice" }

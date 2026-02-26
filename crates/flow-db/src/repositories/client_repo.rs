@@ -68,6 +68,21 @@ impl ClientRepository {
             .await?;
         Ok(())
     }
+
+    pub async fn update(&self, id: &str, name: &str, email: Option<&str>, company: Option<&str>) -> Result<(), sqlx::Error> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE clients SET name = ?, email = ?, company = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(name)
+        .bind(email)
+        .bind(company)
+        .bind(&now)
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
 }
 
 #[derive(sqlx::FromRow)]

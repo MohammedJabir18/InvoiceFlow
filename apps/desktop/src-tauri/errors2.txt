@@ -1,0 +1,67 @@
+    Checking invoice-flow-desktop v0.1.0 (D:\My Codings\My Projects\InvoiceFlow\apps\desktop\src-tauri)
+warning: unused imports: `Currency` and `PaymentTerms`
+   --> apps\desktop\src-tauri\src\commands.rs:123:28
+    |
+123 |     use flow_core::types::{Currency, InvoiceStatus, PaymentTerms};
+    |                            ^^^^^^^^                 ^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `flow_core::types::InvoiceStatus`
+   --> apps\desktop\src-tauri\src\commands.rs:232:9
+    |
+232 |     use flow_core::types::InvoiceStatus;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `sqlx`
+   --> apps\desktop\src-tauri\src\commands.rs:425:5
+    |
+425 |     sqlx::query("DELETE FROM invoice_items")
+    |     ^^^^ use of unresolved module or unlinked crate `sqlx`
+    |
+    = help: if you wanted to use a crate named `sqlx`, use `cargo add sqlx` to add it to your `Cargo.toml`
+
+error[E0282]: type annotations needed
+   --> apps\desktop\src-tauri\src\commands.rs:425:5
+    |
+425 | /     sqlx::query("DELETE FROM invoice_items")
+426 | |         .execute(&state.db)
+427 | |         .await
+    | |______________^ cannot infer type
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `sqlx`
+   --> apps\desktop\src-tauri\src\commands.rs:430:5
+    |
+430 |     sqlx::query("DELETE FROM invoices")
+    |     ^^^^ use of unresolved module or unlinked crate `sqlx`
+    |
+    = help: if you wanted to use a crate named `sqlx`, use `cargo add sqlx` to add it to your `Cargo.toml`
+
+error[E0282]: type annotations needed
+   --> apps\desktop\src-tauri\src\commands.rs:430:5
+    |
+430 | /     sqlx::query("DELETE FROM invoices")
+431 | |         .execute(&state.db)
+432 | |         .await
+    | |______________^ cannot infer type
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `sqlx`
+   --> apps\desktop\src-tauri\src\commands.rs:435:5
+    |
+435 |     sqlx::query("DELETE FROM clients")
+    |     ^^^^ use of unresolved module or unlinked crate `sqlx`
+    |
+    = help: if you wanted to use a crate named `sqlx`, use `cargo add sqlx` to add it to your `Cargo.toml`
+
+error[E0282]: type annotations needed
+   --> apps\desktop\src-tauri\src\commands.rs:435:5
+    |
+435 | /     sqlx::query("DELETE FROM clients")
+436 | |         .execute(&state.db)
+437 | |         .await
+    | |______________^ cannot infer type
+
+Some errors have detailed explanations: E0282, E0433.
+For more information about an error, try `rustc --explain E0282`.
+warning: `invoice-flow-desktop` (lib) generated 2 warnings
+error: could not compile `invoice-flow-desktop` (lib) due to 6 previous errors; 2 warnings emitted

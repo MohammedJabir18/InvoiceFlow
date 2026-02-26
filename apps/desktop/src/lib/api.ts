@@ -64,6 +64,17 @@ export async function deleteClient(id: string): Promise<void> {
     return invoke<void>("delete_client", { id });
 }
 
+export interface UpdateClientRequest {
+    id: string;
+    name: string;
+    email: string | null;
+    company: string | null;
+}
+
+export async function updateClient(request: UpdateClientRequest): Promise<void> {
+    return invoke<void>("update_client", { request });
+}
+
 // ─── Invoice API ─────────────────────────────────────────────
 
 export async function getInvoices(): Promise<InvoiceSummary[]> {
@@ -96,4 +107,10 @@ export async function generatePdf(id: string): Promise<string> {
 
 export async function openPdf(path: string): Promise<void> {
     return invoke<void>("open_pdf", { path });
+}
+
+// ─── System & Data API ───────────────────────────────────────
+
+export async function resetDatabase(): Promise<void> {
+    return invoke<void>("reset_database");
 }

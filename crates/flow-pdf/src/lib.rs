@@ -18,7 +18,8 @@ impl PdfGenerator {
         Self { output_dir }
     }
 
-    /// Generates a PDF directly using system-installed Edge/Chrome CLI to avoid console popups
+    /// Generates a PDF using system-installed Edge/Chrome in headless mode.
+    /// Uses a persistent user-data-dir to avoid slow cold-start profile creation.
     pub fn generate_from_url(&self, url: &str, output_filename: &str) -> Result<PathBuf> {
         let output_path = self.output_dir.join(output_filename);
         
@@ -26,6 +27,7 @@ impl PdfGenerator {
         let browser_paths = [
             // ms edge is guaranteed on win10/11
             r#"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"#,
+            r#"C:\Program Files\Microsoft\Edge\Application\msedge.exe"#,
             r#"C:\Program Files\Google\Chrome\Application\chrome.exe"#,
             r#"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"#,
         ];
@@ -41,6 +43,11 @@ impl PdfGenerator {
         if exe_path.is_empty() {
             return Err(anyhow::anyhow!("No supported browser (Edge/Chrome) found for PDF generation"));
         }
+
+        // Use a persistent user-data-dir so the browser reuses its cached profile
+        // instead of creating a fresh temporary one every time (~2-3s saved)
+        let pdf_profile_dir = std::env::temp_dir().join("invoiceflow_pdf_profile");
+        fs::create_dir_all(&pdf_profile_dir).ok();
 
         let mut cmd = Command::new(exe_path);
         
@@ -58,6 +65,23 @@ impl PdfGenerator {
                 "--no-pdf-header-footer",
                 "--disable-software-rasterizer",
                 "--run-all-compositor-stages-before-draw",
+                // Performance flags to minimize startup time
+                "--disable-extensions",
+                "--disable-background-networking",
+                "--disable-sync",
+                "--disable-default-apps",
+                "--no-first-run",
+                "--disable-features=TranslateUI",
+                "--disable-component-update",
+                "--disable-hang-monitor",
+                "--disable-prompt-on-repost",
+                "--disable-domain-reliability",
+                "--disable-client-side-phishing-detection",
+                "--disable-breakpad",
+                // Reuse a persistent profile directory for faster startup
+                &format!("--user-data-dir={}", pdf_profile_dir.display()),
+                // Virtual time budget so the page doesn't wait for real timers
+                "--virtual-time-budget=5000",
                 &format!("--print-to-pdf={}", output_path.display()),
                 url,
             ])
@@ -67,9 +91,6 @@ impl PdfGenerator {
         if !status.success() {
             return Err(anyhow::anyhow!("Browser process failed with status: {}", status));
         }
-        
-        // Wait a tiny bit to ensure file is flushed to disk
-        std::thread::sleep(std::time::Duration::from_millis(500));
 
         if !output_path.exists() {
             return Err(anyhow::anyhow!("PDF file was not created at expected path"));

@@ -37,6 +37,7 @@ pub fn run() {
             commands::get_clients,
             commands::create_client,
             commands::delete_client,
+            commands::update_client,
             commands::get_invoices,
             commands::create_invoice,
             commands::delete_invoice,
@@ -54,6 +55,7 @@ pub fn run() {
             commands::get_bank_details,
             commands::get_settings,
             commands::save_settings,
+            commands::reset_database,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

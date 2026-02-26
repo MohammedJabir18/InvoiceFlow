@@ -34,6 +34,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
+import { resetDatabase } from "../lib/api";
 
 // --- Types ---
 interface SectionHeader {
@@ -421,6 +422,11 @@ export function Settings() {
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    // Danger Zone State
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [resetConfirmText, setResetConfirmText] = useState('');
+    const [isResetting, setIsResetting] = useState(false);
+
     const profile = useSettingsStore(state => state.profile);
     const bankDetails = useSettingsStore(state => state.bankDetails);
     const updateSettings = useSettingsStore(state => state.updateSettings);
@@ -456,6 +462,20 @@ export function Settings() {
     const handleUpdateField = (field: keyof BusinessProfile, value: string) => {
         if (!profile) return;
         useSettingsStore.setState({ profile: { ...profile, [field]: value } });
+    };
+
+    const handleResetDatabase = async () => {
+        if (resetConfirmText !== "RESET") return;
+        setIsResetting(true);
+        try {
+            await resetDatabase();
+            localStorage.removeItem('has_skipped_onboarding');
+            // Force a full app reload to trigger the onboarding wizard overlay
+            window.location.reload();
+        } catch (error) {
+            console.error("Failed to reset database:", error);
+            setIsResetting(false);
+        }
     };
 
     const handleUpdateAddress = (field: keyof BusinessProfile['address'], value: string) => {
@@ -982,7 +1002,12 @@ export function Settings() {
                                                         <p className="text-xs text-[var(--text-muted)]">Irreversible data loss.</p>
                                                     </div>
                                                 </div>
-                                                <button className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                                                <button
+                                                    onClick={() => {
+                                                        setResetConfirmText('');
+                                                        setShowResetModal(true);
+                                                    }}
+                                                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition-all">
                                                     Reset DB
                                                 </button>
                                             </div>
@@ -994,6 +1019,94 @@ export function Settings() {
                     </AnimatePresence>
                 </div>
             </div>
+
+            {/* Aggressive Danger Zone Reset Modal */}
+            <AnimatePresence>
+                {showResetModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                            animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
+                            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                            className="absolute inset-0 bg-black/80"
+                            onClick={() => !isResetting && setShowResetModal(false)}
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="relative w-full max-w-md bg-[var(--background)] border-2 border-red-500/50 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden"
+                        >
+                            {/* Pulsing Red Background Glow */}
+                            <motion.div
+                                className="absolute inset-0 bg-red-500/5"
+                                animate={{ opacity: [0.5, 1, 0.5] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                            />
+
+                            <div className="relative p-8 text-center flex flex-col items-center">
+                                <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20 relative">
+                                    <AlertTriangle size={36} className="text-red-500 relative z-10" />
+                                    {/* Sonar pulse effect */}
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full border-2 border-red-500/50"
+                                        animate={{ scale: [1, 2], opacity: [1, 0] }}
+                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                    />
+                                </div>
+
+                                <h3 className="text-2xl font-black text-red-500 uppercase tracking-widest mb-2">System Wipe</h3>
+                                <p className="text-[var(--foreground)] font-medium mb-2">
+                                    You are about to irreversibly delete all data.
+                                </p>
+                                <p className="text-sm text-[var(--text-muted)] mb-8">
+                                    This will wipe all clients, invoices, settings, and business profiles. The application will be reset to factory defaults.
+                                </p>
+
+                                <div className="w-full text-left mb-8">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-red-400 mb-2">
+                                        Type "RESET" to confirm
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={resetConfirmText}
+                                        onChange={(e) => setResetConfirmText(e.target.value)}
+                                        placeholder="RESET"
+                                        className="w-full bg-[var(--premium-bg)] border-2 border-red-500/30 rounded-xl px-4 py-3 text-[var(--foreground)] font-mono text-center tracking-widest focus:outline-none focus:border-red-500 transition-colors"
+                                        disabled={isResetting}
+                                    />
+                                </div>
+
+                                <div className="flex gap-4 w-full">
+                                    <button
+                                        onClick={() => setShowResetModal(false)}
+                                        disabled={isResetting}
+                                        className="flex-1 px-4 py-3 rounded-xl font-bold text-[var(--foreground)] bg-[var(--premium-bg)] border border-[var(--premium-border)] hover:bg-[var(--premium-bg-hover)] transition-colors disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <motion.button
+                                        onClick={handleResetDatabase}
+                                        disabled={resetConfirmText !== "RESET" || isResetting}
+                                        whileHover={resetConfirmText === "RESET" && !isResetting ? { scale: 1.02 } : {}}
+                                        whileTap={resetConfirmText === "RESET" && !isResetting ? { scale: 0.98 } : {}}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-red-500/20"
+                                    >
+                                        {isResetting ? (
+                                            <>
+                                                <Loader2 size={18} className="animate-spin" />
+                                                Wiping...
+                                            </>
+                                        ) : (
+                                            'INITIATE WIPE'
+                                        )}
+                                    </motion.button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

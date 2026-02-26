@@ -11,9 +11,11 @@ import {
     Trash2,
     Loader2,
     Briefcase,
-    ArrowRight
+    ArrowRight,
+    Pencil,
+    AlertTriangle
 } from "lucide-react";
-import { getClients, createClient, deleteClient, type ClientResponse } from "../lib/api";
+import { getClients, createClient, deleteClient, updateClient, type ClientResponse } from "../lib/api";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -33,6 +35,10 @@ export function Clients() {
     const [creating, setCreating] = useState(false);
     const [menuId, setMenuId] = useState<string | null>(null);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [editClient, setEditClient] = useState<ClientResponse | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [clientToDelete, setClientToDelete] = useState<ClientResponse | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Form refs
     const nameRef = useRef<HTMLInputElement>(null);
@@ -65,6 +71,10 @@ export function Clients() {
                 email: emailRef.current?.value?.trim() || null,
                 company: companyRef.current?.value?.trim() || null,
             });
+            // Reset form fields
+            if (nameRef.current) nameRef.current.value = '';
+            if (emailRef.current) emailRef.current.value = '';
+            if (companyRef.current) companyRef.current.value = '';
             setShowCreate(false);
             await fetchClients();
         } catch (err) {
@@ -75,16 +85,54 @@ export function Clients() {
         }
     };
 
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
+    const handleDeleteClick = (client: ClientResponse, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this client?")) return;
+        setClientToDelete(client);
+        setMenuId(null);
+    };
+
+    const confirmDelete = async () => {
+        if (!clientToDelete) return;
+        setIsDeleting(true);
         try {
-            await deleteClient(id);
+            await deleteClient(clientToDelete.id);
+            if (editClient?.id === clientToDelete.id) setEditClient(null);
             await fetchClients();
-            setMenuId(null);
+            setClientToDelete(null);
         } catch (err) {
             console.error("Failed to delete client:", err);
             alert("Failed to delete client. It may have invoices attached.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleStartEdit = (client: ClientResponse, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditClient(client);
+        setMenuId(null);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editClient) return;
+        const name = nameRef.current?.value?.trim();
+        if (!name) return;
+
+        setSaving(true);
+        try {
+            await updateClient({
+                id: editClient.id,
+                name,
+                email: emailRef.current?.value?.trim() || null,
+                company: companyRef.current?.value?.trim() || null,
+            });
+            setEditClient(null);
+            await fetchClients();
+        } catch (err) {
+            console.error("Failed to update client:", err);
+            alert("Failed to update client. Please try again.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -94,6 +142,15 @@ export function Clients() {
             (c.company || "").toLowerCase().includes(search.toLowerCase()) ||
             (c.email || "").toLowerCase().includes(search.toLowerCase())
     );
+
+    // Close context menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setMenuId(null);
+        if (menuId) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [menuId]);
 
     // A simple hash function to generate a consistent gradient hue for avatars based on name
     const getHue = (str: string) => {
@@ -183,6 +240,7 @@ export function Clients() {
                                         variants={cardVariants}
                                         onMouseEnter={() => setHoveredId(client.id)}
                                         onMouseLeave={() => { setHoveredId(null); setMenuId(null); }}
+                                        onClick={() => setEditClient(client)}
                                         style={{
                                             position: "relative",
                                             borderRadius: 'var(--radius-2xl)',
@@ -266,11 +324,24 @@ export function Clients() {
                                                                 style={{
                                                                     width: "100%",
                                                                     justifyContent: "flex-start",
+                                                                    color: "var(--primary)",
+                                                                    fontSize: "0.9rem",
+                                                                    gap: '10px'
+                                                                }}
+                                                                onClick={(e) => handleStartEdit(client, e)}
+                                                            >
+                                                                <Pencil size={16} /> Edit Client
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-ghost"
+                                                                style={{
+                                                                    width: "100%",
+                                                                    justifyContent: "flex-start",
                                                                     color: "var(--color-soft-coral)",
                                                                     fontSize: "0.9rem",
                                                                     gap: '10px'
                                                                 }}
-                                                                onClick={(e) => handleDelete(client.id, e)}
+                                                                onClick={(e) => handleDeleteClick(client, e)}
                                                             >
                                                                 <Trash2 size={16} /> Delete Client
                                                             </button>
@@ -330,7 +401,7 @@ export function Clients() {
                                     ? `We couldn't find any clients matching "${search}". Try a different keyword.`
                                     : "Start building your professional network. Add your first client to unlock the full potential of InvoiceFlow."}
                             </p>
-                            <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '30px' }}>
+                            <button className="btn btn-primary" onClick={() => { if (search) { setSearch(''); } else { setShowCreate(true); } }} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '30px' }}>
                                 <Plus size={20} /> {search ? "Clear Search" : "Add Your First Client"}
                             </button>
                         </motion.div>
@@ -338,16 +409,16 @@ export function Clients() {
                 </AnimatePresence>
             </div>
 
-            {/* Create Client Premium Modal */}
+            {/* Create / Edit Client Premium Modal */}
             <AnimatePresence>
-                {showCreate && (
+                {(showCreate || editClient) && (
                     <motion.div
                         className="modal-overlay"
                         initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
                         animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
                         exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
                         style={{ position: 'fixed', inset: 0, background: 'color-mix(in srgb, var(--background) 80%, transparent)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
-                        onClick={() => setShowCreate(false)}
+                        onClick={() => { setShowCreate(false); setEditClient(null); }}
                     >
                         <motion.div
                             className="glass-panel"
@@ -365,13 +436,15 @@ export function Clients() {
                                 <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{ width: 8, height: 8, background: 'var(--primary)', borderRadius: '50%', boxShadow: '0 0 10px var(--primary)' }} />
-                                            New Connection
+                                            <div style={{ width: 8, height: 8, background: editClient ? 'var(--secondary)' : 'var(--primary)', borderRadius: '50%', boxShadow: editClient ? '0 0 10px var(--secondary)' : '0 0 10px var(--primary)' }} />
+                                            {editClient ? 'Edit Connection' : 'New Connection'}
                                         </h2>
-                                        <p style={{ color: 'var(--foreground)', opacity: 0.7, fontSize: '0.9rem', marginTop: '4px' }}>Add a new client to your workspace.</p>
+                                        <p style={{ color: 'var(--foreground)', opacity: 0.7, fontSize: '0.9rem', marginTop: '4px' }}>
+                                            {editClient ? 'Update client details below.' : 'Add a new client to your workspace.'}
+                                        </p>
                                     </div>
                                     <button
-                                        onClick={() => setShowCreate(false)}
+                                        onClick={() => { setShowCreate(false); setEditClient(null); }}
                                         style={{ width: 36, height: 36, borderRadius: '50%', background: 'color-mix(in srgb, var(--foreground) 5%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--foreground)', opacity: 0.8, border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
                                         onMouseEnter={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 10%, transparent)'}
                                         onMouseLeave={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 5%, transparent)'}
@@ -386,39 +459,116 @@ export function Clients() {
                                     <label className="form-label">Client / Contact Name <span style={{ color: 'var(--primary)' }}>*</span></label>
                                     <div style={{ position: 'relative' }}>
                                         <Users size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--foreground)', opacity: 0.5 }} />
-                                        <input ref={nameRef} className="form-input" placeholder="e.g. Sarah Connor" style={{ paddingLeft: '44px' }} autoFocus />
+                                        <input ref={nameRef} className="form-input" placeholder="e.g. Sarah Connor" style={{ paddingLeft: '44px' }} defaultValue={editClient?.name || ''} autoFocus key={editClient ? `edit-name-${editClient.id}` : 'create-name'} />
                                     </div>
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label">Billing Email Address</label>
                                     <div style={{ position: 'relative' }}>
                                         <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--foreground)', opacity: 0.5 }} />
-                                        <input ref={emailRef} className="form-input" type="email" placeholder="billing@client.com" style={{ paddingLeft: '44px' }} />
+                                        <input ref={emailRef} className="form-input" type="email" placeholder="billing@client.com" style={{ paddingLeft: '44px' }} defaultValue={editClient?.email || ''} key={editClient ? `edit-email-${editClient.id}` : 'create-email'} />
                                     </div>
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label">Company / Organization</label>
                                     <div style={{ position: 'relative' }}>
                                         <Building2 size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--foreground)', opacity: 0.5 }} />
-                                        <input ref={companyRef} className="form-input" placeholder="e.g. Cyberdyne Systems" style={{ paddingLeft: '44px' }} />
+                                        <input ref={companyRef} className="form-input" placeholder="e.g. Cyberdyne Systems" style={{ paddingLeft: '44px' }} defaultValue={editClient?.company || ''} key={editClient ? `edit-company-${editClient.id}` : 'create-company'} />
                                     </div>
                                 </div>
                             </div>
 
                             <div style={{ padding: '1.5rem 2.5rem', borderTop: '1px solid color-mix(in srgb, var(--foreground) 10%, transparent)', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'color-mix(in srgb, var(--foreground) 2%, transparent)' }}>
-                                <button className="btn btn-secondary" onClick={() => setShowCreate(false)} style={{ background: 'transparent', border: 'none', color: 'var(--foreground)' }}>
+                                <button className="btn btn-secondary" onClick={() => { setShowCreate(false); setEditClient(null); }} style={{ background: 'transparent', border: 'none', color: 'var(--foreground)' }}>
                                     Cancel
                                 </button>
                                 <motion.button
                                     className="btn btn-primary"
-                                    onClick={handleCreate}
-                                    disabled={creating}
+                                    onClick={editClient ? handleSaveEdit : handleCreate}
+                                    disabled={editClient ? saving : creating}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     style={{ padding: '0.75rem 2rem', borderRadius: '30px' }}
                                 >
-                                    {creating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-                                    {creating ? "Provisioning..." : "Add Client"}
+                                    {editClient
+                                        ? (saving ? <Loader2 size={18} className="animate-spin" /> : <Pencil size={18} />)
+                                        : (creating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />)
+                                    }
+                                    {editClient
+                                        ? (saving ? 'Saving...' : 'Save Changes')
+                                        : (creating ? 'Provisioning...' : 'Add Client')
+                                    }
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* Premium Delete Confirmation Modal */}
+            <AnimatePresence>
+                {clientToDelete && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                        animate={{ opacity: 1, backdropFilter: 'blur(30px)' }}
+                        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                        style={{ position: 'fixed', inset: 0, background: 'color-mix(in srgb, var(--background) 85%, rgba(220, 38, 38, 0.05))', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+                        onClick={() => !isDeleting && setClientToDelete(null)}
+                    >
+                        <motion.div
+                            className="glass-panel"
+                            initial={{ opacity: 0, scale: 0.85, y: 50, rotateX: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+                            exit={{ opacity: 0, scale: 0.85, y: 50, rotateX: -20 }}
+                            transition={{ duration: 0.5, type: 'spring', bounce: 0.4 }}
+                            style={{ width: '100%', maxWidth: '440px', borderRadius: 'var(--radius-3xl)', overflow: 'hidden', boxShadow: '0 30px 60px -15px rgba(220, 38, 38, 0.15), 0 0 0 1px rgba(220, 38, 38, 0.1)', perspective: '1000px', background: 'color-mix(in srgb, var(--background) 60%, transparent)', backdropFilter: 'blur(20px)' }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ padding: '3rem 2.5rem', textAlign: 'center', position: 'relative' }}>
+                                {/* Danger Ambient Glow */}
+                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%)', zIndex: 0, filter: 'blur(20px)' }} />
+
+                                <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <motion.div
+                                        initial={{ scale: 0, rotate: -180 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        transition={{ type: 'spring', damping: 15, delay: 0.1 }}
+                                        style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid rgba(239, 68, 68, 0.2)', boxShadow: '0 0 30px rgba(239, 68, 68, 0.3)' }}
+                                    >
+                                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <AlertTriangle size={32} style={{ color: '#ef4444', filter: 'drop-shadow(0 0 10px rgba(239,68,68,0.5))' }} />
+                                        </div>
+                                    </motion.div>
+
+                                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--foreground)', letterSpacing: '-0.02em' }}>
+                                        Delete Client?
+                                    </h2>
+                                    <p style={{ color: 'var(--text-tertiary)', fontSize: '1.05rem', lineHeight: 1.6, margin: 0, maxWidth: '90%' }}>
+                                        You are about to permanently remove <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>{clientToDelete.name}</span>. This action cannot be undone and will remove them from your active network.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div style={{ padding: '1.5rem 2.5rem', borderTop: '1px solid rgba(239, 68, 68, 0.1)', display: 'flex', gap: '1rem', background: 'rgba(0, 0, 0, 0.2)' }}>
+                                <motion.button
+                                    className="btn btn-secondary"
+                                    onClick={() => setClientToDelete(null)}
+                                    disabled={isDeleting}
+                                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    style={{ flex: 1, padding: '0.875rem', borderRadius: 'var(--radius-xl)', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--foreground)', fontSize: '1rem', fontWeight: 600 }}
+                                >
+                                    Cancel
+                                </motion.button>
+                                <motion.button
+                                    onClick={confirmDelete}
+                                    disabled={isDeleting}
+                                    whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(239, 68, 68, 0.4)' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    style={{ flex: 1, padding: '0.875rem', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#fff', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: isDeleting ? 'not-allowed' : 'pointer', opacity: isDeleting ? 0.7 : 1 }}
+                                >
+                                    {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                    {isDeleting ? 'Deleting...' : 'Yes, Delete'}
                                 </motion.button>
                             </div>
                         </motion.div>

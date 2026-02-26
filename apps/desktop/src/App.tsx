@@ -6,8 +6,9 @@ import { Clients } from "./pages/Clients";
 import { Editor } from "./pages/Editor";
 import { Settings } from "./pages/Settings";
 import { About } from "./pages/About";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSettingsStore } from "./store/settingsStore";
+import { OnboardingWizard } from "./components/OnboardingWizard";
 
 function App() {
     const fetchSettings = useSettingsStore(state => state.fetchSettings);
@@ -15,11 +16,26 @@ function App() {
 
     // Global Settings
     const profile = useSettingsStore(state => state.profile);
+    const isLoading = useSettingsStore(state => state.isLoading);
+    const [showWizard, setShowWizard] = useState(false);
 
     useEffect(() => {
         fetchSettings();
         fetchBankDetails();
     }, [fetchSettings, fetchBankDetails]);
+
+    // Check onboarding status
+    useEffect(() => {
+        if (profile && !isLoading) {
+            // First run condition: profile name is exactly "My Company" and no email/phone
+            const hasSkipped = localStorage.getItem('has_skipped_onboarding') === 'true';
+            if (!hasSkipped && profile.name === "My Company" && !profile.email && !profile.phone) {
+                setShowWizard(true);
+            } else {
+                setShowWizard(false);
+            }
+        }
+    }, [profile, isLoading]);
 
     // Apply Global Theme
     useEffect(() => {
@@ -47,6 +63,9 @@ function App() {
 
     return (
         <BrowserRouter>
+            {showWizard && (
+                <OnboardingWizard onComplete={() => setShowWizard(false)} />
+            )}
             <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
                 <div className="aurora-bg" />
                 <Routes>

@@ -97,14 +97,12 @@ pub fn render_invoice_html(invoice: &Invoice, client: &Client, _profile: &Busine
             <meta charset="utf-8">
             <title>Invoice {}</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-                
                 * {{
                     box-sizing: border-box;
                 }}
                 
                 body {{
-                    font-family: 'Inter', sans-serif;
+                    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
                     background-color: #ffffff;
                     color: #111827;
                     margin: 0;
