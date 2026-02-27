@@ -101,7 +101,50 @@ Built on the bleeding edge. A hyper-optimized React frontend seamlessly synergiz
 
 ---
 
-## ⚙️ Quick Start Ignition
+## 📥 Direct Download & Installation
+
+Skip the build process. Experience the sheer velocity of **InvoiceFlow** directly on your operating system. Our standalone binaries are heavily optimized, zero-config, and ready for immediate deployment.
+
+<br/>
+
+<table style="width:100%; border-collapse: separate; border-spacing: 20px; text-align:center;">
+  <tr>
+    <td width="33%" style="background-color: rgba(0, 240, 255, 0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 8px 30px rgba(0, 240, 255, 0.1);">
+        <img src="https://skillicons.dev/icons?i=windows" width="65" />
+        <h3 style="margin-top: 15px; margin-bottom: 5px;">Windows</h3>
+        <p style="color: #a0a0a0; font-size: 14px; margin-top: 0;">Stable • 64-bit • Auto-updates</p>
+        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest">
+          <img src="https://img.shields.io/badge/Download_.exe-00f0ff?style=for-the-badge&logoColor=000000" alt="Download Windows" style="margin-top: 10px;" />
+        </a>
+    </td>
+    <td width="33%" style="background-color: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 30px rgba(255, 255, 255, 0.05);">
+        <img src="https://skillicons.dev/icons?i=apple" width="65" />
+        <h3 style="margin-top: 15px; margin-bottom: 5px;">macOS</h3>
+        <p style="color: #a0a0a0; font-size: 14px; margin-top: 0;">Silicon & Intel • .dmg Installer</p>
+        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest">
+          <img src="https://img.shields.io/badge/Download_.dmg-ffffff?style=for-the-badge&color=ffffff&logoColor=000000" alt="Download macOS" style="margin-top: 10px;" />
+        </a>
+    </td>
+    <td width="33%" style="background-color: rgba(255, 179, 0, 0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255, 179, 0, 0.3); box-shadow: 0 8px 30px rgba(255, 179, 0, 0.1);">
+        <img src="https://skillicons.dev/icons?i=linux" width="65" />
+        <h3 style="margin-top: 15px; margin-bottom: 5px;">Linux</h3>
+        <p style="color: #a0a0a0; font-size: 14px; margin-top: 0;">AppImage • Snap • DEB</p>
+        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest">
+          <img src="https://img.shields.io/badge/Download_.AppImage-FFB300?style=for-the-badge&color=FFB300&logoColor=000000" alt="Download Linux" style="margin-top: 10px;" />
+        </a>
+    </td>
+  </tr>
+</table>
+
+<div align="center">
+  <p><i>Looking for older versions? <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases">View all releases here.</a></i></p>
+</div>
+
+<br/>
+
+---
+
+## ⚙️ Quick Start Ignition (For Developers)
 
 Ready to launch? Get InvoiceFlow running locally on your machine in seconds.
 
