@@ -28,3 +28,6 @@ artifacts/
 *.webm
 *.mp4
 *.log
+
+# App user data
+Sample_Invoices/
