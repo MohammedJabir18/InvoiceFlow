@@ -114,3 +114,8 @@ export async function openPdf(path: string): Promise<void> {
 export async function resetDatabase(): Promise<void> {
     return invoke<void>("reset_database");
 }
+
+export async function exportData(path: string): Promise<void> {
+    return invoke<void>("export_data", { path });
+}
+

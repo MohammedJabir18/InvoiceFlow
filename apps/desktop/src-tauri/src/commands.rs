@@ -472,3 +472,49 @@ pub async fn reset_database(state: State<'_, AppState>) -> Result<(), String> {
     Ok(())
 }
 
+// ─── Export Command ──────────────────────────────────────────
+
+#[tauri::command]
+pub async fn export_data(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    use flow_db::repositories::{BusinessProfileRepository, ClientRepository, InvoiceRepository};
+    use serde_json::json;
+    use std::fs;
+
+    // Fetch clients
+    let client_repo = ClientRepository::new(state.db.clone());
+    let clients = client_repo.list_all().await.map_err(|e| e.to_string())?;
+
+    // Fetch invoices
+    let invoice_repo = InvoiceRepository::new(state.db.clone());
+    let invoices = invoice_repo.list_all().await.map_err(|e| e.to_string())?;
+
+    // Fetch profile
+    let profile_repo = BusinessProfileRepository::new(state.db.clone());
+    let profile = profile_repo.get_profile().await.map_err(|e| e.to_string())?;
+
+    // Fetch bank details
+    let bank_path = state.app_data_dir.join("bank_details.json");
+    let bank_details = if bank_path.exists() {
+        fs::read_to_string(&bank_path).unwrap_or_else(|_| "{}".to_string())
+    } else {
+        "{}".to_string()
+    };
+    let bank_json: serde_json::Value = serde_json::from_str(&bank_details).unwrap_or_else(|_| json!({}));
+
+    // Construct export payload
+    let export_payload = json!({
+        "version": "1.0",
+        "exported_at": chrono::Utc::now().to_rfc3339(),
+        "profile": profile,
+        "bank_details": bank_json,
+        "clients": clients,
+        "invoices": invoices,
+    });
+
+    let json_string = serde_json::to_string_pretty(&export_payload).map_err(|e| e.to_string())?;
+
+    // Write to selected path
+    fs::write(&path, json_string).map_err(|e| format!("Failed to write export file: {}", e))?;
+
+    Ok(())
+}

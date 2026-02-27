@@ -20,9 +20,11 @@ export interface InvoiceEditorRef {
 
 interface Props {
     clients: ClientResponse[];
+    initialData?: any;
+    onChange?: (data: any) => void;
 }
 
-export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, ref) => {
+export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients, initialData, onChange }, ref) => {
     // --- Date Helpers ---
     const formatDate = (date: Date): string =>
         date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -43,13 +45,20 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
     };
 
     // --- State ---
-    const [invoiceNumber, setInvoiceNumber] = useState("");
-    const [invoiceDate, setInvoiceDate] = useState(() => formatDate(new Date()));
-    const [developer, setDeveloper] = useState("");
-    const [dueDate, setDueDate] = useState("");
-    const [status, setStatus] = useState("Draft");
+    const [invoiceNumber, setInvoiceNumber] = useState(initialData?.invoiceNumber || "");
+    const [invoiceDate, setInvoiceDate] = useState(() => {
+        if (initialData?.issueDate) return formatDate(new Date(initialData.issueDate));
+        return formatDate(new Date());
+    });
+    const customNotes = initialData?.notes ? JSON.parse(initialData.notes) : null;
+    const [developer, setDeveloper] = useState(customNotes?.developer || "");
+    const [dueDate, setDueDate] = useState(() => {
+        if (initialData?.dueDate) return formatDate(new Date(initialData.dueDate));
+        return "";
+    });
+    const [status, setStatus] = useState(initialData?.status || "Draft");
 
-    const [selectedClientId, setSelectedClientId] = useState("");
+    const [selectedClientId, setSelectedClientId] = useState(initialData?.clientId || "");
     const selectedClient = clients.find((c) => c.id === selectedClientId);
 
     const profile = useSettingsStore(state => state.profile);
@@ -104,17 +113,17 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
     // Auto-populate Bank Details
     useEffect(() => {
         if (bankDetailsFromStore) {
-            setAccountHolder(prev => prev || bankDetailsFromStore.accountHolder);
-            setAccountNumber(prev => prev || bankDetailsFromStore.accountNumber);
-            setIfscCode(prev => prev || bankDetailsFromStore.ifscCode);
-            setBankName(prev => prev || bankDetailsFromStore.bankName);
-            setBranch(prev => prev || bankDetailsFromStore.branch);
-            setUpiId(prev => prev || bankDetailsFromStore.upiId);
+            setAccountHolder((prev: string) => prev || bankDetailsFromStore.accountHolder);
+            setAccountNumber((prev: string) => prev || bankDetailsFromStore.accountNumber);
+            setIfscCode((prev: string) => prev || bankDetailsFromStore.ifscCode);
+            setBankName((prev: string) => prev || bankDetailsFromStore.bankName);
+            setBranch((prev: string) => prev || bankDetailsFromStore.branch);
+            setUpiId((prev: string) => prev || bankDetailsFromStore.upiId);
         }
     }, [bankDetailsFromStore]);
 
     // Project Details (Dynamic Key-Value Pairs)
-    const [projectDetails, setProjectDetails] = useState([
+    const [projectDetails, setProjectDetails] = useState(customNotes?.projectDetails || [
         { id: 1, label: "Website Name", value: "" },
         { id: 2, label: "Tech Stack", value: "" },
         { id: 3, label: "Domain Name", value: "" },
@@ -124,24 +133,33 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
     ]);
 
     // Line Items
-    const [lineItems, setLineItems] = useState([
-        {
-            id: 1,
-            description: "",
-            amount: 0
+    const [lineItems, setLineItems] = useState<{ id: number, description: string, amount: number }[]>(() => {
+        if (initialData?.items && initialData.items.length > 0) {
+            return initialData.items.map((i: any, index: number) => ({
+                id: index + 1,
+                description: i.description,
+                amount: i.unit_price
+            }));
         }
-    ]);
+        return [
+            {
+                id: 1,
+                description: "",
+                amount: 0
+            }
+        ];
+    });
 
     // Bank Details
-    const [accountHolder, setAccountHolder] = useState("");
-    const [accountNumber, setAccountNumber] = useState("");
-    const [ifscCode, setIfscCode] = useState("");
-    const [bankName, setBankName] = useState("");
-    const [branch, setBranch] = useState("");
-    const [upiId, setUpiId] = useState("");
+    const [accountHolder, setAccountHolder] = useState(customNotes?.bankDetails?.accountHolder || "");
+    const [accountNumber, setAccountNumber] = useState(customNotes?.bankDetails?.accountNumber || "");
+    const [ifscCode, setIfscCode] = useState(customNotes?.bankDetails?.ifscCode || "");
+    const [bankName, setBankName] = useState(customNotes?.bankDetails?.bankName || "");
+    const [branch, setBranch] = useState(customNotes?.bankDetails?.branch || "");
+    const [upiId, setUpiId] = useState(customNotes?.bankDetails?.upiId || "");
 
     // Notes / Payment Term
-    const [paymentTermsNote, setPaymentTermsNote] = useState("");
+    const [paymentTermsNote, setPaymentTermsNote] = useState(customNotes?.paymentTermsNote || "");
 
     // Calculations
     const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -158,11 +176,11 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
     };
 
     const updateProjectDetail = (id: number, field: "label" | "value", val: string) => {
-        setProjectDetails(projectDetails.map(item => item.id === id ? { ...item, [field]: val } : item));
+        setProjectDetails(projectDetails.map((item: any) => item.id === id ? { ...item, [field]: val } : item));
     };
 
     const removeProjectDetail = (id: number) => {
-        setProjectDetails(projectDetails.filter(item => item.id !== id));
+        setProjectDetails(projectDetails.filter((item: any) => item.id !== id));
     };
 
     // Line Items Helpers
@@ -190,34 +208,52 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
         }
     };
 
+    // Serialize data function
+    const getCurrentData = () => {
+        const customData = {
+            developer,
+            logoPath: logoPreview,
+            qrCodeUrl,
+            projectDetails,
+            bankDetails: { accountHolder, accountNumber, ifscCode, bankName, branch, upiId },
+            paymentTermsNote,
+            status
+        };
+
+        return {
+            invoiceNumber: invoiceNumber.trim() || null,
+            clientId: selectedClientId,
+            items: lineItems.map((li) => ({
+                description: li.description,
+                quantity: 1,
+                unit_price: li.amount,
+            })),
+            notes: JSON.stringify(customData),
+            status: status,
+            issueDate: parseDateToISO(invoiceDate),
+            dueDate: parseDateToISO(dueDate)
+        };
+    };
+
+    // Auto-save logic
+    useEffect(() => {
+        if (onChange) {
+            const timeoutId = setTimeout(() => {
+                onChange(getCurrentData());
+            }, 1000); // 1s debounce
+            return () => clearTimeout(timeoutId);
+        }
+    }, [
+        onChange,
+        invoiceNumber, selectedClientId, lineItems, status, invoiceDate, dueDate,
+        developer, logoPreview, qrCodeUrl, projectDetails,
+        accountHolder, accountNumber, ifscCode, bankName, branch, upiId,
+        paymentTermsNote
+    ]);
+
     // Expose data to parent via ref
     useImperativeHandle(ref, () => ({
-        getData: () => {
-            // Serialize custom fields into the notes field so the backend can save them without schema changes
-            const customData = {
-                developer,
-                logoPath: logoPreview,
-                qrCodeUrl,
-                projectDetails,
-                bankDetails: { accountHolder, accountNumber, ifscCode, bankName, branch, upiId },
-                paymentTermsNote,
-                status // Include status in customData for potential serialized use
-            };
-
-            return {
-                invoiceNumber: invoiceNumber.trim() || null,
-                clientId: selectedClientId,
-                items: lineItems.map((li) => ({
-                    description: li.description,
-                    quantity: 1, // Fixed quantity for this specific template layout
-                    unit_price: li.amount,
-                })),
-                notes: JSON.stringify(customData),
-                status: status,
-                issueDate: parseDateToISO(invoiceDate),
-                dueDate: parseDateToISO(dueDate)
-            };
-        }
+        getData: getCurrentData
     }));
 
     return (
@@ -335,7 +371,7 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients }, r
                 <div className="mb-8 relative group/projectTable">
                     <h2 className="text-xl font-bold text-[#3e546c] mb-2">Project Details</h2>
                     <div className="border border-gray-200 p-4 text-sm flex flex-col gap-2">
-                        {projectDetails.map((detail, index) => (
+                        {projectDetails.map((detail: any, index: number) => (
                             <div key={detail.id} className="grid grid-cols-[160px_1fr] relative group/projectRow items-center">
                                 <input
                                     value={detail.label}

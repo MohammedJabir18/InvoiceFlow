@@ -32,9 +32,9 @@ import {
     FolderOpen
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
-import { resetDatabase } from "../lib/api";
+import { resetDatabase, exportData } from "../lib/api";
 
 // --- Types ---
 interface SectionHeader {
@@ -427,6 +427,9 @@ export function Settings() {
     const [resetConfirmText, setResetConfirmText] = useState('');
     const [isResetting, setIsResetting] = useState(false);
 
+    // Export State
+    const [isExporting, setIsExporting] = useState(false);
+
     const profile = useSettingsStore(state => state.profile);
     const bankDetails = useSettingsStore(state => state.bankDetails);
     const updateSettings = useSettingsStore(state => state.updateSettings);
@@ -500,6 +503,24 @@ export function Settings() {
             }
         } catch (err) {
             console.error("Failed to open dialog:", err);
+        }
+    };
+
+    const handleExportData = async () => {
+        try {
+            const selectedPath = await save({
+                title: "Export InvoiceFlow Data",
+                filters: [{ name: "JSON Backup", extensions: ["json"] }],
+                defaultPath: "invoiceflow_backup.json"
+            });
+            if (selectedPath) {
+                setIsExporting(true);
+                await exportData(selectedPath);
+            }
+        } catch (err) {
+            console.error("Failed to export data:", err);
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -985,8 +1006,13 @@ export function Settings() {
                                                         <p className="text-xs text-[var(--text-muted)]">Download a full JSON backup.</p>
                                                     </div>
                                                 </div>
-                                                <button className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)] hover:text-[var(--background)] transition-all">
-                                                    Export
+                                                <button
+                                                    onClick={handleExportData}
+                                                    disabled={isExporting}
+                                                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)] hover:text-[var(--background)] disabled:opacity-50 transition-all"
+                                                >
+                                                    {isExporting ? <Loader2 size={14} className="animate-spin" /> : null}
+                                                    {isExporting ? 'Exporting...' : 'Export'}
                                                 </button>
                                             </div>
                                         </div>
