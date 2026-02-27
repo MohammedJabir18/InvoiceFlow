@@ -51,6 +51,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const handleNext = () => setStep(s => s + 1);
     const handleBack = () => setStep(s => s - 1);
 
+    const handleSkip = () => {
+        localStorage.setItem('has_skipped_onboarding', 'true');
+        onComplete();
+    };
+
     const handleSaveAndComplete = async () => {
         setIsSaving(true);
         try {
@@ -159,27 +164,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                 Let's get your business set up. We'll configure your profile, invoicing defaults, and payment details so you can start billing immediately.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button
-                                    onClick={handleNext}
-                                    className="group relative overflow-hidden bg-[var(--foreground)] text-[var(--background)] font-bold py-4 px-10 rounded-2xl hover:scale-105 transition-all shadow-2xl"
-                                >
-                                    <span className="relative z-10 flex items-center gap-2 text-lg">
-                                        Get Started <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                                    </span>
-                                    <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        localStorage.setItem('has_skipped_onboarding', 'true');
-                                        onComplete();
-                                    }}
-                                    className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold py-4 px-6 rounded-2xl transition-colors"
-                                >
-                                    Skip for now
-                                </button>
-                            </div>
+                            <button
+                                onClick={handleNext}
+                                className="group relative overflow-hidden bg-[var(--foreground)] text-[var(--background)] font-bold py-4 px-10 rounded-2xl hover:scale-105 transition-all shadow-2xl"
+                            >
+                                <span className="relative z-10 flex items-center gap-2 text-lg">
+                                    Get Started <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                </span>
+                                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
+                            </button>
                         </motion.div>
                     )}
 
@@ -250,15 +243,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                 </div>
                             </div>
 
-                            <div className="flex justify-between mt-12 pt-6 border-t border-[var(--premium-border)]">
+                            <div className="flex justify-between items-center mt-12 pt-6 border-t border-[var(--premium-border)]">
                                 <button onClick={handleBack} className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold transition-colors">Back</button>
-                                <button
-                                    onClick={handleNext}
-                                    disabled={!profileData.name}
-                                    className="bg-[var(--primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-teal-500 transition-colors disabled:opacity-50"
-                                >
-                                    Continue <ArrowRight size={18} />
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={handleSkip} className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold transition-colors px-4 py-2 rounded-xl">Skip for now</button>
+                                    <button
+                                        onClick={handleNext}
+                                        disabled={!profileData.name}
+                                        className="bg-[var(--primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-teal-500 transition-colors disabled:opacity-50"
+                                    >
+                                        Continue <ArrowRight size={18} />
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -316,14 +312,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                 </div>
                             </div>
 
-                            <div className="flex justify-between mt-12 pt-6 border-t border-[var(--premium-border)]">
+                            <div className="flex justify-between items-center mt-12 pt-6 border-t border-[var(--premium-border)]">
                                 <button onClick={handleBack} className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold transition-colors">Back</button>
-                                <button
-                                    onClick={handleNext}
-                                    className="bg-[var(--primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-teal-500 transition-colors"
-                                >
-                                    Continue <ArrowRight size={18} />
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={handleSkip} className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold transition-colors px-4 py-2 rounded-xl">Skip for now</button>
+                                    <button
+                                        onClick={handleNext}
+                                        className="bg-[var(--primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-teal-500 transition-colors"
+                                    >
+                                        Continue <ArrowRight size={18} />
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -394,19 +393,22 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                 </div>
                             </div>
 
-                            <div className="flex justify-between mt-12 pt-6 border-t border-[var(--premium-border)]">
+                            <div className="flex justify-between items-center mt-12 pt-6 border-t border-[var(--premium-border)]">
                                 <button disabled={isSaving} onClick={handleBack} className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold transition-colors">Back</button>
-                                <button
-                                    onClick={handleSaveAndComplete}
-                                    disabled={isSaving}
-                                    className="bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(45,212,191,0.3)] disabled:opacity-50"
-                                >
-                                    {isSaving ? (
-                                        <><Loader2 size={18} className="animate-spin" /> Finalizing...</>
-                                    ) : (
-                                        <><CheckCircle2 size={18} /> Complete Setup</>
-                                    )}
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    <button disabled={isSaving} onClick={handleSkip} className="text-[var(--text-muted)] hover:text-[var(--foreground)] font-bold transition-colors px-4 py-2 rounded-xl">Skip for now</button>
+                                    <button
+                                        onClick={handleSaveAndComplete}
+                                        disabled={isSaving}
+                                        className="bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(45,212,191,0.3)] disabled:opacity-50"
+                                    >
+                                        {isSaving ? (
+                                            <><Loader2 size={18} className="animate-spin" /> Finalizing...</>
+                                        ) : (
+                                            <><CheckCircle2 size={18} /> Complete Setup</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}
