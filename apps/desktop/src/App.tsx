@@ -9,6 +9,7 @@ import { About } from "./pages/About";
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "./store/settingsStore";
 import { OnboardingWizard } from "./components/OnboardingWizard";
+import { UpdaterNotification } from "./components/ui/UpdaterNotification";
 
 function App() {
     const fetchSettings = useSettingsStore(state => state.fetchSettings);
@@ -66,6 +67,7 @@ function App() {
             {showWizard && (
                 <OnboardingWizard onComplete={() => setShowWizard(false)} />
             )}
+            <UpdaterNotification />
             <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
                 <div className="aurora-bg" />
                 <Routes>
