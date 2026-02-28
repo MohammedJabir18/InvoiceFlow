@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-obsidian-void: #020617;
-  --color-glass-navy: #0F172A;
-  --color-electric-teal: #2DD4BF;
-  --color-cyber-violet: #7C3AED;
-  --color-starlight: #F8FAFC;
+  --color-obsidian-void: #000000;
+  --color-glass-navy: #0A0A0A;
+  --color-electric-teal: #00F0FF;
+  --color-cyber-violet: #8A2BE2;
+  --color-starlight: #FFFFFF;
 
   --color-ceramic-white: #FAFAFA;
   --color-vapor-grey: #F1F5F9;
-  --color-deep-ocean: #0F172A;
+  --color-deep-ocean: #050505;
   --color-soft-coral: #F43F5E;
-  --color-ink-black: #1E293B;
+  --color-ink-black: #111111;
 
   --font-sans: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -33,12 +33,12 @@
     --radius: var(--radius-xl);
 
     /* Semantic Adaptive Variables */
-    --premium-bg: color-mix(in srgb, var(--foreground) 3%, transparent);
-    --premium-bg-hover: color-mix(in srgb, var(--foreground) 6%, transparent);
-    --premium-border: color-mix(in srgb, var(--foreground) 10%, transparent);
-    --premium-border-hover: color-mix(in srgb, var(--foreground) 20%, transparent);
+    --premium-bg: color-mix(in srgb, var(--foreground) 2%, transparent);
+    --premium-bg-hover: color-mix(in srgb, var(--foreground) 4%, transparent);
+    --premium-border: color-mix(in srgb, var(--foreground) 6%, transparent);
+    --premium-border-hover: color-mix(in srgb, var(--foreground) 12%, transparent);
     --text-muted: color-mix(in srgb, var(--foreground) 40%, transparent);
-    --text-low: color-mix(in srgb, var(--foreground) 25%, transparent);
+    --text-low: color-mix(in srgb, var(--foreground) 20%, transparent);
   }
 
   .daylight {
@@ -104,14 +104,14 @@
 
 @layer utilities {
   .glass-panel {
-    @apply bg-[var(--surface)]/10 backdrop-blur-2xl border border-[var(--foreground)]/10 shadow-2xl;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    @apply bg-[var(--surface)]/60 backdrop-blur-[32px] border border-[var(--foreground)]/5 shadow-2xl;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .glass-panel:hover {
-    @apply border-[var(--foreground)]/20;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    @apply border-[var(--foreground)]/15;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .text-glow {
@@ -127,10 +127,10 @@
 
   /* Aurora Glow Effect */
   .aurora-bg {
-    background: radial-gradient(circle at 50% -20%, var(--secondary) 0%, transparent 60%),
-      radial-gradient(circle at -20% 50%, var(--primary) 0%, transparent 50%),
-      radial-gradient(circle at 120% 50%, var(--primary) 0%, transparent 50%);
-    opacity: 0.12;
+    background: radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--secondary) 60%, transparent) 0%, transparent 60%),
+      radial-gradient(circle at -20% 50%, color-mix(in srgb, var(--primary) 50%, transparent) 0%, transparent 50%),
+      radial-gradient(circle at 120% 50%, color-mix(in srgb, var(--primary) 50%, transparent) 0%, transparent 50%);
+    opacity: 0.15;
     pointer-events: none;
     position: fixed;
     top: 0;
@@ -138,7 +138,7 @@
     width: 100%;
     height: 100%;
     z-index: -1;
-    filter: blur(60px);
+    filter: blur(80px);
     transition: background 1s ease;
   }
 
@@ -226,7 +226,7 @@
   }
 
   .btn-primary {
-    @apply bg-[var(--primary)] text-[var(--background)] shadow-[0_0_15px_rgba(45,212,191,0.3)] hover:shadow-[0_0_25px_rgba(45,212,191,0.5)];
+    @apply bg-[var(--primary)] text-[var(--background)] shadow-[0_0_15px_rgba(45, 212, 191, 0.3)] hover:shadow-[0_0_25px_rgba(45, 212, 191, 0.5)];
   }
 
   .btn-secondary {
@@ -234,7 +234,7 @@
   }
 
   .btn-danger {
-    @apply bg-[var(--color-soft-coral)]/10 text-[var(--color-soft-coral)] border border-[var(--color-soft-coral)]/20 hover:bg-[var(--color-soft-coral)]/20 hover:border-[var(--color-soft-coral)]/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)];
+    @apply bg-[var(--color-soft-coral)]/10 text-[var(--color-soft-coral)] border border-[var(--color-soft-coral)]/20 hover:bg-[var(--color-soft-coral)]/20 hover:border-[var(--color-soft-coral)]/40 hover:shadow-[0_0_15px_rgba(244, 63, 94, 0.3)];
   }
 
   /* Custom Scrollbar for sleek feel */
@@ -301,11 +301,11 @@
 
   0%,
   100% {
-    box-shadow: 0 0 20px var(--primary), 0 0 40px rgba(45, 212, 191, 0.3);
+    box-shadow: 0 0 10px var(--primary), 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 30px var(--primary), 0 0 60px rgba(45, 212, 191, 0.5);
+    box-shadow: 0 0 20px var(--primary), 0 0 40px color-mix(in srgb, var(--primary) 60%, transparent);
   }
 }
 
