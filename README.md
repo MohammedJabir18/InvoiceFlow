@@ -113,7 +113,7 @@ Skip the build process. Experience the sheer velocity of **InvoiceFlow** directl
         <img src="https://skillicons.dev/icons?i=windows" width="65" />
         <h3 style="margin-top: 15px; margin-bottom: 5px;">Windows</h3>
         <p style="color: #a0a0a0; font-size: 14px; margin-top: 0;">Stable • 64-bit • Auto-updates</p>
-        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/InvoiceFlow_0.1.0_x64-setup.exe">
+        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/InvoiceFlow_0.1.1_x64-setup.exe">
           <img src="https://img.shields.io/badge/Download_.exe-00f0ff?style=for-the-badge&logoColor=000000" alt="Download Windows" style="margin-top: 10px;" />
         </a>
     </td>
@@ -121,7 +121,7 @@ Skip the build process. Experience the sheer velocity of **InvoiceFlow** directl
         <img src="https://skillicons.dev/icons?i=apple" width="65" />
         <h3 style="margin-top: 15px; margin-bottom: 5px;">macOS</h3>
         <p style="color: #a0a0a0; font-size: 14px; margin-top: 0;">Silicon & Intel • .dmg Installer</p>
-        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/InvoiceFlow_0.1.0_aarch64.dmg">
+        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/InvoiceFlow_0.1.1_aarch64.dmg">
           <img src="https://img.shields.io/badge/Download_.dmg-ffffff?style=for-the-badge&color=ffffff&logoColor=000000" alt="Download macOS" style="margin-top: 10px;" />
         </a>
     </td>
@@ -129,7 +129,7 @@ Skip the build process. Experience the sheer velocity of **InvoiceFlow** directl
         <img src="https://skillicons.dev/icons?i=linux" width="65" />
         <h3 style="margin-top: 15px; margin-bottom: 5px;">Linux</h3>
         <p style="color: #a0a0a0; font-size: 14px; margin-top: 0;">AppImage • Snap • DEB</p>
-        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/InvoiceFlow_0.1.0_amd64.AppImage">
+        <a href="https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/InvoiceFlow_0.1.1_amd64.AppImage">
           <img src="https://img.shields.io/badge/Download_.AppImage-FFB300?style=for-the-badge&color=FFB300&logoColor=000000" alt="Download Linux" style="margin-top: 10px;" />
         </a>
     </td>
