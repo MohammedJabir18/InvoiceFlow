@@ -24,6 +24,7 @@ uuid = { workspace = true }
 rust_decimal = { workspace = true }
 open = "5.3.3"
 tauri-plugin-dialog = "2.6.0"
+tauri-build.workspace = true
 
 [lib]
 name = "invoice_flow_desktop_lib"

@@ -37,5 +37,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU1QTIwMEYxMjZDNEFBQzcKUldUSHFzUW04UUNpVlVBNUNUUEVqMm8ySHpybG41M1ZoSWh6b21TdFB5aWc5bkFqRldTUjRQbGMK",
+      "endpoints": [
+        "https://github.com/MohammedJabir18/InvoiceFlow/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
