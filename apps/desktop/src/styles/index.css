@@ -226,7 +226,13 @@
   }
 
   .btn-primary {
-    @apply bg-[var(--primary)] text-[var(--background)] shadow-[0_0_15px_rgba(45, 212, 191, 0.3)] hover:shadow-[0_0_25px_rgba(45, 212, 191, 0.5)];
+    @apply bg-[var(--primary)] text-[var(--background)];
+    box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 30%, transparent);
+  }
+
+  .btn-primary:active,
+  .btn-primary:hover {
+    box-shadow: 0 0 25px color-mix(in srgb, var(--primary) 50%, transparent);
   }
 
   .btn-secondary {
@@ -234,7 +240,12 @@
   }
 
   .btn-danger {
-    @apply bg-[var(--color-soft-coral)]/10 text-[var(--color-soft-coral)] border border-[var(--color-soft-coral)]/20 hover:bg-[var(--color-soft-coral)]/20 hover:border-[var(--color-soft-coral)]/40 hover:shadow-[0_0_15px_rgba(244, 63, 94, 0.3)];
+    @apply bg-[var(--color-soft-coral)]/10 text-[var(--color-soft-coral)] border border-[var(--color-soft-coral)]/20 hover:bg-[var(--color-soft-coral)]/20 hover:border-[var(--color-soft-coral)]/40;
+  }
+
+  .btn-danger:active,
+  .btn-danger:hover {
+    box-shadow: 0 0 15px color-mix(in srgb, var(--color-soft-coral) 30%, transparent);
   }
 
   /* Custom Scrollbar for sleek feel */
