@@ -283,6 +283,7 @@ pub async fn create_invoice(
         }).unwrap_or(InvoiceStatus::Draft),
         client_id: Uuid::parse_str(&request.client_id).map_err(|e| e.to_string())?,
         business_profile_id: profile.id,
+        deal_id: None,
         issue_date,
         due_date,
         currency: profile.default_currency.clone(),

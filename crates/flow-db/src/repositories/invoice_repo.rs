@@ -15,6 +15,7 @@ impl InvoiceRepository {
         let id = invoice.id.to_string();
         let client_id = invoice.client_id.to_string();
         let bp_id = invoice.business_profile_id.to_string();
+        let deal_id = invoice.deal_id.map(|id| id.to_string());
         let status = format!("{:?}", invoice.status);
         let currency = invoice.currency.to_string();
         let issue_date = invoice.issue_date.to_string();
@@ -29,14 +30,15 @@ impl InvoiceRepository {
         let now = Utc::now().to_rfc3339();
 
         sqlx::query(
-            r#"INSERT INTO invoices (id, number, status, client_id, business_profile_id, issue_date, due_date, currency, subtotal, tax_total, discount_total, total, amount_paid, amount_due, payment_terms, notes, terms_and_conditions, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+            r#"INSERT INTO invoices (id, number, status, client_id, business_profile_id, deal_id, issue_date, due_date, currency, subtotal, tax_total, discount_total, total, amount_paid, amount_due, payment_terms, notes, terms_and_conditions, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&id)
         .bind(&invoice.number)
         .bind(&status)
         .bind(&client_id)
         .bind(&bp_id)
+        .bind(&deal_id)
         .bind(&issue_date)
         .bind(&due_date)
         .bind(&currency)
@@ -118,7 +120,7 @@ impl InvoiceRepository {
 
     pub async fn get_by_id(&self, id: &str) -> Result<Option<Invoice>, sqlx::Error> {
         let inv_row = sqlx::query_as::<_, FullInvoiceRow>(
-            r#"SELECT id, number, status, client_id, business_profile_id, issue_date, due_date, currency, subtotal, tax_total, discount_total, total, amount_paid, amount_due, payment_terms, notes, terms_and_conditions, created_at, updated_at
+            r#"SELECT id, number, status, client_id, business_profile_id, deal_id, issue_date, due_date, currency, subtotal, tax_total, discount_total, total, amount_paid, amount_due, payment_terms, notes, terms_and_conditions, created_at, updated_at
                FROM invoices WHERE id = ?"#,
         )
         .bind(id)
@@ -192,6 +194,7 @@ struct FullInvoiceRow {
     status: String,
     client_id: String,
     business_profile_id: String,
+    deal_id: Option<String>,
     issue_date: String,
     due_date: String,
     currency: String,
@@ -231,6 +234,7 @@ impl FullInvoiceRow {
             status,
             client_id: uuid::Uuid::parse_str(&self.client_id).unwrap_or_default(),
             business_profile_id: uuid::Uuid::parse_str(&self.business_profile_id).unwrap_or_default(),
+            deal_id: self.deal_id.and_then(|id| uuid::Uuid::parse_str(&id).ok()),
             issue_date: chrono::NaiveDate::parse_from_str(&self.issue_date, "%Y-%m-%d").unwrap_or_default(),
             due_date: chrono::NaiveDate::parse_from_str(&self.due_date, "%Y-%m-%d").unwrap_or_default(),
             currency: Currency::from_str(&self.currency).unwrap_or_default(),

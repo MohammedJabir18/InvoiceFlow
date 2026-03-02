@@ -64,6 +64,7 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
             status TEXT NOT NULL DEFAULT 'Draft',
             client_id TEXT NOT NULL,
             business_profile_id TEXT NOT NULL,
+            deal_id TEXT,
             issue_date TEXT NOT NULL,
             due_date TEXT NOT NULL,
             currency TEXT NOT NULL DEFAULT 'USD',
@@ -203,6 +204,13 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
     // Add total_ltv column to clients if not exists
     let _ = sqlx::query(
         "ALTER TABLE clients ADD COLUMN total_ltv TEXT NOT NULL DEFAULT '0';"
+    )
+    .execute(pool)
+    .await;
+
+    // Add deal_id column to invoices if not exists
+    let _ = sqlx::query(
+        "ALTER TABLE invoices ADD COLUMN deal_id TEXT;"
     )
     .execute(pool)
     .await;

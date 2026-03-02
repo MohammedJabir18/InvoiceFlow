@@ -60,6 +60,7 @@ pub struct Invoice {
     pub status: InvoiceStatus,
     pub client_id: Uuid,
     pub business_profile_id: Uuid,
+    pub deal_id: Option<Uuid>,
 
     // Dates
     pub issue_date: NaiveDate,
