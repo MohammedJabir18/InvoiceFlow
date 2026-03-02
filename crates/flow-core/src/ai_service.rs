@@ -31,6 +31,22 @@ pub struct DealInsights {
     pub next_suggested_action: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ActionType {
+    CreateInvoice,
+    AddDeal,
+    Maps,
+    Summarize,
+    Unknown,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ParsedIntent {
+    pub action: ActionType,
+    pub message: String,
+    pub payload: Option<serde_json::Value>,
+}
+
 pub struct AIService {
     client: Client,
     api_key: String,
@@ -134,6 +150,58 @@ impl AIService {
         // Real LLM call placeholder: 
         // Build a system prompt feeding the deal and interaction logs.
         // Post to Gemini / Claude instructing structured JSON response matching `InvoiceDraft`.
+        Err(FlowError::Internal("LLM Integration not fully wired to production key".into()))
+    }
+
+    /// Agentic Command Palette Interpreter
+    /// Parses natural language requests into structured global commands.
+    pub async fn parse_user_intent(&self, query: &str) -> Result<ParsedIntent, FlowError> {
+        let q = query.to_lowercase();
+        
+        if self.api_key == "DUMMY_KEY_FOR_TESTING" {
+            // Simulate AI thought process
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+            // Simple heuristic for demonstration purposes
+            if q.contains("invoice") {
+                return Ok(ParsedIntent {
+                    action: ActionType::CreateInvoice,
+                    message: "Creating a new invoice based on your request.".to_string(),
+                    payload: Some(serde_json::json!({
+                        "items": [
+                            { "description": "Consulting Services", "quantity": 1, "unit_price": 500 }
+                        ]
+                    })),
+                });
+            } else if q.contains("deal") || q.contains("lead") {
+                return Ok(ParsedIntent {
+                    action: ActionType::AddDeal,
+                    message: "Setting up a new deal.".to_string(),
+                    payload: Some(serde_json::json!({
+                        "title": "New Platform Lead",
+                        "value": 2500
+                    })),
+                });
+            } else if q.contains("map") || q.contains("location") {
+                return Ok(ParsedIntent {
+                    action: ActionType::Maps,
+                    message: "Opening maps routing...".to_string(),
+                    payload: None,
+                });
+            } else {
+                return Ok(ParsedIntent {
+                    action: ActionType::Summarize,
+                    message: "I can help summarize our recent financial activity or deals.".to_string(),
+                    payload: None,
+                });
+            }
+        }
+
+        // Real LLM call placeholder:
+        // System Prompt: "You are an AI internal router for a high-end CRM and Invoicing app. 
+        // Analyze the user's natural language request and output STRICT JSON conforming 
+        // to the `ParsedIntent` schema (action, message, payload). Examples of payload 
+        // include extracted billing items or lead names."
         Err(FlowError::Internal("LLM Integration not fully wired to production key".into()))
     }
 }

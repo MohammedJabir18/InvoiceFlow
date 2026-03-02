@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useSettingsStore } from "./store/settingsStore";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { UpdaterNotification } from "./components/ui/UpdaterNotification";
+import { CommandPalette } from "./components/ui/CommandPalette";
 
 function App() {
     const fetchSettings = useSettingsStore(state => state.fetchSettings);
@@ -65,6 +66,7 @@ function App() {
             )}
             <UpdaterNotification />
             <div className="app-layout focus:outline-none">
+                <CommandPalette />
                 <div className="aurora-bg" />
                 <Routes>
                     <Route path="/editor" element={<Editor />} />

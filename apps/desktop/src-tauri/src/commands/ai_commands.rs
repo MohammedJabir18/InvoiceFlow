@@ -1,5 +1,5 @@
 use crate::commands::AppState;
-use flow_core::ai_service::{AIService, ParsedExpense, DealInsights};
+use flow_core::ai_service::{AIService, ParsedExpense, DealInsights, ParsedIntent};
 use flow_db::repositories::CrmRepository;
 use tauri::State;
 use std::fs;
@@ -29,4 +29,12 @@ pub async fn generate_deal_insights(state: State<'_, AppState>, deal_id: String)
         .map_err(|e| e.to_string())?;
         
     Ok(insights)
+}
+
+#[tauri::command]
+pub async fn process_nl_command(query: String) -> Result<ParsedIntent, String> {
+    let ai = AIService::new().map_err(|e| e.to_string())?;
+    
+    // Asynchronously call the Intent Parser
+    ai.parse_user_intent(&query).await.map_err(|e| e.to_string())
 }

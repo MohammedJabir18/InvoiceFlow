@@ -69,6 +69,7 @@ pub fn run() {
             // AI Commands
             commands::ai_commands::extract_receipt_data,
             commands::ai_commands::generate_deal_insights,
+            commands::ai_commands::process_nl_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
