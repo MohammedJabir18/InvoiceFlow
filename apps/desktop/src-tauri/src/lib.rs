@@ -59,6 +59,16 @@ pub fn run() {
             commands::save_settings,
             commands::reset_database,
             commands::export_data,
+            // CRM Commands
+            commands::create_deal,
+            commands::get_deals_by_client,
+            commands::update_deal_status_cmd,
+            commands::update_deal_ai_metrics,
+            commands::add_interaction,
+            commands::get_interactions_for_deal,
+            // AI Commands
+            commands::ai_commands::extract_receipt_data,
+            commands::ai_commands::generate_deal_insights,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

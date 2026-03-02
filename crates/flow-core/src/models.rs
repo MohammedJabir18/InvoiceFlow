@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::types::{Currency, DiscountType, InvoiceStatus, PaymentTerms, TaxRate};
+use crate::types::{Currency, DealStatus, DiscountType, InteractionType, InvoiceStatus, PaymentTerms, TaxRate};
 
 /// Business / company profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,6 +36,7 @@ pub struct Client {
     pub company: Option<String>,
     pub address: Address,
     pub notes: Option<String>,
+    pub total_ltv: Decimal,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -109,4 +110,29 @@ pub struct InvoiceTemplate {
     pub is_default: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+/// CRM Deal
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Deal {
+    pub id: Uuid,
+    pub client_id: Uuid,
+    pub title: String,
+    pub value: Decimal,
+    pub status: DealStatus,
+    pub ai_lead_score: Option<i32>,
+    pub next_suggested_action: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// CRM Interaction Log
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InteractionLog {
+    pub id: Uuid,
+    pub deal_id: Uuid,
+    pub interaction_type: InteractionType,
+    pub notes: Option<String>,
+    pub ai_sentiment_summary: Option<String>,
+    pub date: DateTime<Utc>,
 }

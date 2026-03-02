@@ -1,6 +1,8 @@
 use crate::database::DbPool;
 use flow_core::models::{Address, Client};
 use chrono::Utc;
+use rust_decimal::Decimal;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct ClientRepository {
@@ -39,13 +41,14 @@ impl ClientRepository {
             company: company.map(String::from),
             address: Address::default(),
             notes: None,
+            total_ltv: Decimal::ZERO,
             created_at: now,
             updated_at: now,
         })
     }
 
     pub async fn list_all(&self) -> Result<Vec<Client>, sqlx::Error> {
-        let rows = sqlx::query_as::<_, ClientRow>("SELECT id, name, email, phone, company, address_line1, address_city, address_postal_code, address_country, notes, created_at, updated_at FROM clients ORDER BY name")
+        let rows = sqlx::query_as::<_, ClientRow>("SELECT id, name, email, phone, company, address_line1, address_city, address_postal_code, address_country, notes, total_ltv, created_at, updated_at FROM clients ORDER BY name")
             .fetch_all(&self.pool)
             .await?;
 
@@ -53,7 +56,7 @@ impl ClientRepository {
     }
 
     pub async fn get_by_id(&self, id: &str) -> Result<Option<Client>, sqlx::Error> {
-        let row = sqlx::query_as::<_, ClientRow>("SELECT id, name, email, phone, company, address_line1, address_city, address_postal_code, address_country, notes, created_at, updated_at FROM clients WHERE id = ?")
+        let row = sqlx::query_as::<_, ClientRow>("SELECT id, name, email, phone, company, address_line1, address_city, address_postal_code, address_country, notes, total_ltv, created_at, updated_at FROM clients WHERE id = ?")
             .bind(id)
             .fetch_optional(&self.pool)
             .await?;
@@ -97,6 +100,7 @@ struct ClientRow {
     address_postal_code: String,
     address_country: String,
     notes: Option<String>,
+    total_ltv: String,
     created_at: String,
     updated_at: String,
 }
@@ -118,6 +122,7 @@ impl ClientRow {
                 country: self.address_country,
             },
             notes: self.notes,
+            total_ltv: Decimal::from_str(&self.total_ltv).unwrap_or_default(),
             created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
                 .map(|dt| dt.with_timezone(&Utc))
                 .unwrap_or_else(|_| Utc::now()),

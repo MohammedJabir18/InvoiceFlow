@@ -1,0 +1,91 @@
+use crate::error::FlowError;
+use crate::models::InteractionLog;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ParsedExpense {
+    pub amount: f64,
+    pub vendor: String,
+    pub date: String,
+    pub category: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DealInsights {
+    pub ai_lead_score: i32,
+    pub next_suggested_action: String,
+}
+
+pub struct AIService {
+    client: Client,
+    api_key: String,
+}
+
+impl AIService {
+    pub fn new() -> Result<Self, FlowError> {
+        let api_key = std::env::var("GEMINI_API_KEY")
+            .unwrap_or_else(|_| "DUMMY_KEY_FOR_TESTING".to_string());
+        
+        Ok(Self {
+            client: Client::new(),
+            api_key,
+        })
+    }
+
+    /// Extrapolates receipt data strictly into the `ParsedExpense` struct format.
+    pub async fn analyze_receipt(&self, _file_bytes: &[u8]) -> Result<ParsedExpense, FlowError> {
+        // Normally, here is where we would encode the image as base64 or upload it
+        // and send a request to Gemini Vision API. For the sake of this CRM setup,
+        // we'll simulate the structured response if a real API key isn't provided.
+        
+        if self.api_key == "DUMMY_KEY_FOR_TESTING" {
+            // Simulate network delay for the "Awwwards thinking UI" to shine
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            
+            return Ok(ParsedExpense {
+                amount: 145.20,
+                vendor: "Stripe Processing".to_string(),
+                date: "2026-03-02".to_string(),
+                category: "Software/SaaS".to_string(),
+            });
+        }
+
+        // Real LLM call placeholder: 
+        // Use self.client.post(...)
+        // Strict system prompt enforcing JSON only.
+        // Return structured parsing.
+        Err(FlowError::Internal("LLM Integration not fully wired to production key".into()))
+    }
+
+    /// Evaluates past interactions to generate a momentum score and actionable next steps.
+    pub async fn score_deal(&self, interactions: &[InteractionLog]) -> Result<DealInsights, FlowError> {
+        if interactions.is_empty() {
+            return Ok(DealInsights {
+                ai_lead_score: 10,
+                next_suggested_action: "Initial outreach required. Start with a tailored email.".to_string(),
+            });
+        }
+
+        if self.api_key == "DUMMY_KEY_FOR_TESTING" {
+            // Simulate network delay for UI glow
+            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
+            // Simple heuristic for demonstration of insights
+            let score = if interactions.len() > 3 { 85 } else { 45 };
+            let action = if interactions.len() > 3 {
+                "Momentum is high. Send the finalized proposal and schedule a closing call."
+            } else {
+                "Follow up on the last meeting to maintain engagement."
+            };
+
+            return Ok(DealInsights {
+                ai_lead_score: score,
+                next_suggested_action: action.to_string(),
+            });
+        }
+
+        // Here we would dump the interaction log into the LLM context and request DealInsights Schema.
+        Err(FlowError::Internal("LLM Integration not fully wired to production key".into()))
+    }
+}

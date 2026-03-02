@@ -18,15 +18,15 @@ export function LiveFeed({ invoices, clients }: Props) {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         }).format(num);
     };
 
     // Generate events from real invoice data
     const events = invoices
         .sort((a, b) => b.issue_date.localeCompare(a.issue_date))
-        .slice(0, 6)
+        .slice(0, 8)
         .map((inv) => {
             const status = inv.status.toLowerCase();
             switch (status) {
@@ -36,8 +36,8 @@ export function LiveFeed({ invoices, clients }: Props) {
                         message: `Payment received: ${formatCurrency(inv.total)} from ${clientName(inv.client_id)}`,
                         time: inv.issue_date,
                         icon: CheckCircle2,
-                        color: "text-[#34d399]",
-                        bg: "bg-[#34d399]/10",
+                        color: "text-emerald-500",
+                        bg: "bg-emerald-500/10",
                     };
                 case "overdue":
                     return {
@@ -45,8 +45,8 @@ export function LiveFeed({ invoices, clients }: Props) {
                         message: `Invoice ${inv.number} is overdue`,
                         time: inv.due_date,
                         icon: AlertCircle,
-                        color: "text-[#f87171]",
-                        bg: "bg-[#f87171]/10",
+                        color: "text-rose-500",
+                        bg: "bg-rose-500/10",
                     };
                 case "sent":
                     return {
@@ -54,8 +54,8 @@ export function LiveFeed({ invoices, clients }: Props) {
                         message: `Invoice ${inv.number} sent to ${clientName(inv.client_id)}`,
                         time: inv.issue_date,
                         icon: ArrowRight,
-                        color: "text-[#60a5fa]",
-                        bg: "bg-[#60a5fa]/10",
+                        color: "text-[var(--primary)]",
+                        bg: "bg-[var(--primary)]/10",
                     };
                 case "pending":
                     return {
@@ -63,8 +63,8 @@ export function LiveFeed({ invoices, clients }: Props) {
                         message: `Invoice ${inv.number} is pending payment`,
                         time: inv.issue_date,
                         icon: Clock,
-                        color: "text-[#fbbf24]",
-                        bg: "bg-[#fbbf24]/10",
+                        color: "text-amber-500",
+                        bg: "bg-amber-500/10",
                     };
                 default:
                     return {
@@ -72,51 +72,53 @@ export function LiveFeed({ invoices, clients }: Props) {
                         message: `Draft created for ${clientName(inv.client_id)}`,
                         time: inv.issue_date,
                         icon: FilePlus2,
-                        color: "text-[#9ca3af]",
-                        bg: "bg-[#9ca3af]/10",
+                        color: "text-gray-400",
+                        bg: "bg-gray-500/10",
                     };
             }
         });
 
     return (
-        <div className="h-full flex flex-col p-6 rounded-2xl glass-panel relative overflow-hidden border border-white/5">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-[var(--text-tertiary)] text-xs font-bold uppercase tracking-widest">Activity Feed</h3>
+        <div className="flex h-full flex-col relative w-full p-6">
+            <div className="mb-6 flex items-center justify-between z-10">
+                <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Activity Feed</h3>
                 <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
                 </span>
             </div>
 
-            <div className="flex-1 overflow-hidden relative">
+            <div className="relative flex-1 overflow-hidden">
                 {/* Scroll mask for fading out bottom elements */}
-                <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[var(--surface)] to-transparent z-10 pointer-events-none" />
+                <div className="pointer-events-none absolute bottom-0 inset-x-0 z-10 h-16 bg-gradient-to-t from-[var(--surface)] to-transparent" />
 
-                <div className="space-y-3 absolute w-full inset-0 overflow-y-auto pr-2 pb-12 custom-scrollbar">
+                <div className="custom-scrollbar absolute inset-0 w-full overflow-y-auto pb-16 pr-2">
                     {events.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                            <Clock size={32} className="text-[var(--text-tertiary)] mb-3 opacity-50" />
-                            <p className="text-[var(--text-secondary)] text-sm font-medium">No recent activity.</p>
-                            <p className="text-[var(--text-tertiary)] text-xs mt-1">Generate invoices to see them here.</p>
+                        <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+                            <Clock size={32} className="mb-3 text-[var(--text-tertiary)] opacity-50" />
+                            <p className="text-sm font-medium text-[var(--foreground)]">No recent activity.</p>
+                            <p className="mt-1 text-xs text-[var(--text-muted)]">Generate invoices to see them here.</p>
                         </div>
                     ) : (
-                        events.map((event, i) => (
-                            <motion.div
-                                key={`${event.id}-${i}`}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1, type: "spring", stiffness: 100, damping: 15 }}
-                                className="flex items-start gap-4 p-3.5 rounded-xl bg-black/20 hover:bg-black/40 transition-colors border border-white/5 group"
-                            >
-                                <div className={`p-2 rounded-lg ${event.bg} ${event.color} shrink-0 shadow-inner block`}>
-                                    <event.icon size={16} />
-                                </div>
-                                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                    <p className="text-sm font-medium text-[var(--foreground)] truncate group-hover:text-white transition-colors">{event.message}</p>
-                                    <p className="text-[11px] text-[var(--text-tertiary)] font-mono mt-1 opacity-80">{event.time}</p>
-                                </div>
-                            </motion.div>
-                        ))
+                        <div className="flex flex-col gap-3">
+                            {events.map((event, i) => (
+                                <motion.div
+                                    key={`${event.id}-${i}`}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05, type: "spring", stiffness: 100, damping: 15 }}
+                                    className="group flex items-start gap-4 rounded-xl border border-transparent bg-white/5 p-3.5 transition-colors hover:bg-white/10"
+                                >
+                                    <div className={`shrink-0 block rounded-lg p-2 shadow-inner transition-colors duration-300 group-hover:bg-opacity-20 ${event.bg} ${event.color}`}>
+                                        <event.icon size={16} />
+                                    </div>
+                                    <div className="flex min-w-0 flex-1 flex-col justify-center">
+                                        <p className="truncate text-sm font-medium text-[var(--foreground)] opacity-90 transition-opacity group-hover:opacity-100">{event.message}</p>
+                                        <p className="mt-1 font-mono text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] opacity-80 uppercase">{event.time}</p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>

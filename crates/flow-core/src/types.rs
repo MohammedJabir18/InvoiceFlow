@@ -124,3 +124,27 @@ pub enum DiscountType {
     Percentage(Decimal),
     FixedAmount(Decimal),
 }
+
+/// Deal status lifecycle
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum DealStatus {
+    Prospect,
+    Contacted,
+    Proposal,
+    Won,
+    Lost,
+}
+
+impl Default for DealStatus {
+    fn default() -> Self {
+        DealStatus::Prospect
+    }
+}
+
+/// Interaction types
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum InteractionType {
+    Email,
+    Call,
+    Meeting,
+}

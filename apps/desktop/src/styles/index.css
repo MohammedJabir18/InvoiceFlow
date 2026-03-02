@@ -2,18 +2,18 @@
 
 @theme {
   --color-obsidian-void: #000000;
-  --color-glass-navy: #0A0A0A;
+  --color-glass-navy: #050505;
   --color-electric-teal: #00F0FF;
-  --color-cyber-violet: #8A2BE2;
+  --color-cyber-violet: #7C3AED;
   --color-starlight: #FFFFFF;
 
   --color-ceramic-white: #FAFAFA;
-  --color-vapor-grey: #F1F5F9;
+  --color-vapor-grey: #F7F9FC;
   --color-deep-ocean: #050505;
   --color-soft-coral: #F43F5E;
   --color-ink-black: #111111;
 
-  --font-sans: "Inter", sans-serif;
+  --font-sans: "Inter", "Geist", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --radius-xl: 1rem;
@@ -26,38 +26,38 @@
     /* Default to Midnight Mode */
     --background: var(--color-obsidian-void);
     --surface: var(--color-glass-navy);
-    --primary: var(--color-electric-teal);
-    --secondary: var(--color-cyber-violet);
+    --primary: var(--color-cyber-violet);
+    --secondary: var(--color-electric-teal);
     --foreground: var(--color-starlight);
 
     --radius: var(--radius-xl);
 
-    /* Semantic Adaptive Variables */
+    /* Semantic Adaptive Variables (Dark Mode defaults) */
     --premium-bg: color-mix(in srgb, var(--foreground) 2%, transparent);
-    --premium-bg-hover: color-mix(in srgb, var(--foreground) 4%, transparent);
-    --premium-border: color-mix(in srgb, var(--foreground) 6%, transparent);
-    --premium-border-hover: color-mix(in srgb, var(--foreground) 12%, transparent);
+    --premium-bg-hover: color-mix(in srgb, var(--foreground) 6%, transparent);
+    --premium-border: color-mix(in srgb, var(--foreground) 5%, transparent);
+    --premium-border-hover: color-mix(in srgb, var(--foreground) 15%, transparent);
     --text-muted: color-mix(in srgb, var(--foreground) 40%, transparent);
-    --text-low: color-mix(in srgb, var(--foreground) 20%, transparent);
+    --text-low: color-mix(in srgb, var(--foreground) 15%, transparent);
   }
 
   .daylight {
     --background: var(--color-ceramic-white);
     --surface: var(--color-vapor-grey);
-    --primary: var(--color-deep-ocean);
-    --secondary: var(--color-soft-coral);
+    --primary: var(--color-cyber-violet);
+    --secondary: var(--color-electric-teal);
     --foreground: var(--color-ink-black);
 
-    --premium-bg: color-mix(in srgb, var(--foreground) 5%, transparent);
-    --premium-bg-hover: color-mix(in srgb, var(--foreground) 8%, transparent);
-    --premium-border: color-mix(in srgb, var(--foreground) 15%, transparent);
-    --premium-border-hover: color-mix(in srgb, var(--foreground) 25%, transparent);
+    --premium-bg: color-mix(in srgb, var(--starlight) 60%, transparent);
+    --premium-bg-hover: color-mix(in srgb, var(--starlight) 80%, transparent);
+    --premium-border: color-mix(in srgb, var(--foreground) 5%, transparent);
+    --premium-border-hover: color-mix(in srgb, var(--primary) 20%, transparent);
     --text-muted: color-mix(in srgb, var(--foreground) 60%, transparent);
-    --text-low: color-mix(in srgb, var(--foreground) 35%, transparent);
+    --text-low: color-mix(in srgb, var(--foreground) 30%, transparent);
   }
 
   body {
-    @apply bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen font-sans transition-colors duration-500 relative;
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen font-sans transition-colors duration-500 relative tracking-tight;
     overflow-x: hidden;
   }
 

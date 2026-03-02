@@ -1,7 +1,9 @@
 pub mod client_repo;
 pub mod invoice_repo;
 pub mod business_profile_repo;
+pub mod crm_repo;
 
 pub use client_repo::ClientRepository;
 pub use invoice_repo::InvoiceRepository;
 pub use business_profile_repo::BusinessProfileRepository;
+pub use crm_repo::CrmRepository;

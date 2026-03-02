@@ -109,6 +109,33 @@ export async function openPdf(path: string): Promise<void> {
     return invoke<void>("open_pdf", { path });
 }
 
+// ─── CRM API ─────────────────────────────────────────────────
+
+export interface Deal {
+    id: string;
+    client_id: string;
+    title: string;
+    value: string;
+    status: string;
+    ai_lead_score: number | null;
+    next_suggested_action: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface DealInsights {
+    ai_lead_score: number;
+    next_suggested_action: string;
+}
+
+export async function getDealsByClient(client_id: string): Promise<Deal[]> {
+    return invoke<Deal[]>("get_deals_by_client", { clientId: client_id });
+}
+
+export async function generateDealInsights(deal_id: string): Promise<DealInsights> {
+    return invoke<DealInsights>("generate_deal_insights", { dealId: deal_id });
+}
+
 // ─── System & Data API ───────────────────────────────────────
 
 export async function resetDatabase(): Promise<void> {

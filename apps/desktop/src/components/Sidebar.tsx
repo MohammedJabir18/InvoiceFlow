@@ -23,6 +23,7 @@ const navItems = [
         label: "Manage", items: [
             { icon: FileText, label: "Invoices", path: "/invoices" },
             { icon: Users, label: "Clients", path: "/clients" },
+            { icon: TrendingUp, label: "Deals (AI)", path: "/deals" },
         ]
     },
     {

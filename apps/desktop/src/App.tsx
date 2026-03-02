@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Sidebar } from "./components/Sidebar";
+import { FloatingSidebar } from "./components/FloatingSidebar";
+import { TopNavbar } from "./components/TopNavbar";
 import { Dashboard } from "./pages/Dashboard";
 import { Invoices } from "./pages/Invoices";
 import { Clients } from "./pages/Clients";
+import { Deals } from "./pages/Deals";
 import { Editor } from "./pages/Editor";
 import { Settings } from "./pages/Settings";
 import { About } from "./pages/About";
@@ -51,14 +53,8 @@ function App() {
         };
 
         if (profile.theme_preference === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
-            applyTheme(mediaQuery.matches);
-
-            const listener = (e: MediaQueryListEvent) => applyTheme(e.matches);
-            mediaQuery.addEventListener('change', listener);
-            return () => mediaQuery.removeEventListener('change', listener);
-        } else {
-            applyTheme(profile.theme_preference === 'light');
+            // System preference shouldn't override explicitly set 'daylight' if toggle sets it.
+            // We'll leave the initial body setup inside App and let ThemeToggle handle manual overrides.
         }
     }, [profile?.theme_preference]);
 
@@ -68,19 +64,21 @@ function App() {
                 <OnboardingWizard onComplete={() => setShowWizard(false)} />
             )}
             <UpdaterNotification />
-            <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
+            <div className="app-layout focus:outline-none">
                 <div className="aurora-bg" />
                 <Routes>
                     <Route path="/editor" element={<Editor />} />
                     <Route path="*" element={
                         <>
-                            <Sidebar />
-                            <main style={{ marginLeft: '16rem', flex: 1, minHeight: '100vh', overflowY: 'auto', overflowX: 'hidden', padding: '1.5rem' }}>
+                            <FloatingSidebar />
+                            <TopNavbar />
+                            <main className="flex-1 ml-[104px] min-h-screen overflow-y-auto overflow-x-hidden pt-24 px-8 pb-10">
                                 <Routes>
                                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                                     <Route path="/dashboard" element={<Dashboard />} />
                                     <Route path="/invoices" element={<Invoices />} />
                                     <Route path="/clients" element={<Clients />} />
+                                    <Route path="/deals" element={<Deals />} />
                                     <Route path="/settings" element={<Settings />} />
                                     <Route path="/about" element={<About />} />
                                 </Routes>

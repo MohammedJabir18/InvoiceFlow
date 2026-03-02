@@ -46,6 +46,7 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
             address_postal_code TEXT NOT NULL DEFAULT '',
             address_country TEXT NOT NULL DEFAULT '',
             notes TEXT,
+            total_ltv TEXT NOT NULL DEFAULT '0',
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
@@ -138,6 +139,50 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
     )
     .execute(pool)
     .await?;
+    // Create deals table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS deals (
+            id TEXT PRIMARY KEY NOT NULL,
+            client_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            value TEXT NOT NULL DEFAULT '0',
+            status TEXT NOT NULL DEFAULT 'Prospect',
+            ai_lead_score INTEGER,
+            next_suggested_action TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+        );
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create interaction_logs table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS interaction_logs (
+            id TEXT PRIMARY KEY NOT NULL,
+            deal_id TEXT NOT NULL,
+            interaction_type TEXT NOT NULL,
+            notes TEXT,
+            ai_sentiment_summary TEXT,
+            date TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
+        );
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create indexes for new tables
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_deals_client_id ON deals(client_id);")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_interaction_logs_deal_id ON interaction_logs(deal_id);")
+        .execute(pool)
+        .await?;
 
     // --- Backwards Compatibility Migrations ---
     
@@ -151,6 +196,13 @@ pub async fn run_migrations(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
     // Add pdf_export_dir column if not exists
     let _ = sqlx::query(
         "ALTER TABLE business_profiles ADD COLUMN pdf_export_dir TEXT;"
+    )
+    .execute(pool)
+    .await;
+
+    // Add total_ltv column to clients if not exists
+    let _ = sqlx::query(
+        "ALTER TABLE clients ADD COLUMN total_ltv TEXT NOT NULL DEFAULT '0';"
     )
     .execute(pool)
     .await;

@@ -11,6 +11,8 @@ pub struct AppState {
     pub app_data_dir: std::path::PathBuf,
 }
 
+pub mod ai_commands;
+
 // ─── Client Commands ──────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -85,6 +87,89 @@ pub async fn update_client(
     repo.update(&request.id, &request.name, request.email.as_deref(), request.company.as_deref())
         .await
         .map_err(|e| e.to_string())
+}
+
+// ─── CRM Commands ──────────────────────────────────────────────
+
+use flow_core::models::{Deal, InteractionLog};
+use flow_core::types::{DealStatus, InteractionType};
+use flow_db::repositories::CrmRepository;
+use rust_decimal::Decimal;
+use std::str::FromStr;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateDealRequest {
+    pub client_id: String,
+    pub title: String,
+    pub value: f64,
+}
+
+#[tauri::command]
+pub async fn create_deal(state: State<'_, AppState>, request: CreateDealRequest) -> Result<Deal, String> {
+    let repo = CrmRepository::new(state.db.clone());
+    let dec_value = Decimal::from_f64_retain(request.value).unwrap_or_default();
+    repo.create_deal(&request.client_id, &request.title, dec_value)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_deals_by_client(state: State<'_, AppState>, client_id: String) -> Result<Vec<Deal>, String> {
+    let repo = CrmRepository::new(state.db.clone());
+    repo.get_deals_by_client(&client_id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_deal_status_cmd(state: State<'_, AppState>, id: String, status: String) -> Result<(), String> {
+    let repo = CrmRepository::new(state.db.clone());
+    let deal_status = match status.as_str() {
+        "Prospect" => DealStatus::Prospect,
+        "Contacted" => DealStatus::Contacted,
+        "Proposal" => DealStatus::Proposal,
+        "Won" => DealStatus::Won,
+        "Lost" => DealStatus::Lost,
+        _ => return Err("Invalid deal status".to_string()),
+    };
+    repo.update_deal_status(&id, deal_status).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_deal_ai_metrics(state: State<'_, AppState>, id: String, score: i32, action: String) -> Result<(), String> {
+    let repo = CrmRepository::new(state.db.clone());
+    repo.update_deal_ai_metrics(&id, score, &action).await.map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AddInteractionRequest {
+    pub deal_id: String,
+    pub type_str: String,
+    pub notes: Option<String>,
+    pub sentiment: Option<String>,
+}
+
+#[tauri::command]
+pub async fn add_interaction(state: State<'_, AppState>, request: AddInteractionRequest) -> Result<InteractionLog, String> {
+    let repo = CrmRepository::new(state.db.clone());
+    let interaction_type = match request.type_str.as_str() {
+        "Email" => InteractionType::Email,
+        "Call" => InteractionType::Call,
+        "Meeting" => InteractionType::Meeting,
+        _ => return Err("Invalid interaction type".to_string()),
+    };
+    repo.add_interaction(
+        &request.deal_id,
+        interaction_type,
+        request.notes.as_deref(),
+        request.sentiment.as_deref(),
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_interactions_for_deal(state: State<'_, AppState>, deal_id: String) -> Result<Vec<InteractionLog>, String> {
+    let repo = CrmRepository::new(state.db.clone());
+    repo.get_interactions_for_deal(&deal_id).await.map_err(|e| e.to_string())
 }
 
 // ─── Invoice Commands ─────────────────────────────────────────
