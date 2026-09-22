@@ -128,7 +128,7 @@ export function InvoiceMetricsCards({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: idx * 0.06 }}
                         onClick={() => onSelectFilter && onSelectFilter(card.filter)}
-                        className={`relative rounded-2xl p-5 cursor-pointer transition-all duration-300 backdrop-blur-xl border ${
+                        className={`metric-card relative rounded-2xl p-5 cursor-pointer transition-all duration-300 backdrop-blur-xl border ${
                             isSelected
                                 ? "ring-2 ring-blue-400/50 scale-[1.02]"
                                 : "hover:scale-[1.01] hover:border-white/20"

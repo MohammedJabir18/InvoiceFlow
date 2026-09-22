@@ -96,17 +96,17 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
                 <div className="absolute inset-0" onClick={onClose} />
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-lg bg-[#131b2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-white z-10"
+                    className="relative w-full max-w-lg my-auto bg-[#131b2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-white z-10 max-h-[90vh] flex flex-col"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0f172a]">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0f172a] shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                 <QrCode size={20} />
@@ -125,7 +125,7 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-6 overflow-y-auto">
                         {/* Invoice Summary Card */}
                         <div className="p-4 rounded-xl bg-[#0b0f19] border border-white/5 flex items-center justify-between">
                             <div>

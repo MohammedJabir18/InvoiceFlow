@@ -1,22 +1,40 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useSettingsStore } from "../store/settingsStore";
 
 export function ThemeToggle() {
-    const [theme, setTheme] = useState<"midnight" | "daylight">("midnight");
+    const profile = useSettingsStore(state => state.profile);
+    const updateSettings = useSettingsStore(state => state.updateSettings);
+
+    const [theme, setTheme] = useState<"midnight" | "daylight">(() => {
+        const saved = localStorage.getItem("invoiceflow_theme");
+        if (saved === "daylight" || saved === "midnight") return saved;
+        return profile?.theme_preference === "light" ? "daylight" : "midnight";
+    });
 
     useEffect(() => {
+        localStorage.setItem("invoiceflow_theme", theme);
         const root = window.document.documentElement;
-        // In the original template they used document.body for the theme class 'daylight', let's stick to their existing `body` logic. We applied `.daylight` to body in index.css.
+        const body = window.document.body;
+
         if (theme === "daylight") {
-            document.body.classList.add("daylight");
+            root.classList.add("daylight");
+            body.classList.add("daylight");
         } else {
-            document.body.classList.remove("daylight");
+            root.classList.remove("daylight");
+            body.classList.remove("daylight");
         }
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme((prev) => (prev === "midnight" ? "daylight" : "midnight"));
+        setTheme((prev) => {
+            const next = prev === "midnight" ? "daylight" : "midnight";
+            if (profile) {
+                updateSettings({ ...profile, theme_preference: next === "daylight" ? "light" : "dark" });
+            }
+            return next;
+        });
     };
 
     return (

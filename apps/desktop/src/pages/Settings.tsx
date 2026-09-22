@@ -508,7 +508,8 @@ export function Settings() {
 
     const handleUpdateAddress = (field: keyof BusinessProfile['address'], value: string) => {
         if (!profile) return;
-        useSettingsStore.setState({ profile: { ...profile, address: { ...profile.address, [field]: value } } });
+        const currentAddress = profile.address || { line1: '', line2: '', city: '', state: '', postal_code: '', country: '' };
+        useSettingsStore.setState({ profile: { ...profile, address: { ...currentAddress, [field]: value } } });
     };
 
     const handleUpdateBankField = (field: keyof BankDetails, value: string) => {
@@ -684,10 +685,10 @@ export function Settings() {
                         {activeSection === 'preferences' && (
                             <motion.div
                                 key="preferences"
-                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
-                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
-                                transition={{ duration: 0.4 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.15 }}
                             >
                                 <SpotlightCard className="p-8 md:p-10 mb-8">
                                     <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
@@ -773,10 +774,10 @@ export function Settings() {
                         {activeSection === 'profile' && (
                             <motion.div
                                 key="profile"
-                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
-                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
-                                transition={{ duration: 0.4 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.15 }}
                             >
                                 <SpotlightCard className="p-8 md:p-10">
                                     <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
@@ -838,7 +839,7 @@ export function Settings() {
                                             label="Website / Address Line 2"
                                             icon={Globe}
                                             placeholder="Suite 100"
-                                            value={profile.address.line2 || ''}
+                                            value={profile.address?.line2 || ''}
                                             onChange={(e) => handleUpdateAddress('line2', e.target.value)}
                                         />
                                         <PremiumInput
@@ -855,7 +856,7 @@ export function Settings() {
                                                 icon={MapPin}
                                                 placeholder="123 Business Avenue&#10;City, State, Zip"
                                                 rows={3}
-                                                value={profile.address.line1}
+                                                value={profile.address?.line1 || ''}
                                                 onChange={(e) => handleUpdateAddress('line1', e.target.value)}
                                             />
                                         </div>
@@ -867,10 +868,10 @@ export function Settings() {
                         {activeSection === 'invoicing' && (
                             <motion.div
                                 key="invoicing"
-                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
-                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
-                                transition={{ duration: 0.4 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.15 }}
                             >
                                 <SpotlightCard className="p-8 md:p-10">
                                     <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
@@ -918,10 +919,10 @@ export function Settings() {
                         {activeSection === 'payments' && (
                             <motion.div
                                 key="payments"
-                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
-                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
-                                transition={{ duration: 0.4 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.15 }}
                             >
                                 <SpotlightCard className="p-8 md:p-10">
                                     <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
@@ -1003,10 +1004,10 @@ export function Settings() {
                         {activeSection === 'tabby' && (
                             <motion.div
                                 key="tabby"
-                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
-                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
-                                transition={{ duration: 0.4 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.15 }}
                             >
                                 <SpotlightCard className="p-8 md:p-10">
                                     <div className="flex items-center justify-between gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
@@ -1126,10 +1127,10 @@ export function Settings() {
                         {activeSection === 'system' && (
                             <motion.div
                                 key="system"
-                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
-                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
-                                transition={{ duration: 0.4 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.15 }}
                             >
                                 <SpotlightCard className="p-8 md:p-10">
                                     <div className="flex items-center gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">

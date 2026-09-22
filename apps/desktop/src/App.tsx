@@ -36,17 +36,23 @@ function App() {
         fetchBankDetails();
     }, [fetchSettings, fetchBankDetails]);
 
-    // Check onboarding status
+    // Synchronize Daylight / Midnight theme globally
     useEffect(() => {
-        if (profile && !isLoading) {
-            const hasSkipped = localStorage.getItem('has_skipped_onboarding') === 'true';
-            if (!hasSkipped && profile.name === "My Company" && !profile.email && !profile.phone) {
-                setShowWizard(true);
+        const syncTheme = () => {
+            const saved = localStorage.getItem("invoiceflow_theme");
+            const isDaylight = saved === "daylight" || (profile?.theme_preference === "light" && saved !== "midnight");
+            if (isDaylight) {
+                document.documentElement.classList.add("daylight");
+                document.body.classList.add("daylight");
             } else {
-                setShowWizard(false);
+                document.documentElement.classList.remove("daylight");
+                document.body.classList.remove("daylight");
             }
-        }
-    }, [profile, isLoading]);
+        };
+        syncTheme();
+        window.addEventListener("storage", syncTheme);
+        return () => window.removeEventListener("storage", syncTheme);
+    }, [profile?.theme_preference]);
 
     return (
         <BrowserRouter>

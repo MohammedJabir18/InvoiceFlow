@@ -492,3 +492,478 @@
   color: var(--primary);
   filter: drop-shadow(0 0 8px var(--primary));
 }
+
+/* ============================================================
+   DAYLIGHT (LIGHT MODE) COMPREHENSIVE VISIBILITY & STYLING
+   ============================================================ */
+.daylight {
+  color-scheme: light;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --primary: #4f46e5;
+  --secondary: #0284c7;
+  --foreground: #0f172a;
+}
+
+body.daylight {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Base text contrast & headings */
+.daylight h1,
+.daylight h2,
+.daylight h3,
+.daylight h4,
+.daylight h5,
+.daylight h6 {
+  color: #0f172a !important;
+}
+
+/* Text color transformations in Daylight mode (excluding solid colored badges/buttons) */
+.daylight .text-white:not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not(.btn-primary):not([class*="badge"]) {
+  color: #0f172a !important;
+}
+
+.daylight .text-gray-100,
+.daylight .text-gray-200,
+.daylight .text-gray-300 {
+  color: #1e293b !important;
+}
+
+.daylight .text-gray-400 {
+  color: #475569 !important;
+}
+
+.daylight .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Glass panel & Cards in Daylight */
+.daylight .glass-panel {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+}
+
+.daylight .glass-panel:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Dark card backgrounds converted to clean white cards with crisp borders */
+.daylight .bg-\[\#111927\],
+.daylight .bg-\[\#131b2e\],
+.daylight .bg-\[\#0d1527\],
+.daylight .bg-\[\#0a101f\],
+.daylight .bg-\[\#0f172a\],
+.daylight .bg-\[\#0b0f19\],
+.daylight .bg-\[\#161f31\],
+.daylight .bg-\[\#152033\],
+.daylight .bg-\[\#1e293b\],
+.daylight .bg-\[\#0f1720\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+}
+
+/* Floating Sidebar & Header in Daylight */
+.daylight aside {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+}
+
+.daylight header {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Table headers & cells */
+.daylight table thead tr,
+.daylight tr.bg-black\/40 {
+  background-color: #f1f5f9 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.daylight table thead th {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+
+.daylight table tbody tr {
+  border-color: #f1f5f9 !important;
+}
+
+.daylight table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+.daylight table tbody td {
+  color: #1e293b !important;
+}
+
+.daylight .divide-white\/5 > * {
+  border-color: #f1f5f9 !important;
+}
+
+.daylight .border-white\/10,
+.daylight .border-white\/5,
+.daylight .border-white\/15,
+.daylight .border-white\/20 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Inputs, textareas, selects */
+.daylight input,
+.daylight select,
+.daylight option,
+.daylight textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.daylight input::placeholder,
+.daylight textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.daylight input:focus,
+.daylight select:focus,
+.daylight textarea:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+}
+
+/* Filter pills, secondary buttons, tags */
+.daylight .bg-white\/5,
+.daylight .bg-white\/10 {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.daylight .bg-black\/20,
+.daylight .bg-black\/30,
+.daylight .bg-black\/40,
+.daylight .bg-black\/50,
+.daylight .bg-black\/60 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Slide-over sheet & Modals in Daylight */
+.daylight [role="dialog"],
+.daylight .fixed.inset-y-0.right-0 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-left-color: #e2e8f0 !important;
+}
+
+/* Bottom mobile navigation in daylight */
+.daylight .fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-top-color: #e2e8f0 !important;
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Ensure active primary buttons remain vibrant with crisp white text */
+.daylight .bg-blue-600,
+.daylight .bg-blue-500,
+.daylight .bg-indigo-600,
+.daylight .bg-violet-600,
+.daylight .bg-emerald-600 {
+  color: #ffffff !important;
+}
+
+.daylight .btn-primary,
+.daylight button.btn-primary,
+.daylight .btn.btn-primary,
+.daylight a.btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+
+.daylight .bg-blue-600 *,
+.daylight .bg-blue-500 *,
+.daylight .bg-indigo-600 *,
+.daylight .bg-violet-600 *,
+.daylight .bg-emerald-600 *,
+.daylight .btn-primary * {
+  color: #ffffff !important;
+}
+
+
+/* Metric Cards in Daylight */
+.daylight .metric-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+.daylight .metric-card .text-white {
+  color: #0f172a !important;
+}
+
+.daylight .metric-card .text-gray-400 {
+  color: #475569 !important;
+}
+
+.daylight .metric-card .text-gray-300 {
+  color: #334155 !important;
+}
+
+.daylight .metric-card .bg-white\/5 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.daylight .metric-card .border-white\/5 {
+  border-color: #f1f5f9 !important;
+}
+
+/* Modals & Dialog Cards in Daylight */
+.daylight .bg-\[\#131b2e\],
+.daylight .bg-\[\#111927\],
+.daylight .bg-\[\#0f172a\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.daylight .bg-\[\#0b0f19\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Tabby Banner in Daylight */
+.daylight .from-emerald-950\/40 {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%) !important;
+  border-color: #a7f3d0 !important;
+}
+
+.daylight .from-emerald-950\/40 .text-gray-200 {
+  color: #065f46 !important;
+}
+
+.daylight .from-emerald-950\/40 .text-emerald-400 {
+  color: #047857 !important;
+}
+
+/* Share & Action Buttons in Daylight */
+.daylight .bg-emerald-600\/15 {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.daylight .bg-emerald-600\/15:hover {
+  background-color: #a7f3d0 !important;
+}
+
+.daylight .bg-blue-600\/15 {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #bfdbfe !important;
+}
+
+.daylight .bg-blue-600\/15:hover {
+  background-color: #bfdbfe !important;
+}
+
+/* Editor Canvas Desk in Daylight */
+.daylight .bg-\[\#0d111c\] {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.daylight .bg-\[\#0d111c\] .text-gray-400,
+.daylight .bg-\[\#0d111c\] .text-gray-300 {
+  color: #334155 !important;
+}
+
+/* Actions Dropdown in Daylight */
+.daylight .actions-dropdown {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.daylight .actions-dropdown button {
+  color: #334155 !important;
+}
+
+.daylight .actions-dropdown button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Public Checkout, Subscription, & Report Panels in Daylight */
+.daylight .bg-\[\#0c1322\],
+.daylight .bg-\[\#131d31\] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.daylight .from-blue-950\/40,
+.daylight .from-\[\#16233b\],
+.daylight .from-\[\#192742\] {
+  background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%) !important;
+  border-color: #bfdbfe !important;
+}
+
+.daylight .from-\[\#142921\] {
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%) !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+}
+
+.daylight .bg-black\/40 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.daylight .bg-emerald-600\/20 {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.daylight .bg-blue-600\/20 {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #bfdbfe !important;
+}
+
+.daylight .bg-purple-600\/20 {
+  background-color: #faf5ff !important;
+  color: #7e22ce !important;
+  border-color: #e9d5ff !important;
+}
+
+.daylight .bg-\[\#081210\] {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.daylight .bg-\[\#081210\] .text-gray-400,
+.daylight .bg-\[\#081210\] .text-gray-300 {
+  color: #047857 !important;
+}
+
+/* Universal Card & Surface Rules for Any Opacity in Daylight */
+.daylight [class*="bg-[#111927]"],
+.daylight [class*="bg-[#131b2e]"],
+.daylight [class*="bg-[#151f32]"],
+.daylight [class*="bg-[#141b2d]"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Universal Table Styling in Daylight across all pages */
+.daylight table {
+  background-color: #ffffff !important;
+}
+
+.daylight table thead tr,
+.daylight [class*="bg-[#0c1322]"] {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.daylight table thead th {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+.daylight table tbody {
+  background-color: #ffffff !important;
+}
+
+.daylight table tbody tr {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+.daylight table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+.daylight table tbody td {
+  color: #334155 !important;
+}
+
+.daylight table tbody td .text-white,
+.daylight table tbody td [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+.daylight table tbody td .text-gray-300,
+.daylight table tbody td .text-gray-400 {
+  color: #475569 !important;
+}
+
+.daylight table tbody td .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Table action buttons */
+.daylight table tbody td button {
+  color: #64748b !important;
+}
+
+.daylight table tbody td button:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Subscription Pricing Cards in Daylight */
+.daylight .grid.grid-cols-1.md\:grid-cols-3 > div {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+.daylight .grid.grid-cols-1.md\:grid-cols-3 > div h3,
+.daylight .grid.grid-cols-1.md\:grid-cols-3 > div .text-white {
+  color: #0f172a !important;
+}
+
+.daylight .grid.grid-cols-1.md\:grid-cols-3 > div .text-gray-300,
+.daylight .grid.grid-cols-1.md\:grid-cols-3 > div .text-gray-400 {
+  color: #475569 !important;
+}
+
+.daylight .grid.grid-cols-1.md\:grid-cols-3 > div .h-px {
+  background-color: #e2e8f0 !important;
+}
+
+/* Public Payment Portal in Daylight */
+.daylight .min-h-screen[class*="bg-[#0b0f19]"] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.daylight .min-h-screen[class*="bg-[#0b0f19]"] h1,
+.daylight .min-h-screen[class*="bg-[#0b0f19]"] h2,
+.daylight .min-h-screen[class*="bg-[#0b0f19]"] h3 {
+  color: #0f172a !important;
+}
+
+.daylight .min-h-screen[class*="bg-[#0b0f19]"] [class*="bg-[#0b0f19]"] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+

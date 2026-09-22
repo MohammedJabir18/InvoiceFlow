@@ -1,0 +1,68 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Local-First Desktop Core & SQLite DB",
+      "description": "Tauri v2 application, SQLite database migrations in flow-db, and Rust IPC commands for offline-first privacy and speed",
+      "dependencies": [],
+      "status": "completed",
+      "evidence": "cargo check --workspace passes; SQLite migrations active in flow-db/src/migrations"
+    },
+    {
+      "id": "feat-002",
+      "name": "Midday Invoicing Engine & Slide-Over Sheet",
+      "description": "Interactive KPI metrics cards, slide-over details drawer with multi-tab view (overview, items, client, internal notes, activity log), and full invoice editing with line-item tax and discounts",
+      "dependencies": ["feat-001"],
+      "status": "completed",
+      "evidence": "InvoiceDetailsSheet.tsx, InvoiceMetricsCards.tsx, InvoiceEditor.tsx verified; 0 build errors"
+    },
+    {
+      "id": "feat-003",
+      "name": "Quotations & Estimates Module with Print",
+      "description": "Quotation pipeline tracking, multi-line item estimator, formal corporate printable contract with dual signature blocks, and 1-click conversion to invoice",
+      "dependencies": ["feat-002"],
+      "status": "completed",
+      "evidence": "src/pages/Quotations.tsx, QuotationPrintModal.tsx, QuotationEditor.tsx verified; converted QUO-2026-001 to INV-2026-005"
+    },
+    {
+      "id": "feat-004",
+      "name": "Monthly Financial Reports & Tax Statements",
+      "description": "Monthly and annual financial statement, executive KPIs, statutory 18% tax/VAT provisions, client revenue contribution ranking, and printable accountant ledger",
+      "dependencies": ["feat-002"],
+      "status": "completed",
+      "evidence": "src/pages/MonthlyReport.tsx verified; audited statements render with 0 errors"
+    },
+    {
+      "id": "feat-005",
+      "name": "Shareable Payment Links & Public Pay Portal",
+      "description": "Shareable checkout URLs (/pay/:id), dynamic vector SVG QR codes, 1-click WhatsApp/email sharing, and simulated instant settlement receipts",
+      "dependencies": ["feat-002"],
+      "status": "completed",
+      "evidence": "PaymentLinkModal.tsx, PaymentLinkView.tsx verified; settled INV-2026-002 on mobile viewport"
+    },
+    {
+      "id": "feat-006",
+      "name": "Tabby BNPL Integration through Custom MCP Server",
+      "description": "Custom Model Context Protocol (MCP) server conforming to JSON-RPC 2.0 with tool schemas for 4-installment schedule calculations and merchant configuration",
+      "dependencies": ["feat-005"],
+      "status": "completed",
+      "evidence": "mcp-servers/tabby/ schemas active, tabby.ts calculation service integrated into checkout"
+    },
+    {
+      "id": "feat-007",
+      "name": "Subscription SaaS Licensing & Quota Management",
+      "description": "Starter ($19), Pro ($49), and Enterprise ($99) tiers, quota usage meters, annual 20% discount switch, and offline cryptographic client license activation",
+      "dependencies": ["feat-002"],
+      "status": "completed",
+      "evidence": "src/store/subscriptionStore.ts, src/pages/Subscription.tsx verified"
+    },
+    {
+      "id": "feat-008",
+      "name": "Mobile Smartphone Responsiveness & LAN Network Binding",
+      "description": "Mobile viewport optimization, sticky bottom navigation, mobile header drawer, and Vite host 0.0.0.0 binding for Wi-Fi mobile testing",
+      "dependencies": ["feat-001", "feat-002"],
+      "status": "completed",
+      "evidence": "MobileBottomNav.tsx, MobileHeader.tsx, MobileMenuDrawer.tsx verified in Playwright (390x844)"
+    }
+  ]
+}

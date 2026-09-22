@@ -107,7 +107,7 @@ export function PaymentLinkView() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0b0f19] text-white flex flex-col items-center justify-center p-3 sm:p-6 py-10 selection:bg-blue-600">
+        <div className="min-h-screen w-full flex-1 bg-[#0b0f19] text-white flex flex-col items-center justify-center p-3 sm:p-6 py-10 selection:bg-blue-600">
             {/* Top Security Header */}
             <div className="w-full max-w-xl flex items-center justify-between mb-4 px-2 text-xs text-gray-400">
                 <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">

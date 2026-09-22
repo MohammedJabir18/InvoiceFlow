@@ -325,16 +325,6 @@ export function Invoices() {
                 onClose={() => setDownloadState((s) => ({ ...s, isOpen: false }))}
             />
 
-            {/* Midday-style Slide-Over Invoice Details Sheet */}
-            <InvoiceDetailsSheet
-                invoiceId={selectedInvoiceId}
-                clients={clients}
-                currency={currency}
-                onClose={() => setSelectedInvoiceId(null)}
-                onRefresh={fetchData}
-                onDownloadPdf={handleDownload}
-            />
-
             {/* Top Header */}
             <motion.div
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8"
@@ -545,7 +535,7 @@ export function Invoices() {
                                                 onClick={() => setSelectedInvoiceId(inv.id)}
                                                 className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${
                                                     isRowSelected ? "bg-blue-500/[0.07]" : ""
-                                                }`}
+                                                } ${menuId === inv.id ? "relative z-30" : ""}`}
                                             >
                                                 {/* Checkbox */}
                                                 <td className="py-3.5 px-4 text-center" onClick={(e) => toggleSelectRow(inv.id, e)}>
@@ -613,7 +603,7 @@ export function Invoices() {
                                                 </td>
 
                                                 {/* Action Menu (Three dots) */}
-                                                <td className="py-3.5 px-4 text-center relative" onClick={(e) => e.stopPropagation()}>
+                                                <td className={`py-3.5 px-4 text-center relative ${menuId === inv.id ? "z-30" : ""}`} onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
                                                         className="btn-action-trigger p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
