@@ -12,7 +12,7 @@ export function TopNavbar() {
 
     return (
         <motion.header
-            className="fixed top-0 left-0 right-0 z-40 flex h-20 items-center justify-end px-8 transition-all duration-500"
+            className="hidden md:flex fixed top-0 left-0 right-0 z-40 h-20 items-center justify-end px-8 transition-all duration-500"
             initial={false}
             animate={{
                 backgroundColor: scrolled ? "var(--surface)" : "transparent",

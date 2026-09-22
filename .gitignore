@@ -31,3 +31,4 @@ artifacts/
 
 # App user data
 Sample_Invoices/
+.playwright-mcp/

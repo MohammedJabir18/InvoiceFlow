@@ -3,10 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     LayoutDashboard,
     FileText,
+    FileCheck2,
+    BarChart3,
     Users,
     Settings,
     TrendingUp,
-    User
+    User,
+    CreditCard
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -18,11 +21,14 @@ function cn(...inputs: ClassValue[]) {
 const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
     { icon: FileText, label: "Invoices", path: "/invoices" },
+    { icon: FileCheck2, label: "Quotations", path: "/quotations" },
+    { icon: BarChart3, label: "Reports", path: "/reports" },
     { icon: Users, label: "Clients", path: "/clients" },
     { icon: TrendingUp, label: "Deals (AI)", path: "/deals" },
 ];
 
 const systemItems = [
+    { icon: CreditCard, label: "Subscription", path: "/subscription" },
     { icon: Settings, label: "Settings", path: "/settings" },
     { icon: User, label: "About", path: "/about" },
 ];
@@ -33,7 +39,7 @@ export function FloatingSidebar() {
 
     return (
         <motion.aside
-            className="fixed left-6 top-6 bottom-6 z-50 flex w-20 flex-col items-center justify-between rounded-3xl border border-white/10 bg-[var(--surface)]/50 py-8 shadow-2xl backdrop-blur-3xl dark:border-white/5 dark:bg-white/[0.02] sm:w-24 transition-colors duration-500"
+            className="hidden md:flex fixed left-6 top-6 bottom-6 z-50 w-20 flex-col items-center justify-between rounded-3xl border border-white/10 bg-[var(--surface)]/50 py-8 shadow-2xl backdrop-blur-3xl dark:border-white/5 dark:bg-white/[0.02] sm:w-24 transition-colors duration-500"
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}

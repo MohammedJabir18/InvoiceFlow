@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,7 +7,6 @@ import {
     MoreHorizontal,
     FileText,
     Trash2,
-    X,
     Loader2,
     Download,
     ArrowRight,
@@ -15,37 +14,42 @@ import {
     Clock,
     CheckCircle2,
     AlertCircle,
-    FilePlus2
+    FilePlus2,
+    FileSpreadsheet,
+    FileCode,
+    Receipt,
+    Copy,
+    Edit3,
+    CheckSquare,
+    Square,
+    QrCode
 } from "lucide-react";
 import {
     getInvoices,
     getClients,
-    createInvoice,
     deleteInvoice,
     updateInvoiceStatus,
+    duplicateInvoice,
     generatePdf,
-    openPdf,
+    exportInvoicesToCsv,
+    exportInvoicesToJson,
     type InvoiceSummary,
-    type ClientResponse,
-    type CreateInvoiceRequest,
+    type ClientResponse
 } from "../lib/api";
 import { useSettingsStore } from "../store/settingsStore";
 import { DownloadProgressModal } from "../components/ui/DownloadProgressModal";
+import { InvoiceMetricsCards } from "../components/invoices/InvoiceMetricsCards";
+import { InvoiceDetailsSheet } from "../components/invoices/InvoiceDetailsSheet";
+import { PaymentLinkModal } from "../components/invoices/PaymentLinkModal";
 
 const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+    visible: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
 };
 
 const rowVariants = {
-    hidden: { opacity: 0, x: -10, filter: 'blur(4px)' },
-    visible: { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
-};
-
-const slideOverVariants = {
-    hidden: { x: '100%', opacity: 0.5 },
-    visible: { x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } },
-    exit: { x: '100%', opacity: 0.5, transition: { duration: 0.3, ease: 'easeIn' } }
+    hidden: { opacity: 0, x: -10, filter: "blur(4px)" },
+    visible: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
 };
 
 export function Invoices() {
@@ -55,33 +59,26 @@ export function Invoices() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<string | null>(null);
-    const [showCreate, setShowCreate] = useState(false);
-    const [creating, setCreating] = useState(false);
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
     const [menuId, setMenuId] = useState<string | null>(null);
-    const [previewInvoice, setPreviewInvoice] = useState<InvoiceSummary | null>(null);
-    const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [linkModalInvoice, setLinkModalInvoice] = useState<InvoiceSummary | null>(null);
+    const currency = useSettingsStore((state) => state.profile?.default_currency) || "USD";
 
     // Download Modal State
     const [downloadState, setDownloadState] = useState<{
         isOpen: boolean;
-        status: 'idle' | 'initializing' | 'rendering' | 'generating' | 'complete' | 'error';
+        status: "idle" | "initializing" | "rendering" | "generating" | "complete" | "error";
         invoiceNumber: string;
         path: string | null;
         error: string | null;
     }>({
         isOpen: false,
-        status: 'idle',
-        invoiceNumber: '',
+        status: "idle",
+        invoiceNumber: "",
         path: null,
-        error: null
+        error: null,
     });
-
-    // Form refs
-    const clientRef = useRef<HTMLSelectElement>(null);
-    const descRef = useRef<HTMLInputElement>(null);
-    const qtyRef = useRef<HTMLInputElement>(null);
-    const priceRef = useRef<HTMLInputElement>(null);
-    const notesRef = useRef<HTMLInputElement>(null);
 
     const fetchData = async () => {
         try {
@@ -99,715 +96,693 @@ export function Invoices() {
         fetchData();
     }, []);
 
-    // Click outside handler for more options menu
+    // Click outside listener to close contextual action menus
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            // If menu is open and we click outside the menu container and outside the toggle button
-            if (menuId && !target.closest('.aurora-menu') && !target.closest('.btn-icon')) {
+            if (menuId && !target.closest(".actions-dropdown") && !target.closest(".btn-action-trigger")) {
                 setMenuId(null);
             }
         };
 
         if (menuId) {
-            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener("mousedown", handleClickOutside);
         }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [menuId]);
 
-    // Find client name by ID
+    // Client name lookup
     const clientName = (id: string) => {
         const c = clients.find((cl) => cl.id === id);
-        return c ? c.name : "Unknown";
+        return c ? c.name : "Unknown Client";
     };
 
-    const handleCreate = async () => {
-        const clientId = clientRef.current?.value;
-        const desc = descRef.current?.value?.trim();
-        const qty = parseFloat(qtyRef.current?.value || "1");
-        const price = parseFloat(priceRef.current?.value || "0");
-
-        if (!clientId || !desc || price <= 0) {
-            alert("Please fill in all required fields (client, description, price).");
-            return;
-        }
-
-        setCreating(true);
-        try {
-            await createInvoice({
-                invoice_number: null,
-                client_id: clientId,
-                items: [{ description: desc, quantity: qty, unit_price: price }],
-                notes: notesRef.current?.value?.trim() || null,
-                status: "Draft",
-                issue_date: null,
-                due_date: null
-            });
-            setShowCreate(false);
-            await fetchData();
-        } catch (err) {
-            console.error("Failed to create invoice:", err);
-            alert("Failed to create invoice. Please try again.");
-        } finally {
-            setCreating(false);
-        }
+    const clientCompany = (id: string) => {
+        const c = clients.find((cl) => cl.id === id);
+        return c?.company || null;
     };
 
-    const handleDelete = async (id: string) => {
+    // Delete handler
+    const handleDelete = async (id: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         if (!confirm("Are you sure you want to delete this invoice?")) return;
         try {
             await deleteInvoice(id);
-            await fetchData();
             setMenuId(null);
+            setSelectedIds((prev) => prev.filter((i) => i !== id));
+            await fetchData();
         } catch (err) {
             console.error("Failed to delete invoice:", err);
             alert("Failed to delete invoice.");
         }
     };
 
-    const handleStatusChange = async (id: string, newStatus: string) => {
+    // Duplicate handler (Midday feature)
+    const handleDuplicate = async (id: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        try {
+            const newId = await duplicateInvoice(id);
+            setMenuId(null);
+            await fetchData();
+            navigate(`/editor?id=${newId}`);
+        } catch (err) {
+            console.error("Failed to duplicate invoice:", err);
+            alert("Failed to duplicate invoice.");
+        }
+    };
+
+    // Status change handler
+    const handleStatusChange = async (id: string, newStatus: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         try {
             await updateInvoiceStatus(id, newStatus);
             await fetchData();
             setMenuId(null);
         } catch (err) {
             console.error("Failed to update status:", err);
-            alert("Failed to update status.");
         }
     };
 
+    // Download PDF with simulated high-tech progress modal
     const handleDownload = async (id: string, invoiceNumber: string) => {
         setMenuId(null);
-        setDownloadState({ isOpen: true, status: 'initializing', invoiceNumber, path: null, error: null });
+        setDownloadState({ isOpen: true, status: "initializing", invoiceNumber, path: null, error: null });
 
-        // Timeout promises to stagger the visual effects to look premium
-        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+        const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
         try {
-            // Stage 1
-            await delay(400);
-            setDownloadState(s => s.status === 'initializing' ? { ...s, status: 'rendering' } : s);
+            await delay(300);
+            setDownloadState((s) => ({ ...s, status: "rendering" }));
 
-            // Stage 2
-            await delay(400);
-            setDownloadState(s => s.status === 'rendering' ? { ...s, status: 'generating' } : s);
+            await delay(300);
+            setDownloadState((s) => ({ ...s, status: "generating" }));
 
             const path = await generatePdf(id);
+            await delay(400);
 
-            // Minimum time in generating state so it doesn't flash too fast
-            await delay(600);
-
-            setDownloadState(s => ({ ...s, status: 'complete', path }));
+            setDownloadState((s) => ({ ...s, status: "complete", path }));
         } catch (err) {
             console.error("PDF generation failed:", err);
-            setDownloadState(s => ({ ...s, status: 'error', error: "Failed to generate PDF. Make sure Chrome/Edge is installed." }));
+            setDownloadState((s) => ({
+                ...s,
+                status: "error",
+                error: "Failed to generate PDF. Make sure Chrome/Edge is installed.",
+            }));
         }
     };
 
+    // Status calculation & Relative Due Date (Midday Style)
     const getDisplayStatus = (inv: InvoiceSummary) => {
-        if (inv.status !== 'Paid' && inv.status !== 'Cancelled') {
+        if (inv.status !== "Paid" && inv.status !== "Cancelled") {
             if (inv.due_date) {
                 const dueDate = new Date(inv.due_date);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 if (!isNaN(dueDate.getTime()) && dueDate < today) {
-                    return 'Overdue';
+                    return "Overdue";
                 }
             }
         }
         return inv.status;
     };
 
-    const handlePreview = (id: string, e?: React.MouseEvent) => {
-        console.log("handlePreview triggered for:", id);
-        if (e) {
-            const target = e.target as HTMLElement;
-            console.log("Clicked element:", target.tagName, target.className);
-            if (target.closest('button') || target.closest('.aurora-menu')) {
-                console.log("Click was on/inside a button or menu, ignoring preview");
-                return;
-            }
+    const getRelativeDueInfo = (inv: InvoiceSummary) => {
+        const displayStatus = getDisplayStatus(inv);
+        if (displayStatus === "Paid") {
+            return <span className="text-emerald-400 font-medium">Paid</span>;
         }
+        if (displayStatus === "Cancelled") {
+            return <span className="text-gray-500 line-through">Cancelled</span>;
+        }
+        if (!inv.due_date) return <span className="text-gray-400">Upon Receipt</span>;
 
-        const inv = invoices.find(i => i.id === id);
-        if (inv) {
-            console.log("Setting previewInvoice:", inv.number);
-            setPreviewInvoice(inv);
+        const due = new Date(inv.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (isNaN(due.getTime())) return <span>{inv.due_date}</span>;
+
+        const diffTime = due.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+            return (
+                <span className="text-rose-400 font-semibold flex items-center gap-1">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                    Overdue by {Math.abs(diffDays)}d
+                </span>
+            );
+        } else if (diffDays === 0) {
+            return (
+                <span className="text-amber-400 font-semibold flex items-center gap-1">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Due today
+                </span>
+            );
+        } else if (diffDays <= 7) {
+            return <span className="text-amber-400/90 font-medium">Due in {diffDays}d</span>;
         } else {
-            console.warn("Invoice not found in state for ID:", id);
+            return <span className="text-gray-400">Due in {diffDays}d</span>;
         }
     };
 
     const formatCurrency = (total: string) => {
         const num = parseFloat(total);
         if (isNaN(num)) return total;
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
+        return new Intl.NumberFormat("en-US", {
+            style: "currency",
             currency: currency,
             minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            maximumFractionDigits: 2,
         }).format(num);
     };
 
+    // Filter & search invoices
     const filtered = invoices.filter((inv) => {
         const matchesSearch =
             inv.number.toLowerCase().includes(search.toLowerCase()) ||
-            clientName(inv.client_id).toLowerCase().includes(search.toLowerCase());
-        const matchesFilter = !filterStatus || getDisplayStatus(inv).toLowerCase() === filterStatus;
+            clientName(inv.client_id).toLowerCase().includes(search.toLowerCase()) ||
+            (clientCompany(inv.client_id) || "").toLowerCase().includes(search.toLowerCase());
+        const matchesFilter = !filterStatus || getDisplayStatus(inv).toLowerCase() === filterStatus.toLowerCase();
         return matchesSearch && matchesFilter;
     });
 
-    const statuses = [
-        { id: "all", label: "All Invoices", icon: FileText },
-        { id: "paid", label: "Paid", icon: CheckCircle2 },
-        { id: "sent", label: "Sent", icon: ArrowRight },
-        { id: "pending", label: "Pending", icon: Clock },
-        { id: "overdue", label: "Overdue", icon: AlertCircle },
-        { id: "draft", label: "Draft", icon: FilePlus2 },
-    ];
-
-    const statusConfig = (status: string) => {
+    const statusPillConfig = (status: string) => {
         switch (status.toLowerCase()) {
-            case "paid": return { bg: "rgba(16, 185, 129, 0.15)", border: "rgba(16, 185, 129, 0.3)", color: "#34d399", glow: "0 0 10px rgba(16, 185, 129, 0.4)" };
-            case "pending": return { bg: "rgba(245, 158, 11, 0.15)", border: "rgba(245, 158, 11, 0.3)", color: "#fbbf24", glow: "0 0 10px rgba(245, 158, 11, 0.4)" };
-            case "sent": return { bg: "rgba(59, 130, 246, 0.15)", border: "rgba(59, 130, 246, 0.3)", color: "#60a5fa", glow: "0 0 10px rgba(59, 130, 246, 0.4)" };
-            case "overdue": return { bg: "rgba(239, 68, 68, 0.15)", border: "rgba(239, 68, 68, 0.3)", color: "#f87171", glow: "0 0 10px rgba(239, 68, 68, 0.4)" };
-            case "draft": return { bg: "rgba(107, 114, 128, 0.15)", border: "rgba(107, 114, 128, 0.3)", color: "#9ca3af", glow: "none" };
-            default: return { bg: "rgba(107, 114, 128, 0.1)", border: "transparent", color: "#6b7280", glow: "none" };
+            case "paid":
+                return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]";
+            case "pending":
+            case "sent":
+                return "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]";
+            case "overdue":
+                return "bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]";
+            case "draft":
+                return "bg-gray-500/10 text-gray-400 border-gray-500/30";
+            case "cancelled":
+                return "bg-zinc-800/60 text-zinc-500 border-zinc-700/40 line-through";
+            default:
+                return "bg-gray-500/10 text-gray-400 border-gray-500/20";
         }
     };
 
-    // Calculate sum of visible invoices
-    const totalAmount = filtered.reduce((sum, inv) => sum + parseFloat(inv.total || "0"), 0);
+    // Batch Selection Helpers
+    const toggleSelectAll = () => {
+        if (selectedIds.length === filtered.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filtered.map((i) => i.id));
+        }
+    };
+
+    const toggleSelectRow = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    };
+
+    // Batch Actions
+    const handleBatchMarkPaid = async () => {
+        for (const id of selectedIds) {
+            await updateInvoiceStatus(id, "Paid");
+        }
+        setSelectedIds([]);
+        await fetchData();
+    };
+
+    const handleBatchDelete = async () => {
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} invoices?`)) return;
+        for (const id of selectedIds) {
+            await deleteInvoice(id);
+        }
+        setSelectedIds([]);
+        await fetchData();
+    };
 
     return (
-        <div style={{ paddingBottom: '4rem', maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ paddingBottom: "6rem", maxWidth: "1400px", margin: "0 auto" }}>
             {/* Download Progress Modal */}
             <DownloadProgressModal
                 {...downloadState}
-                onClose={() => setDownloadState(s => ({ ...s, isOpen: false }))}
+                onClose={() => setDownloadState((s) => ({ ...s, isOpen: false }))}
             />
 
-            {/* Premium Dashboard Header */}
+            {/* Midday-style Slide-Over Invoice Details Sheet */}
+            <InvoiceDetailsSheet
+                invoiceId={selectedInvoiceId}
+                clients={clients}
+                currency={currency}
+                onClose={() => setSelectedInvoiceId(null)}
+                onRefresh={fetchData}
+                onDownloadPdf={handleDownload}
+            />
+
+            {/* Top Header */}
             <motion.div
-                className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10"
+                className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
+                transition={{ duration: 0.4 }}
             >
                 <div>
-                    <h1 className="text-gradient" style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>Financials</h1>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <p style={{ color: 'var(--text-tertiary)', fontSize: '1.1rem', margin: 0 }}>
-                            Track and manage your revenue stream.
-                        </p>
-                        {!loading && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(45,212,191,0.1)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(45,212,191,0.2)' }}>
-                                <TrendingUp size={14} style={{ color: 'var(--primary)' }} />
-                                <span style={{ color: 'var(--foreground)', fontWeight: 600, fontSize: '0.9rem' }}>
-                                    {formatCurrency(totalAmount.toString())}
-                                </span>
-                            </div>
-                        )}
-                    </div>
+                    <h1
+                        className="text-gradient"
+                        style={{
+                            fontSize: "2.5rem",
+                            fontWeight: 800,
+                            letterSpacing: "-0.02em",
+                            marginBottom: "0.25rem",
+                        }}
+                    >
+                        Invoices
+                    </h1>
+                    <p style={{ color: "var(--text-tertiary)", fontSize: "1rem", margin: 0 }}>
+                        Command, monitor, and accelerate your cash flow with Midday-grade precision.
+                    </p>
                 </div>
-                <div className="page-header-actions">
+
+                {/* Header Action Buttons */}
+                <div className="flex items-center gap-3">
+                    {/* Export Dropdown */}
+                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl p-1">
+                        <button
+                            onClick={() => exportInvoicesToCsv(filtered, clients)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                            title="Export current view to CSV"
+                        >
+                            <FileSpreadsheet size={14} className="text-emerald-400" />
+                            <span>CSV</span>
+                        </button>
+                        <button
+                            onClick={() => exportInvoicesToJson(filtered)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                            title="Export current view to JSON"
+                        >
+                            <FileCode size={14} className="text-blue-400" />
+                            <span>JSON</span>
+                        </button>
+                    </div>
+
+                    {/* New Invoice Button */}
                     <motion.button
                         className="btn btn-primary glass-panel"
-                        onClick={() => navigate('/editor')}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{ height: '3rem', padding: '0 1.5rem', borderRadius: 'var(--radius-xl)' }}
+                        onClick={() => navigate("/editor")}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
+                        style={{ height: "2.75rem", padding: "0 1.25rem", borderRadius: "var(--radius-xl)" }}
                     >
-                        <Plus size={18} /> Generate Invoice
+                        <Plus size={16} /> New Invoice
                     </motion.button>
                 </div>
             </motion.div>
 
-            {/* Dashboard Controls */}
-            <div className="page-content">
-                <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-2xl)', marginBottom: '2rem', display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* Search Component */}
-                    <div style={{ position: "relative", flex: '1 1 300px', minWidth: '250px' }}>
-                        <Search
-                            size={18}
-                            style={{
-                                position: "absolute",
-                                left: 16,
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "var(--foreground)",
-                                opacity: 0.5
-                            }}
-                        />
-                        <input
-                            className="form-input"
-                            placeholder="Search by invoice number or client name..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            style={{ paddingLeft: '44px', borderRadius: 'var(--radius-xl)' }}
-                        />
-                    </div>
+            {/* Midday-style Financial Metrics Cards */}
+            <InvoiceMetricsCards
+                invoices={invoices}
+                currency={currency}
+                activeFilter={filterStatus}
+                onSelectFilter={(st) => setFilterStatus(st)}
+            />
 
-                    {/* Filter Pills */}
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", flex: '2 1 auto', justifyContent: 'flex-end' }}>
-                        {statuses.map((s) => {
-                            const Icon = s.icon;
-                            const isActive = (s.id === "all" && !filterStatus) || filterStatus === s.id;
-                            return (
-                                <motion.button
-                                    key={s.id}
-                                    className="btn btn-ghost"
-                                    whileHover={{ scale: 1.05, background: 'color-mix(in srgb, var(--foreground) 8%, transparent)' }}
-                                    whileTap={{ scale: 0.95 }}
-                                    style={{
-                                        fontSize: "0.9rem",
-                                        fontWeight: isActive ? 600 : 500,
-                                        height: '2.5rem',
-                                        padding: "0 1rem",
-                                        borderRadius: '20px',
-                                        background: isActive ? "linear-gradient(135deg, var(--primary), var(--secondary))" : "color-mix(in srgb, var(--foreground) 3%, transparent)",
-                                        color: isActive ? "#fff" : "var(--foreground)",
-                                        opacity: isActive ? 1 : 0.7,
-                                        border: `1px solid ${isActive ? 'transparent' : 'color-mix(in srgb, var(--foreground) 5%, transparent)'}`,
-                                        boxShadow: isActive ? '0 4px 15px rgba(124, 58, 237, 0.3)' : 'none',
-                                        transition: 'all 0.2s',
-                                        display: 'flex',
-                                        gap: '6px',
-                                        alignItems: 'center'
-                                    }}
-                                    onClick={() => setFilterStatus(s.id === "all" ? null : s.id)}
-                                >
-                                    {s.id !== 'all' && <Icon size={14} />}
-                                    {s.label}
-                                </motion.button>
-                            );
-                        })}
-                    </div>
+            {/* Search & Filter Toolbar */}
+            <div className="glass-panel mb-6 p-4 rounded-2xl flex gap-4 items-center justify-between flex-wrap border border-white/10">
+                {/* Search Input */}
+                <div style={{ position: "relative", flex: "1 1 300px", minWidth: "250px" }}>
+                    <Search
+                        size={16}
+                        style={{
+                            position: "absolute",
+                            left: 14,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "var(--foreground)",
+                            opacity: 0.5,
+                        }}
+                    />
+                    <input
+                        className="form-input"
+                        placeholder="Search invoice number, client, company..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        style={{ paddingLeft: "40px", borderRadius: "var(--radius-xl)", height: "2.5rem" }}
+                    />
                 </div>
 
-                {/* Loading State */}
-                <AnimatePresence mode="wait">
-                    {loading && (
-                        <motion.div
-                            key="loading"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                            <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
-                                <Loader2 size={36} style={{ color: "var(--secondary)" }} />
-                            </motion.div>
-                            <p style={{ marginTop: '1.5rem', color: 'var(--text-tertiary)', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Fetching Financials</p>
-                        </motion.div>
-                    )}
-
-                    {/* Premium Data Table */}
-                    {!loading && filtered.length > 0 && (
-                        <motion.div
-                            key="table"
-                            className="glass-panel w-full"
-                            style={{ padding: 0, borderRadius: 'var(--radius-2xl)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'visible' }}
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: menuId ? '150px' : '0' }}>
-                                <table className="data-table min-w-[800px]" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invoice ID</th>
-                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client</th>
-                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timeline</th>
-                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                                            <th style={{ padding: '1.25rem 1.5rem', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
-                                            <th style={{ padding: '1.25rem 1.5rem', width: 80 }}></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filtered.map((inv) => {
-                                            const displayStatus = getDisplayStatus(inv);
-                                            const config = statusConfig(displayStatus);
-                                            return (
-                                                <motion.tr
-                                                    key={inv.id}
-                                                    variants={rowVariants}
-                                                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s ease', position: 'relative', zIndex: menuId === inv.id ? 20 : 1, cursor: 'pointer' }}
-                                                    whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
-                                                    onClick={(e) => handlePreview(inv.id, e)}
-                                                >
-                                                    <td style={{ padding: '1.25rem 1.5rem', fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--foreground)", fontSize: '0.95rem' }}>
-                                                        {inv.number}
-                                                    </td>
-                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                            <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>
-                                                                {clientName(inv.client_id).charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <span style={{ fontWeight: 600, color: "var(--foreground)", fontSize: '1rem' }}>
-                                                                {clientName(inv.client_id)}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                <span style={{ display: 'inline-block', width: '40px' }}>Issued:</span>
-                                                                <span style={{ color: 'var(--text-primary)' }}>
-                                                                    {inv.issue_date && !isNaN(new Date(inv.issue_date).getTime())
-                                                                        ? new Date(inv.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                                                                        : 'N/A'}
-                                                                </span>
-                                                            </span>
-                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                <span style={{ display: 'inline-block', width: '40px' }}>Due:</span>
-                                                                <span style={{ color: displayStatus === 'Overdue' ? 'var(--danger)' : 'var(--text-primary)' }}>
-                                                                    {inv.due_date && !isNaN(new Date(inv.due_date).getTime())
-                                                                        ? new Date(inv.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                                                                        : 'N/A'}
-                                                                </span>
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
-                                                        <span style={{
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            padding: '0.25rem 0.75rem',
-                                                            borderRadius: '20px',
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: 600,
-                                                            color: config.color,
-                                                            background: config.bg,
-                                                            border: `1px solid ${config.color}20`
-                                                        }}>
-                                                            {displayStatus}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right', fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--foreground)", fontSize: '1.1rem' }}>
-                                                        {formatCurrency(inv.total)}
-                                                    </td>
-                                                    <td style={{ padding: '1.25rem 1.5rem', position: "relative", zIndex: menuId === inv.id ? 50 : 1 }}>
-                                                        <motion.button
-                                                            className="btn btn-ghost btn-icon"
-                                                            style={{ height: 36, width: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}
-                                                            onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
-                                                            whileHover={{ background: 'rgba(255,255,255,0.1)' }}
-                                                        >
-                                                            <MoreHorizontal size={18} />
-                                                        </motion.button>
-                                                        <AnimatePresence>
-                                                            {menuId === inv.id && (
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                                    transition={{ duration: 0.2, type: 'spring' }}
-                                                                    className="aurora-menu"
-                                                                    style={{
-                                                                        position: "absolute",
-                                                                        right: '2.5rem',
-                                                                        top: 'calc(100% - 10px)',
-                                                                        background: "rgba(15, 23, 42, 0.95)",
-                                                                        backdropFilter: "blur(20px)",
-                                                                        border: "1px solid rgba(255,255,255,0.2)",
-                                                                        borderRadius: "var(--radius-lg)",
-                                                                        padding: "0.5rem",
-                                                                        minWidth: 180,
-                                                                        zIndex: 9999,
-                                                                        boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-                                                                    }}
-                                                                >
-                                                                    <button
-                                                                        className="btn btn-ghost"
-                                                                        style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.9rem", height: 36, gap: '10px', color: 'var(--text-primary)' }}
-                                                                        onClick={() => handleDownload(inv.id, inv.number)}
-                                                                    >
-                                                                        <Download size={16} /> Download PDF
-                                                                    </button>
-
-                                                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
-
-                                                                    {/* Status sub-menu / options */}
-                                                                    <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Set Status</div>
-                                                                    <div className="flex flex-col gap-1 px-1">
-                                                                        {['Draft', 'Pending', 'Sent', 'Paid', 'Cancelled'].map((s) => (
-                                                                            <button
-                                                                                key={s}
-                                                                                className="btn btn-ghost"
-                                                                                style={{ width: "100%", justifyContent: "flex-start", fontSize: "0.85rem", height: 28, color: inv.status === s ? 'var(--primary)' : 'var(--text-secondary)' }}
-                                                                                onClick={() => handleStatusChange(inv.id, s)}
-                                                                            >
-                                                                                <span className="w-4">{inv.status === s && "✓"}</span>
-                                                                                {s}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-
-                                                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
-
-                                                                    <button
-                                                                        className="btn btn-ghost"
-                                                                        style={{ width: "100%", justifyContent: "flex-start", color: "var(--color-soft-coral)", fontSize: "0.9rem", height: 36, gap: '10px' }}
-                                                                        onClick={() => handleDelete(inv.id)}
-                                                                    >
-                                                                        <Trash2 size={16} /> Delete Invoice
-                                                                    </button>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </td>
-                                                </motion.tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {!loading && filtered.length === 0 && (
-                        <motion.div
-                            key="empty"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="glass-panel"
-                            style={{ padding: '6rem 2rem', textAlign: 'center', borderRadius: 'var(--radius-2xl)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                            <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(45,212,191,0.2), rgba(124,58,237,0.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <FileText size={48} style={{ color: 'var(--foreground)' }} />
-                            </div>
-                            <h3 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                {search || filterStatus ? "No matches found" : "No invoices yet"}
-                            </h3>
-                            <p style={{ color: 'var(--text-tertiary)', fontSize: '1.1rem', maxWidth: '400px', marginBottom: '2.5rem', lineHeight: 1.6 }}>
-                                {invoices.length === 0
-                                    ? "Start generating revenue. Create your first professional invoice to send to your clients."
-                                    : "Try adjusting your search criteria or modifying the active filters."}
-                            </p>
-                            {!search && !filterStatus && (
-                                <button className="btn btn-primary" onClick={() => navigate('/editor')} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '30px' }}>
-                                    <Plus size={20} /> Create First Invoice
-                                </button>
-                            )}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {/* Filter Pills */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                        { id: "all", label: "All", icon: FileText },
+                        { id: "paid", label: "Paid", icon: CheckCircle2 },
+                        { id: "pending", label: "Pending", icon: Clock },
+                        { id: "overdue", label: "Overdue", icon: AlertCircle },
+                        { id: "draft", label: "Draft", icon: FilePlus2 },
+                    ].map((s) => {
+                        const Icon = s.icon;
+                        const isActive = (s.id === "all" && !filterStatus) || filterStatus === s.id;
+                        return (
+                            <button
+                                key={s.id}
+                                onClick={() => setFilterStatus(s.id === "all" ? null : s.id)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                                    isActive
+                                        ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]"
+                                        : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
+                                }`}
+                            >
+                                <Icon size={13} />
+                                <span>{s.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
-            {/* Premium Slide-Over Form for Creation */}
-            <AnimatePresence>
-                {showCreate && (
+            {/* Invoices Table Container */}
+            <AnimatePresence mode="wait">
+                {loading ? (
                     <motion.div
-                        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                        animate={{ opacity: 1, backdropFilter: 'blur(10px)' }}
-                        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                        style={{ position: 'fixed', inset: 0, background: 'color-mix(in srgb, var(--background) 70%, transparent)', zIndex: 100, display: 'flex', justifyContent: 'flex-end' }}
-                        onClick={() => setShowCreate(false)}
-                    >
-                        <motion.div
-                            variants={slideOverVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            style={{
-                                width: '100%',
-                                maxWidth: '600px',
-                                height: '100%',
-                                background: 'var(--surface)',
-                                borderLeft: '1px solid color-mix(in srgb, var(--foreground) 8%, transparent)',
-                                boxShadow: '-20px 0 50px rgba(0,0,0,0.5)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                position: 'relative'
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Slide-over Header */}
-                            <div style={{ padding: '2rem 2.5rem', borderBottom: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)', background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', position: 'relative', overflow: 'hidden' }}>
-                                <div style={{ position: 'absolute', top: 0, right: 0, width: '300px', height: '100%', background: 'radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 15%, transparent), transparent 70%)' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                                    <div>
-                                        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                            Draft New Invoice
-                                        </h2>
-                                        <p style={{ color: 'var(--foreground)', opacity: 0.7, fontSize: '0.95rem', marginTop: '0.5rem' }}>Configure details and generate a new billable item.</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowCreate(false)}
-                                        style={{ width: 40, height: 40, borderRadius: '50%', background: 'color-mix(in srgb, var(--foreground) 5%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--foreground)', opacity: 0.7, border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 10%, transparent)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 5%, transparent)'}
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Form Content */}
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                                    {/* Client Selection Section */}
-                                    <div style={{ background: 'color-mix(in srgb, var(--foreground) 3%, transparent)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)' }}>
-                                        <div className="form-group" style={{ marginBottom: 0 }}>
-                                            <label className="form-label" style={{ fontSize: '1rem', color: 'var(--foreground)' }}>Bill To <span style={{ color: 'var(--primary)' }}>*</span></label>
-                                            <select ref={clientRef} className="form-input glass-panel" style={{ height: '3.5rem', fontSize: '1.05rem', marginTop: '0.5rem' }}>
-                                                <option value="" style={{ background: 'var(--surface)' }}>Select a registered client...</option>
-                                                {clients.map((c) => (
-                                                    <option key={c.id} value={c.id} style={{ background: 'var(--surface)' }}>
-                                                        {c.name} {c.company ? `— ${c.company}` : ""}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {clients.length === 0 && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)', fontSize: '0.9rem', marginTop: '1rem', background: 'rgba(245,158,11,0.1)', padding: '10px 14px', borderRadius: '8px' }}>
-                                                    <AlertCircle size={16} /> Cannot create invoice. Please add a client in the Client Hub first.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Line Item Section */}
-                                    <div style={{ background: 'color-mix(in srgb, var(--foreground) 3%, transparent)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)' }}>
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--foreground)', opacity: 0.8, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <FileText size={18} /> Primary Line Item
-                                        </h3>
-
-                                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                            <label className="form-label">Service / Product Description <span style={{ color: 'var(--primary)' }}>*</span></label>
-                                            <input ref={descRef} className="form-input" placeholder="e.g. Website Design - Phase 1" />
-                                        </div>
-
-                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-                                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                                <label className="form-label">Quantity</label>
-                                                <input ref={qtyRef} className="form-input" type="number" placeholder="1" defaultValue={1} />
-                                            </div>
-                                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                                <label className="form-label">Unit Rate ($) <span style={{ color: 'var(--primary)' }}>*</span></label>
-                                                <input ref={priceRef} className="form-input" type="number" placeholder="0.00" step="0.01" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Additional Info Section */}
-                                    <div style={{ background: 'color-mix(in srgb, var(--foreground) 3%, transparent)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid color-mix(in srgb, var(--foreground) 5%, transparent)' }}>
-                                        <div className="form-group" style={{ marginBottom: 0 }}>
-                                            <label className="form-label">Additional Notes & Terms</label>
-                                            <input ref={notesRef} className="form-input" placeholder="Payment due within 30 days. Wire transfer details..." />
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            {/* Slide-over Footer Actions */}
-                            <div style={{ padding: '1.5rem 2.5rem', borderTop: '1px solid color-mix(in srgb, var(--foreground) 10%, transparent)', background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowCreate(false)}
-                                    style={{ background: 'transparent', border: '1px solid color-mix(in srgb, var(--foreground) 15%, transparent)', color: 'var(--foreground)' }}
-                                >
-                                    Cancel
-                                </button>
-                                <motion.button
-                                    className="btn btn-primary"
-                                    onClick={handleCreate}
-                                    disabled={creating || clients.length === 0}
-                                    whileHover={clients.length > 0 ? { scale: 1.02, boxShadow: '0 0 20px rgba(124, 58, 237, 0.4)' } : {}}
-                                    whileTap={clients.length > 0 ? { scale: 0.98 } : {}}
-                                    style={{ padding: '0.75rem 2rem', borderRadius: '30px' }}
-                                >
-                                    {creating ? <Loader2 size={18} className="animate-spin" /> : <FilePlus2 size={18} />}
-                                    {creating ? "Generating Document..." : "Finalize & Draft Invoice"}
-                                </motion.button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            <AnimatePresence>
-                {previewInvoice && (
-                    <motion.div
-                        key="invoice-preview-modal"
+                        key="loading"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
-                        style={{ zIndex: 100000 }}
-                        onClick={() => setPreviewInvoice(null)}
+                        style={{
+                            height: "300px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col relative"
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
                         >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] to-emerald-400" />
-
-                            <div className="p-6 pb-0 flex justify-between items-start">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white tracking-tight">{previewInvoice.number}</h2>
-                                    <p className="text-[var(--text-secondary)] mt-1">{clientName(previewInvoice.client_id)}</p>
-                                </div>
-                                <button
-                                    onClick={() => setPreviewInvoice(null)}
-                                    className="p-2 -mr-2 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="p-6 flex-1 text-sm text-[var(--text-secondary)]">
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                                        <span className="flex items-center gap-2"><Clock size={16} className="text-emerald-400" /> Issued</span>
-                                        <span className="text-white font-medium">
-                                            {previewInvoice.issue_date && !isNaN(new Date(previewInvoice.issue_date).getTime())
-                                                ? new Date(previewInvoice.issue_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                                                : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                                        <span className="flex items-center gap-2"><AlertCircle size={16} className="text-amber-400" /> Due</span>
-                                        <span className="text-white font-medium">
-                                            {previewInvoice.due_date && !isNaN(new Date(previewInvoice.due_date).getTime())
-                                                ? new Date(previewInvoice.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                                                : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                                        <span className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[var(--primary)]" /> Status</span>
-                                        <span className="text-white font-medium">{getDisplayStatus(previewInvoice)}</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-8 p-4 bg-white/5 rounded-xl flex justify-between items-center">
-                                    <span className="uppercase tracking-wider text-xs font-bold text-white/50">Total Amount</span>
-                                    <span className="text-xl font-bold text-emerald-400">
-                                        {formatCurrency(previewInvoice.total)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="p-6 pt-0 flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setPreviewInvoice(null);
-                                        handleDownload(previewInvoice.id, previewInvoice.number);
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors"
-                                >
-                                    <Download size={18} /> Export PDF
-                                </button>
-                            </div>
+                            <Loader2 size={32} style={{ color: "var(--primary)" }} />
                         </motion.div>
+                        <p style={{ marginTop: "1rem", color: "var(--text-tertiary)", fontSize: "0.9rem" }}>
+                            Loading invoices...
+                        </p>
+                    </motion.div>
+                ) : filtered.length === 0 ? (
+                    <motion.div
+                        key="empty"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="glass-panel p-12 rounded-2xl text-center border border-white/10"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-4">
+                            <FileText size={28} />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-1">No invoices found</h3>
+                        <p className="text-sm text-gray-400 max-w-sm mx-auto mb-6">
+                            {search || filterStatus
+                                ? "No invoices match your current search or filter query."
+                                : "Create your first professional invoice with auto-save and payment tracking."}
+                        </p>
+                        <button
+                            onClick={() => navigate("/editor")}
+                            className="btn btn-primary px-5 py-2.5 rounded-xl font-semibold text-xs inline-flex items-center gap-2"
+                        >
+                            <Plus size={15} /> Create Invoice
+                        </button>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="table"
+                        className="glass-panel w-full rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse min-w-[750px]">
+                                <thead>
+                                    <tr className="bg-black/40 border-b border-white/10 text-xs uppercase tracking-wider font-semibold text-gray-400">
+                                        <th className="py-3.5 px-4 w-12 text-center">
+                                            <button onClick={toggleSelectAll} className="text-gray-400 hover:text-white">
+                                                {selectedIds.length === filtered.length && filtered.length > 0 ? (
+                                                    <CheckSquare size={16} className="text-blue-400" />
+                                                ) : (
+                                                    <Square size={16} />
+                                                )}
+                                            </button>
+                                        </th>
+                                        <th className="py-3.5 px-4">Invoice #</th>
+                                        <th className="py-3.5 px-4">Customer</th>
+                                        <th className="py-3.5 px-4">Due Date</th>
+                                        <th className="py-3.5 px-4 text-center">Status</th>
+                                        <th className="py-3.5 px-4 text-right">Amount</th>
+                                        <th className="py-3.5 px-4 w-16 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 text-xs">
+                                    {filtered.map((inv) => {
+                                        const displayStatus = getDisplayStatus(inv);
+                                        const isRowSelected = selectedIds.includes(inv.id);
+
+                                        return (
+                                            <motion.tr
+                                                key={inv.id}
+                                                variants={rowVariants}
+                                                onClick={() => setSelectedInvoiceId(inv.id)}
+                                                className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${
+                                                    isRowSelected ? "bg-blue-500/[0.07]" : ""
+                                                }`}
+                                            >
+                                                {/* Checkbox */}
+                                                <td className="py-3.5 px-4 text-center" onClick={(e) => toggleSelectRow(inv.id, e)}>
+                                                    <button className="text-gray-400 hover:text-white">
+                                                        {isRowSelected ? (
+                                                            <CheckSquare size={16} className="text-blue-400" />
+                                                        ) : (
+                                                            <Square size={16} />
+                                                        )}
+                                                    </button>
+                                                </td>
+
+                                                {/* Invoice Number */}
+                                                <td className="py-3.5 px-4 font-mono font-bold text-white">
+                                                    <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
+                                                        {inv.number}
+                                                    </span>
+                                                </td>
+
+                                                {/* Client Name & Avatar */}
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xs">
+                                                            {clientName(inv.client_id).charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-semibold text-white block">
+                                                                {clientName(inv.client_id)}
+                                                            </span>
+                                                            {clientCompany(inv.client_id) && (
+                                                                <span className="text-[11px] text-gray-400">
+                                                                    {clientCompany(inv.client_id)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* Timeline / Relative Due Date */}
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex flex-col">
+                                                        {getRelativeDueInfo(inv)}
+                                                        <span className="text-[10px] text-gray-500 mt-0.5">
+                                                            {inv.due_date || "Upon receipt"}
+                                                        </span>
+                                                    </div>
+                                                </td>
+
+                                                {/* Status Badge */}
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <span
+                                                        className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusPillConfig(
+                                                            displayStatus
+                                                        )}`}
+                                                    >
+                                                        {displayStatus}
+                                                    </span>
+                                                </td>
+
+                                                {/* Amount */}
+                                                <td className="py-3.5 px-4 text-right font-mono font-bold text-sm text-white">
+                                                    <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
+                                                        {formatCurrency(inv.total)}
+                                                    </span>
+                                                </td>
+
+                                                {/* Action Menu (Three dots) */}
+                                                <td className="py-3.5 px-4 text-center relative" onClick={(e) => e.stopPropagation()}>
+                                                    <button
+                                                        onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
+                                                        className="btn-action-trigger p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                                                    >
+                                                        <MoreHorizontal size={16} />
+                                                    </button>
+
+                                                    {/* Context Dropdown */}
+                                                    {menuId === inv.id && (
+                                                        <div className="actions-dropdown absolute right-4 top-10 w-48 bg-[#141b2d] border border-white/10 rounded-xl shadow-2xl py-1.5 z-40 backdrop-blur-xl">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedInvoiceId(inv.id);
+                                                                    setMenuId(null);
+                                                                }}
+                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
+                                                            >
+                                                                <FileText size={13} className="text-blue-400" />
+                                                                <span>View Details</span>
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setMenuId(null);
+                                                                    navigate(`/editor?id=${inv.id}`);
+                                                                }}
+                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
+                                                            >
+                                                                <Edit3 size={13} className="text-amber-400" />
+                                                                <span>Edit Invoice</span>
+                                                            </button>
+
+                                                            <button
+                                                                onClick={(e) => handleDuplicate(inv.id, e)}
+                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
+                                                            >
+                                                                <Copy size={13} className="text-purple-400" />
+                                                                <span>Duplicate Invoice</span>
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => handleDownload(inv.id, inv.number)}
+                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
+                                                            >
+                                                                <Download size={13} className="text-teal-400" />
+                                                                <span>Download PDF</span>
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setMenuId(null);
+                                                                    setLinkModalInvoice(inv);
+                                                                }}
+                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
+                                                            >
+                                                                <QrCode size={13} className="text-emerald-400" />
+                                                                <span>Payment Link & QR</span>
+                                                            </button>
+
+                                                            {displayStatus === "Paid" && (
+                                                                <button
+                                                                    onClick={() => handleDownload(inv.id, `${inv.number}_Receipt`)}
+                                                                    className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-white/10 flex items-center gap-2"
+                                                                >
+                                                                    <Receipt size={13} />
+                                                                    <span>Download Receipt</span>
+                                                                </button>
+                                                            )}
+
+                                                            <div className="my-1 border-t border-white/5" />
+
+                                                            {displayStatus !== "Paid" ? (
+                                                                <button
+                                                                    onClick={(e) => handleStatusChange(inv.id, "Paid", e)}
+                                                                    className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-emerald-400 hover:bg-white/10 flex items-center gap-2"
+                                                                >
+                                                                    <CheckCircle2 size={13} />
+                                                                    <span>Mark as Paid</span>
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={(e) => handleStatusChange(inv.id, "Pending", e)}
+                                                                    className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-amber-400 hover:bg-white/10 flex items-center gap-2"
+                                                                >
+                                                                    <Clock size={13} />
+                                                                    <span>Mark as Pending</span>
+                                                                </button>
+                                                            )}
+
+                                                            <div className="my-1 border-t border-white/5" />
+
+                                                            <button
+                                                                onClick={(e) => handleDelete(inv.id, e)}
+                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-rose-400 hover:bg-rose-500/10 flex items-center gap-2"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                                <span>Delete Invoice</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div >
+
+            {/* Midday-style Floating Bottom Batch Action Bar */}
+            <AnimatePresence>
+                {selectedIds.length > 0 && (
+                    <motion.div
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 50, opacity: 0 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#141b2d] border border-blue-500/30 rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-4 backdrop-blur-2xl"
+                    >
+                        <span className="text-xs font-semibold text-white">
+                            {selectedIds.length} {selectedIds.length === 1 ? "invoice" : "invoices"} selected
+                        </span>
+
+                        <div className="h-4 w-px bg-white/20" />
+
+                        <button
+                            onClick={handleBatchMarkPaid}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 transition-all flex items-center gap-1.5"
+                        >
+                            <CheckCircle2 size={13} />
+                            <span>Mark Paid</span>
+                        </button>
+
+                        <button
+                            onClick={handleBatchDelete}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-400 transition-all flex items-center gap-1.5"
+                        >
+                            <Trash2 size={13} />
+                            <span>Delete</span>
+                        </button>
+
+                        <button
+                            onClick={() => setSelectedIds([])}
+                            className="text-xs text-gray-400 hover:text-white px-2 py-1"
+                        >
+                            Clear
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Midday-style Slide-Over Invoice Details Sheet */}
+            <InvoiceDetailsSheet
+                invoiceId={selectedInvoiceId}
+                clients={clients}
+                currency={currency}
+                onClose={() => setSelectedInvoiceId(null)}
+                onRefresh={fetchData}
+                onDownloadPdf={handleDownload}
+            />
+
+            {/* Payment Link Modal */}
+            <PaymentLinkModal
+                invoice={linkModalInvoice}
+                client={linkModalInvoice ? (clients.find(c => c.id === linkModalInvoice.client_id) || null) : null}
+                isOpen={Boolean(linkModalInvoice)}
+                onClose={() => setLinkModalInvoice(null)}
+            />
+        </div>
     );
 }

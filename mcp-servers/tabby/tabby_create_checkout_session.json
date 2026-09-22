@@ -1,0 +1,45 @@
+{
+  "name": "tabby_create_checkout_session",
+  "description": "Create a Tabby Buy Now Pay Later (BNPL) checkout session allowing end-customers to split payments into 4 interest-free installments.",
+  "parameters": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "amount": {
+        "type": "number",
+        "description": "Total order / invoice amount in merchant currency (e.g. 1200.00)"
+      },
+      "currency": {
+        "type": "string",
+        "description": "Currency code (AED, SAR, KWD, BHD, USD)",
+        "default": "AED"
+      },
+      "invoice_id": {
+        "type": "string",
+        "description": "InvoiceFlow invoice ID or quotation ID"
+      },
+      "buyer_name": {
+        "type": "string",
+        "description": "Customer full name"
+      },
+      "buyer_email": {
+        "type": "string",
+        "description": "Customer email address"
+      },
+      "buyer_phone": {
+        "type": "string",
+        "description": "Customer phone number with country code"
+      },
+      "success_url": {
+        "type": "string",
+        "description": "Redirect URL on successful authorization"
+      },
+      "cancel_url": {
+        "type": "string",
+        "description": "Redirect URL on cancelled checkout"
+      }
+    },
+    "required": ["amount", "currency", "invoice_id", "buyer_name"],
+    "additionalProperties": false
+  }
+}

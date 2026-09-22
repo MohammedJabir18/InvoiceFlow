@@ -1,13 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FloatingSidebar } from "./components/FloatingSidebar";
 import { TopNavbar } from "./components/TopNavbar";
+import { MobileHeader } from "./components/mobile/MobileHeader";
+import { MobileBottomNav } from "./components/mobile/MobileBottomNav";
+import { MobileMenuDrawer } from "./components/mobile/MobileMenuDrawer";
 import { Dashboard } from "./pages/Dashboard";
 import { Invoices } from "./pages/Invoices";
+import { Quotations } from "./pages/Quotations";
+import { MonthlyReport } from "./pages/MonthlyReport";
+import { Subscription } from "./pages/Subscription";
 import { Clients } from "./pages/Clients";
 import { Deals } from "./pages/Deals";
 import { Editor } from "./pages/Editor";
 import { Settings } from "./pages/Settings";
 import { About } from "./pages/About";
+import { PaymentLinkView } from "./pages/PaymentLinkView";
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "./store/settingsStore";
 import { OnboardingWizard } from "./components/OnboardingWizard";
@@ -22,6 +29,7 @@ function App() {
     const profile = useSettingsStore(state => state.profile);
     const isLoading = useSettingsStore(state => state.isLoading);
     const [showWizard, setShowWizard] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -31,7 +39,6 @@ function App() {
     // Check onboarding status
     useEffect(() => {
         if (profile && !isLoading) {
-            // First run condition: profile name is exactly "My Company" and no email/phone
             const hasSkipped = localStorage.getItem('has_skipped_onboarding') === 'true';
             if (!hasSkipped && profile.name === "My Company" && !profile.email && !profile.phone) {
                 setShowWizard(true);
@@ -40,24 +47,6 @@ function App() {
             }
         }
     }, [profile, isLoading]);
-
-    // Apply Global Theme
-    useEffect(() => {
-        if (!profile) return;
-
-        const applyTheme = (isLight: boolean) => {
-            if (isLight) {
-                document.body.classList.add('daylight');
-            } else {
-                document.body.classList.remove('daylight');
-            }
-        };
-
-        if (profile.theme_preference === 'system') {
-            // System preference shouldn't override explicitly set 'daylight' if toggle sets it.
-            // We'll leave the initial body setup inside App and let ThemeToggle handle manual overrides.
-        }
-    }, [profile?.theme_preference]);
 
     return (
         <BrowserRouter>
@@ -69,16 +58,36 @@ function App() {
                 <CommandPalette />
                 <div className="aurora-bg" />
                 <Routes>
+                    {/* Standalone Editor Route */}
                     <Route path="/editor" element={<Editor />} />
+
+                    {/* Public Shareable Payment Link Route */}
+                    <Route path="/pay/:id" element={<PaymentLinkView />} />
+
+                    {/* Main Application Shell (Desktop + Mobile Responsive) */}
                     <Route path="*" element={
                         <>
+                            {/* Desktop Sidebar & Top Navbar */}
                             <FloatingSidebar />
                             <TopNavbar />
-                            <main className="flex-1 ml-[104px] min-h-screen overflow-y-auto overflow-x-hidden pt-24 px-8 pb-10">
+
+                            {/* Mobile Smartphone Header & Bottom Navigation */}
+                            <MobileHeader onOpenMenu={() => setMobileMenuOpen(true)} />
+                            <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
+                            <MobileMenuDrawer
+                                isOpen={mobileMenuOpen}
+                                onClose={() => setMobileMenuOpen(false)}
+                            />
+
+                            {/* Responsive Main Content Area */}
+                            <main className="flex-1 md:ml-[104px] ml-0 min-h-screen overflow-y-auto overflow-x-hidden pt-16 md:pt-24 px-3 sm:px-6 md:px-8 pb-24 md:pb-10">
                                 <Routes>
                                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                                     <Route path="/dashboard" element={<Dashboard />} />
                                     <Route path="/invoices" element={<Invoices />} />
+                                    <Route path="/quotations" element={<Quotations />} />
+                                    <Route path="/reports" element={<MonthlyReport />} />
+                                    <Route path="/subscription" element={<Subscription />} />
                                     <Route path="/clients" element={<Clients />} />
                                     <Route path="/deals" element={<Deals />} />
                                     <Route path="/settings" element={<Settings />} />

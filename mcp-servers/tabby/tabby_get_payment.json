@@ -1,0 +1,16 @@
+{
+  "name": "tabby_get_payment",
+  "description": "Query Tabby API for payment status, authorized amounts, captured installments, and settlement details.",
+  "parameters": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "payment_id": {
+        "type": "string",
+        "description": "Unique Tabby payment identifier"
+      }
+    },
+    "required": ["payment_id"],
+    "additionalProperties": false
+  }
+}

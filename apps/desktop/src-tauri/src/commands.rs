@@ -330,6 +330,161 @@ pub async fn update_invoice_status(state: State<'_, AppState>, id: String, statu
     repo.update_status(&id, valid_status).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn get_invoice(state: State<'_, AppState>, id: String) -> Result<Option<flow_core::models::Invoice>, String> {
+    let repo = InvoiceRepository::new(state.db.clone());
+    repo.get_by_id(&id).await.map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateInvoiceRequest {
+    pub id: String,
+    pub client_id: String,
+    pub items: Vec<InvoiceItemRequest>,
+    pub notes: Option<String>,
+    pub status: Option<String>,
+    pub issue_date: Option<String>,
+    pub due_date: Option<String>,
+}
+
+#[tauri::command]
+pub async fn update_invoice(state: State<'_, AppState>, request: UpdateInvoiceRequest) -> Result<(), String> {
+    use flow_core::models::InvoiceItem;
+    use flow_core::types::InvoiceStatus;
+    use flow_invoice::calculator::InvoiceCalculator;
+    use rust_decimal::Decimal;
+    use std::str::FromStr;
+    use uuid::Uuid;
+    use chrono::NaiveDate;
+
+    let repo = InvoiceRepository::new(state.db.clone());
+    let mut existing = repo.get_by_id(&request.id).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "Invoice not found".to_string())?;
+
+    let invoice_id = existing.id;
+    existing.client_id = Uuid::parse_str(&request.client_id).map_err(|e| e.to_string())?;
+
+    if let Some(s) = request.status {
+        existing.status = match s.as_str() {
+            "Pending" => InvoiceStatus::Pending,
+            "Sent" => InvoiceStatus::Sent,
+            "Paid" => InvoiceStatus::Paid,
+            "Cancelled" => InvoiceStatus::Cancelled,
+            _ => InvoiceStatus::Draft,
+        };
+    }
+
+    if let Some(d) = request.issue_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()) {
+        existing.issue_date = d;
+    }
+    if let Some(d) = request.due_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()) {
+        existing.due_date = d;
+    }
+
+    let items: Vec<InvoiceItem> = request
+        .items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            let qty = Decimal::from_str(&item.quantity.to_string()).unwrap_or_default();
+            let price = Decimal::from_str(&item.unit_price.to_string()).unwrap_or_default();
+            InvoiceItem {
+                id: Uuid::new_v4(),
+                invoice_id,
+                description: item.description.clone(),
+                quantity: qty,
+                unit_price: price,
+                amount: qty * price,
+                tax_rate_name: None,
+                sort_order: i as i32,
+            }
+        })
+        .collect();
+
+    let (subtotal, tax, disc, total) = InvoiceCalculator::grand_total(&items, &[], &None);
+    existing.items = items;
+    existing.subtotal = subtotal;
+    existing.tax_total = tax;
+    existing.discount_total = disc;
+    existing.total = total;
+    existing.amount_due = if existing.status == InvoiceStatus::Paid { Decimal::ZERO } else { total };
+    if existing.status == InvoiceStatus::Paid {
+        existing.amount_paid = total;
+    }
+    existing.notes = request.notes;
+    existing.updated_at = chrono::Utc::now();
+
+    repo.update(&existing).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn duplicate_invoice(state: State<'_, AppState>, id: String) -> Result<String, String> {
+    use flow_core::models::{Invoice, InvoiceItem};
+    use flow_core::types::InvoiceStatus;
+    use flow_invoice::number_generator::InvoiceNumberGenerator;
+    use uuid::Uuid;
+    use chrono::Utc;
+
+    let repo = InvoiceRepository::new(state.db.clone());
+    let source = repo.get_by_id(&id).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "Invoice not found".to_string())?;
+
+    let existing = repo.list_all().await.map_err(|e| e.to_string())?;
+    let gen = InvoiceNumberGenerator::default();
+    let mut offset = existing.len() as u64;
+    let mut new_number = gen.next(offset);
+    while existing.iter().any(|i| i.number == new_number) {
+        offset += 1;
+        new_number = gen.next(offset);
+    }
+
+    let new_id = Uuid::new_v4();
+    let today = Utc::now().date_naive();
+    let due_date = today + chrono::Duration::days(30);
+
+    let new_items: Vec<InvoiceItem> = source.items.iter().enumerate().map(|(i, item)| {
+        InvoiceItem {
+            id: Uuid::new_v4(),
+            invoice_id: new_id,
+            description: item.description.clone(),
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            amount: item.amount,
+            tax_rate_name: item.tax_rate_name.clone(),
+            sort_order: i as i32,
+        }
+    }).collect();
+
+    let new_invoice = Invoice {
+        id: new_id,
+        number: new_number.clone(),
+        status: InvoiceStatus::Draft,
+        client_id: source.client_id,
+        business_profile_id: source.business_profile_id,
+        deal_id: None,
+        issue_date: today,
+        due_date,
+        currency: source.currency,
+        items: new_items,
+        tax_rates: source.tax_rates,
+        discount: source.discount,
+        subtotal: source.subtotal,
+        tax_total: source.tax_total,
+        discount_total: source.discount_total,
+        total: source.total,
+        amount_paid: rust_decimal::Decimal::ZERO,
+        amount_due: source.total,
+        payment_terms: source.payment_terms,
+        notes: source.notes,
+        terms_and_conditions: source.terms_and_conditions,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    repo.create(&new_invoice).await.map_err(|e| e.to_string())?;
+    Ok(new_id.to_string())
+}
+
 // ─── Analytics Commands ───────────────────────────────────────
 
 #[tauri::command]

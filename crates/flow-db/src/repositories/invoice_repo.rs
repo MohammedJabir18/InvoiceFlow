@@ -110,6 +110,61 @@ impl InvoiceRepository {
         Ok(())
     }
 
+    pub async fn update(&self, invoice: &Invoice) -> Result<(), sqlx::Error> {
+        let id = invoice.id.to_string();
+        let client_id = invoice.client_id.to_string();
+        let status = format!("{:?}", invoice.status);
+        let currency = invoice.currency.to_string();
+        let issue_date = invoice.issue_date.to_string();
+        let due_date = invoice.due_date.to_string();
+        let subtotal = invoice.subtotal.to_string();
+        let tax_total = invoice.tax_total.to_string();
+        let discount_total = invoice.discount_total.to_string();
+        let total = invoice.total.to_string();
+        let amount_paid = invoice.amount_paid.to_string();
+        let amount_due = invoice.amount_due.to_string();
+        let payment_terms = format!("{:?}", invoice.payment_terms);
+        let now = Utc::now().to_rfc3339();
+
+        sqlx::query(
+            r#"UPDATE invoices SET 
+                client_id = ?, status = ?, issue_date = ?, due_date = ?, currency = ?,
+                subtotal = ?, tax_total = ?, discount_total = ?, total = ?, amount_paid = ?, amount_due = ?,
+                payment_terms = ?, notes = ?, terms_and_conditions = ?, updated_at = ?
+               WHERE id = ?"#,
+        )
+        .bind(&client_id)
+        .bind(&status)
+        .bind(&issue_date)
+        .bind(&due_date)
+        .bind(&currency)
+        .bind(&subtotal)
+        .bind(&tax_total)
+        .bind(&discount_total)
+        .bind(&total)
+        .bind(&amount_paid)
+        .bind(&amount_due)
+        .bind(&payment_terms)
+        .bind(&invoice.notes)
+        .bind(&invoice.terms_and_conditions)
+        .bind(&now)
+        .bind(&id)
+        .execute(&self.pool)
+        .await?;
+
+        // Delete old items and insert updated items
+        sqlx::query("DELETE FROM invoice_items WHERE invoice_id = ?")
+            .bind(&id)
+            .execute(&self.pool)
+            .await?;
+
+        for item in &invoice.items {
+            self.insert_item(item).await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn delete(&self, id: &str) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM invoices WHERE id = ?")
             .bind(id)

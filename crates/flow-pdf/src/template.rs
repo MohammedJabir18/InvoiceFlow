@@ -78,6 +78,49 @@ pub fn render_invoice_html(invoice: &Invoice, client: &Client, _profile: &Busine
         )
     }).collect();
 
+    let mut totals_html = String::new();
+    if invoice.discount_total > rust_decimal::Decimal::ZERO || invoice.tax_total > rust_decimal::Decimal::ZERO {
+        totals_html.push_str(&format!(
+            r#"
+            <tr style="border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">
+                <td style="text-align: right; padding: 8px 16px;">Subtotal:</td>
+                <td style="text-align: right; padding: 8px 16px; font-family: monospace;">{}</td>
+            </tr>
+            "#,
+            format_currency(&invoice.subtotal.to_string(), &invoice.currency.to_string())
+        ));
+
+        if invoice.discount_total > rust_decimal::Decimal::ZERO {
+            totals_html.push_str(&format!(
+                r#"
+                <tr style="border-bottom: 1px solid #e5e7eb; color: #059669; font-size: 13px;">
+                    <td style="text-align: right; padding: 8px 16px;">Discount:</td>
+                    <td style="text-align: right; padding: 8px 16px; font-family: monospace;">-{}</td>
+                </tr>
+                "#,
+                format_currency(&invoice.discount_total.to_string(), &invoice.currency.to_string())
+            ));
+        }
+
+        if invoice.tax_total > rust_decimal::Decimal::ZERO {
+            totals_html.push_str(&format!(
+                r#"
+                <tr style="border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">
+                    <td style="text-align: right; padding: 8px 16px;">Tax / VAT:</td>
+                    <td style="text-align: right; padding: 8px 16px; font-family: monospace;">+{}</td>
+                </tr>
+                "#,
+                format_currency(&invoice.tax_total.to_string(), &invoice.currency.to_string())
+            ));
+        }
+    }
+
+    let status_stamp = if invoice.status == flow_core::types::InvoiceStatus::Paid {
+        r#"<div style="display: inline-block; border: 2px solid #10b981; color: #10b981; font-weight: 800; font-size: 14px; padding: 4px 12px; border-radius: 6px; letter-spacing: 0.08em; margin-bottom: 6px;">PAID &amp; SETTLED</div>"#
+    } else {
+        ""
+    };
+
     let qr_html = if let Some(qr) = qr_code_url {
         if qr.starts_with("data:image") {
             format!(r#"<img src="{}" alt="UPI QR Code" class="qr-img bg-white" />"#, qr)
@@ -400,7 +443,8 @@ pub fn render_invoice_html(invoice: &Invoice, client: &Client, _profile: &Busine
                     <div class="logo-container">
                         {}
                     </div>
-                    <div>
+                    <div style="text-align: right;">
+                        {}
                         <h1 class="title-text">INVOICE</h1>
                     </div>
                 </div>
@@ -455,6 +499,7 @@ pub fn render_invoice_html(invoice: &Invoice, client: &Client, _profile: &Busine
                             </tr>
                         </thead>
                         <tbody>
+                            {}
                             {}
                             <tr class="total-row">
                                 <td>TOTAL AMOUNT DUE:</td>
@@ -544,6 +589,7 @@ pub fn render_invoice_html(invoice: &Invoice, client: &Client, _profile: &Busine
         "#,
         &invoice.number,
         logo_html,
+        status_stamp,
         invoice.number,
         invoice.issue_date.format("%d %b %Y"),
         developer,
@@ -567,7 +613,8 @@ pub fn render_invoice_html(invoice: &Invoice, client: &Client, _profile: &Busine
         },
         currency_symbol(&invoice.currency.to_string()),
         items_html,
-        format_currency(&invoice.amount_due.to_string(), &invoice.currency.to_string()),
+        totals_html,
+        format_currency(&invoice.total.to_string(), &invoice.currency.to_string()),
         account_holder,
         account_number,
         ifsc_code,

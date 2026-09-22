@@ -29,7 +29,8 @@ import {
     Moon,
     Sun,
     Monitor,
-    FolderOpen
+    FolderOpen,
+    Zap
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from '@tauri-apps/plugin-dialog';
@@ -414,6 +415,7 @@ const sectionHeaders: SectionHeader[] = [
     { id: 'profile', icon: Building2, title: 'Business Profile', desc: 'Identity & Contact Info' },
     { id: 'invoicing', icon: CreditCard, title: 'Invoicing Data', desc: 'Currencies & Taxes' },
     { id: 'payments', icon: Wallet, title: 'Payments & Bank', desc: 'Accounts & QR Codes' },
+    { id: 'tabby', icon: Zap, title: 'Tabby BNPL', desc: 'GCC Installments & MCP' },
     { id: 'system', icon: Database, title: 'System & Data', desc: 'Backup & Reset' },
 ];
 
@@ -421,6 +423,28 @@ export function Settings() {
     const [activeSection, setActiveSection] = useState('preferences');
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    // Tabby State
+    const [tabbyConfig, setTabbyConfig] = useState(() => {
+        try {
+            const saved = localStorage.getItem("invoiceflow_tabby_config");
+            return saved ? JSON.parse(saved) : {
+                merchantCode: "invoiceflow_client",
+                publicKey: "pk_test_sample_tabby_key_2026",
+                secretKey: "sk_test_sample_tabby_secret",
+                currency: "AED",
+                sandbox: true
+            };
+        } catch {
+            return {
+                merchantCode: "invoiceflow_client",
+                publicKey: "pk_test_sample_tabby_key_2026",
+                secretKey: "sk_test_sample_tabby_secret",
+                currency: "AED",
+                sandbox: true
+            };
+        }
+    });
 
     // Danger Zone State
     const [showResetModal, setShowResetModal] = useState(false);
@@ -453,6 +477,7 @@ export function Settings() {
                     accountHolder: "", accountNumber: "", ifscCode: "", bankName: "", branch: "", upiId: ""
                 });
             }
+            localStorage.setItem("invoiceflow_tabby_config", JSON.stringify(tabbyConfig));
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000);
         } catch (error) {
@@ -970,6 +995,129 @@ export function Settings() {
                                             value={bankDetails?.upiId || ''}
                                             onChange={(e) => handleUpdateBankField('upiId', e.target.value)}
                                         />
+                                    </div>
+                                </SpotlightCard>
+                            </motion.div>
+                        )}
+
+                        {activeSection === 'tabby' && (
+                            <motion.div
+                                key="tabby"
+                                initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
+                                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                                exit={{ opacity: 0, filter: "blur(10px)", y: -20 }}
+                                transition={{ duration: 0.4 }}
+                            >
+                                <SpotlightCard className="p-8 md:p-10">
+                                    <div className="flex items-center justify-between gap-4 mb-10 pb-6 border-b border-[var(--premium-border)]">
+                                        <div className="flex items-center gap-4">
+                                            <div className="px-2.5 py-1 bg-emerald-500 rounded-lg text-black font-black text-sm tracking-wider">
+                                                tabby
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-[var(--foreground)]">Tabby BNPL Integration</h2>
+                                                <p className="text-sm text-[var(--text-muted)]">GCC Buy Now Pay Later (4 Interest-Free Payments)</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                                                MCP Ready
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        {/* Sandbox Toggle */}
+                                        <div className="p-4 rounded-xl bg-[var(--premium-bg)] border border-[var(--premium-border)] flex items-center justify-between">
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-[var(--foreground)]">Sandbox Mode</h4>
+                                                <p className="text-xs text-[var(--text-muted)]">
+                                                    Use test credentials and simulated checkouts without live customer charges.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTabbyConfig({ ...tabbyConfig, sandbox: !tabbyConfig.sandbox })}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                    tabbyConfig.sandbox
+                                                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                                        : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                                }`}
+                                            >
+                                                {tabbyConfig.sandbox ? "TEST / SANDBOX" : "LIVE PRODUCTION"}
+                                            </button>
+                                        </div>
+
+                                        {/* Tabby Credentials Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">
+                                                    Merchant Code
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={tabbyConfig.merchantCode}
+                                                    onChange={(e) => setTabbyConfig({ ...tabbyConfig, merchantCode: e.target.value })}
+                                                    placeholder="invoiceflow_merchant"
+                                                    className="w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 py-2.5 text-xs text-[var(--foreground)] font-mono outline-none focus:border-emerald-500"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">
+                                                    Default Settlement Currency
+                                                </label>
+                                                <select
+                                                    value={tabbyConfig.currency}
+                                                    onChange={(e) => setTabbyConfig({ ...tabbyConfig, currency: e.target.value })}
+                                                    className="w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 py-2.5 text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 cursor-pointer"
+                                                >
+                                                    <option value="AED">AED - UAE Dirham</option>
+                                                    <option value="SAR">SAR - Saudi Riyal</option>
+                                                    <option value="KWD">KWD - Kuwaiti Dinar</option>
+                                                    <option value="BHD">BHD - Bahraini Dinar</option>
+                                                    <option value="USD">USD - US Dollar</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="md:col-span-2">
+                                                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">
+                                                    Tabby Public Key (API Client Key)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={tabbyConfig.publicKey}
+                                                    onChange={(e) => setTabbyConfig({ ...tabbyConfig, publicKey: e.target.value })}
+                                                    placeholder="pk_test_..."
+                                                    className="w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 py-2.5 text-xs text-[var(--foreground)] font-mono outline-none focus:border-emerald-500"
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-2">
+                                                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">
+                                                    Tabby Secret Key (Server & MCP Transport Key)
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={tabbyConfig.secretKey}
+                                                    onChange={(e) => setTabbyConfig({ ...tabbyConfig, secretKey: e.target.value })}
+                                                    placeholder="sk_test_..."
+                                                    className="w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 py-2.5 text-xs text-[var(--foreground)] font-mono outline-none focus:border-emerald-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* MCP Server Information */}
+                                        <div className="p-4 rounded-xl bg-[#081210] border border-emerald-500/20 text-xs text-gray-300 space-y-2">
+                                            <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                                                <Zap size={15} />
+                                                <span>Model Context Protocol (MCP) Server Registered</span>
+                                            </div>
+                                            <p className="text-[11px] text-gray-400 leading-relaxed">
+                                                The Tabby MCP server exposes tools (<code className="text-emerald-400">tabby_create_checkout_session</code>, <code className="text-emerald-400">tabby_get_payment</code>, <code className="text-emerald-400">tabby_calculate_installments</code>) allowing automated billing and conversational agents to manage BNPL checkouts.
+                                            </p>
+                                        </div>
                                     </div>
                                 </SpotlightCard>
                             </motion.div>
