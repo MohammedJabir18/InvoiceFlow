@@ -1,59 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@custom-variant daylight (&:where(.daylight, .daylight *));
+
 @theme {
-  --color-obsidian-void: #000000;
-  --color-glass-navy: #050505;
-  --color-electric-teal: #00F0FF;
-  --color-cyber-violet: #7C3AED;
-  --color-starlight: #FFFFFF;
+  --color-obsidian-void: #08090C;
+  --color-glass-navy: #0D0F14;
+  --color-electric-cobalt: #2563EB;
+  --color-laser-blue: #3B82F6;
+  --color-laser-emerald: #10B981;
+  --color-starlight: #F8FAFC;
 
-  --color-ceramic-white: #FAFAFA;
-  --color-vapor-grey: #F7F9FC;
-  --color-deep-ocean: #050505;
+  --color-ceramic-white: #F8FAFC;
+  --color-vapor-grey: #FFFFFF;
+  --color-deep-ocean: #08090C;
   --color-soft-coral: #F43F5E;
-  --color-ink-black: #111111;
+  --color-ink-black: #090D16;
 
-  --font-sans: "Inter", "Geist", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
 
 @layer base {
   :root {
-    /* Default to Midnight Mode */
-    --background: var(--color-obsidian-void);
-    --surface: var(--color-glass-navy);
-    --primary: var(--color-cyber-violet);
-    --secondary: var(--color-electric-teal);
-    --foreground: var(--color-starlight);
+    /* Haute Fintech Precision Palette */
+    --background: #08090C;
+    --surface: #0D0F15;
+    --surface-elevated: #13161F;
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --secondary: #10B981;
+    --foreground: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-specular: rgba(255, 255, 255, 0.16);
 
     --radius: var(--radius-xl);
 
-    /* Semantic Adaptive Variables (Dark Mode defaults) */
-    --premium-bg: color-mix(in srgb, var(--foreground) 2%, transparent);
-    --premium-bg-hover: color-mix(in srgb, var(--foreground) 6%, transparent);
-    --premium-border: color-mix(in srgb, var(--foreground) 5%, transparent);
-    --premium-border-hover: color-mix(in srgb, var(--foreground) 15%, transparent);
-    --text-muted: color-mix(in srgb, var(--foreground) 40%, transparent);
-    --text-low: color-mix(in srgb, var(--foreground) 15%, transparent);
+    /* Micro-elevation */
+    --premium-bg: rgba(255, 255, 255, 0.03);
+    --premium-bg-hover: rgba(255, 255, 255, 0.06);
+    --premium-border: rgba(255, 255, 255, 0.08);
+    --premium-border-hover: rgba(255, 255, 255, 0.16);
+    --text-low: rgba(255, 255, 255, 0.25);
   }
 
   .daylight {
-    --background: var(--color-ceramic-white);
-    --surface: var(--color-vapor-grey);
-    --primary: var(--color-cyber-violet);
-    --secondary: var(--color-electric-teal);
-    --foreground: var(--color-ink-black);
+    --background: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-elevated: #F1F5F9;
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --secondary: #059669;
+    --foreground: #090D16;
+    --text-muted: #64748B;
+    --border: rgba(15, 23, 42, 0.08);
+    --border-specular: rgba(15, 23, 42, 0.14);
 
-    --premium-bg: color-mix(in srgb, var(--starlight) 60%, transparent);
-    --premium-bg-hover: color-mix(in srgb, var(--starlight) 80%, transparent);
-    --premium-border: color-mix(in srgb, var(--foreground) 5%, transparent);
-    --premium-border-hover: color-mix(in srgb, var(--primary) 20%, transparent);
-    --text-muted: color-mix(in srgb, var(--foreground) 60%, transparent);
-    --text-low: color-mix(in srgb, var(--foreground) 30%, transparent);
+    --premium-bg: rgba(255, 255, 255, 0.85);
+    --premium-bg-hover: #FFFFFF;
+    --premium-border: rgba(15, 23, 42, 0.08);
+    --premium-border-hover: rgba(37, 99, 235, 0.25);
+    --text-low: rgba(15, 23, 42, 0.35);
   }
 
   body {
@@ -115,22 +128,84 @@
   }
 
   .text-glow {
-    text-shadow: 0 0 20px var(--primary);
+    text-shadow: 0 0 16px rgba(37, 99, 235, 0.35);
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, var(--foreground), var(--primary));
+    background: linear-gradient(180deg, #FFFFFF 0%, #94A3B8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Aurora Glow Effect */
+  .daylight .text-gradient {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: #090D16 !important;
+    background-clip: unset !important;
+    color: #090D16 !important;
+  }
+
+  /* --- Swiss Precision Double-Bezel Architecture --- */
+  .doppelrand-chassis {
+    position: relative;
+    padding: 1px; /* Precision 1px chassis bezel */
+    border-radius: 1.25rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+    transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .daylight .doppelrand-chassis,
+  :where(.daylight) .doppelrand-chassis {
+    background: linear-gradient(180deg, rgba(226, 232, 240, 0.9) 0%, rgba(241, 245, 249, 0.5) 100%);
+    box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.08);
+  }
+
+  .doppelrand-core {
+    position: relative;
+    border-radius: calc(1.25rem - 1px);
+    background: #0D0F15;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+
+  .daylight .doppelrand-core,
+  :where(.daylight) .doppelrand-core {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 3px rgba(15, 23, 42, 0.04);
+  }
+
+  /* Kinetic Spring physics */
+  .ease-spring {
+    transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Precision Tactile Nested Icon Badge */
+  .btn-nested-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .daylight .btn-nested-icon {
+    background: rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  /* Atmospheric Top Light */
   .aurora-bg {
-    background: radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--secondary) 60%, transparent) 0%, transparent 60%),
-      radial-gradient(circle at -20% 50%, color-mix(in srgb, var(--primary) 50%, transparent) 0%, transparent 50%),
-      radial-gradient(circle at 120% 50%, color-mix(in srgb, var(--primary) 50%, transparent) 0%, transparent 50%);
-    opacity: 0.15;
+    background: radial-gradient(circle at 50% -10%, rgba(37, 99, 235, 0.07) 0%, transparent 60%),
+      radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.035) 0%, transparent 45%);
+    opacity: 1;
     pointer-events: none;
     position: fixed;
     top: 0;
@@ -138,8 +213,12 @@
     width: 100%;
     height: 100%;
     z-index: -1;
-    filter: blur(80px);
-    transition: background 1s ease;
+    transition: background 0.6s ease;
+  }
+
+  .daylight .aurora-bg {
+    background: radial-gradient(circle at 50% -10%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.02) 0%, transparent 40%);
   }
 
   .mask-linear-fade {
@@ -431,12 +510,12 @@
 }
 
 .nav-item-premium.active {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 15%, transparent) 0%, color-mix(in srgb, var(--secondary) 10%, transparent) 100%);
-  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.35);
   color: var(--foreground);
   box-shadow:
-    0 0 30px color-mix(in srgb, var(--primary) 15%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--foreground) 10%, transparent);
+    0 4px 20px -2px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .nav-item-premium.active::after {
@@ -447,9 +526,9 @@
   transform: translateY(-50%);
   width: 3px;
   height: 60%;
-  background: linear-gradient(180deg, var(--primary), var(--secondary));
+  background: #2563EB;
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 10px var(--primary);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
 }
 
 .nav-icon-wrapper {
@@ -469,8 +548,9 @@
 }
 
 .nav-item-premium.active .nav-icon-wrapper {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  box-shadow: 0 0 20px rgba(45, 212, 191, 0.4);
+  background: #2563EB;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 /* Section header with icon glow */
@@ -481,16 +561,15 @@
   width: 56px;
   height: 56px;
   border-radius: 1rem;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 15%, transparent) 0%, color-mix(in srgb, var(--secondary) 10%, transparent) 100%);
-  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   box-shadow:
-    0 0 30px color-mix(in srgb, var(--primary) 15%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--foreground) 10%, transparent);
+    0 4px 20px rgba(37, 99, 235, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .section-header-icon svg {
   color: var(--primary);
-  filter: drop-shadow(0 0 8px var(--primary));
 }
 
 /* ============================================================
@@ -498,11 +577,11 @@
    ============================================================ */
 .daylight {
   color-scheme: light;
-  --background: #f8fafc;
-  --surface: #ffffff;
-  --primary: #4f46e5;
-  --secondary: #0284c7;
-  --foreground: #0f172a;
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --primary: #2563EB;
+  --secondary: #059669;
+  --foreground: #090D16;
 }
 
 body.daylight {
@@ -670,31 +749,44 @@ body.daylight {
 }
 
 /* Ensure active primary buttons remain vibrant with crisp white text */
-.daylight .bg-blue-600,
-.daylight .bg-blue-500,
-.daylight .bg-indigo-600,
-.daylight .bg-violet-600,
-.daylight .bg-emerald-600 {
-  color: #ffffff !important;
-}
-
+.daylight button.bg-blue-600,
+.daylight button.bg-blue-600 *,
+.daylight a.bg-blue-600,
+.daylight a.bg-blue-600 *,
+.daylight button.bg-blue-500,
+.daylight button.bg-blue-500 *,
+.daylight a.bg-blue-500,
+.daylight a.bg-blue-500 *,
+.daylight button.bg-emerald-600,
+.daylight button.bg-emerald-600 *,
 .daylight .btn-primary,
 .daylight button.btn-primary,
 .daylight .btn.btn-primary,
-.daylight a.btn-primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
-}
-
-.daylight .bg-blue-600 *,
-.daylight .bg-blue-500 *,
-.daylight .bg-indigo-600 *,
-.daylight .bg-violet-600 *,
-.daylight .bg-emerald-600 *,
+.daylight a.btn-primary,
 .daylight .btn-primary * {
   color: #ffffff !important;
+}
+
+/* Specific pill buttons that are active blue */
+.daylight button[class*="bg-blue-600"],
+.daylight button[class*="bg-blue-600"] * {
+  color: #ffffff !important;
+}
+
+/* Guard: Containers, cards, and wrappers with white/light backgrounds in Daylight mode
+   must never inherit forced white text from any ancestor wrapper! */
+.daylight .bg-white,
+.daylight [class*="daylight:bg-white"],
+.daylight [class*="daylight:bg-slate-50"],
+.daylight [class*="daylight:bg-blue-50"] {
+  color: #0f172a !important;
+}
+
+.daylight .bg-white *:not(button):not(button *):not([class*="badge"]):not([class*="badge"] *),
+.daylight [class*="daylight:bg-white"] *:not(button):not(button *):not([class*="badge"]):not([class*="badge"] *),
+.daylight [class*="daylight:bg-slate-50"] *:not(button):not(button *):not([class*="badge"]):not([class*="badge"] *),
+.daylight [class*="daylight:bg-blue-50"] *:not(button):not(button *):not([class*="badge"]):not([class*="badge"] *) {
+  color: inherit;
 }
 
 

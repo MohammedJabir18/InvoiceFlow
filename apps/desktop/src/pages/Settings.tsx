@@ -602,13 +602,13 @@ export function Settings() {
                         transition={{ delay: 0.1, duration: 0.5 }}
                         className="flex items-center gap-3 mb-2"
                     >
-                        <div className="p-1.5 rounded-lg bg-[rgba(45,212,191,0.1)] border border-[rgba(45,212,191,0.2)]">
-                            <Sparkles size={14} className="text-[var(--primary)]" />
+                        <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                            <Sparkles size={14} className="text-blue-500" />
                         </div>
-                        <span className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--primary)] opacity-90">Workspace Configuration</span>
+                        <span className="text-xs font-bold tracking-[0.15em] uppercase text-blue-500">Workspace Configuration</span>
                     </motion.div>
-                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--foreground)] mb-2">
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--foreground)] via-[var(--foreground)] to-[var(--text-muted)]">Settings</span>
+                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white daylight:text-[#090D16] mb-2">
+                        Settings
                     </h1>
                     <p className="text-lg text-[var(--text-muted)] max-w-lg">Manage your organization's identity, preferences, and data retention policies.</p>
                 </div>
@@ -616,9 +616,9 @@ export function Settings() {
                 <motion.button
                     onClick={handleSave}
                     disabled={isSaving}
-                    whileHover={{ scale: 1.02, boxShadow: "0 0 25px color-mix(in srgb, var(--primary) 30%, transparent)" }}
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="relative overflow-hidden group bg-gradient-to-br from-[var(--primary)] to-teal-600 text-[var(--background)] font-bold py-3 px-8 rounded-xl shadow-[0_0_15px_rgba(45,212,191,0.2)] transition-all"
+                    className="relative overflow-hidden group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-[0_4px_16px_rgba(37,99,235,0.3)] hover:shadow-[0_4px_24px_rgba(37,99,235,0.45)] transition-all"
                 >
                     <div className="relative z-10 flex items-center gap-2">
                         <AnimatePresence mode="wait">
@@ -692,10 +692,10 @@ export function Settings() {
                                 }`}
                         >
                             <div className={`p-2 rounded-lg transition-all duration-300 ${activeSection === sec.id
-                                ? 'bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-[0_0_15px_rgba(45,212,191,0.3)]'
+                                ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-[0_4px_16px_rgba(37,99,235,0.3)]'
                                 : 'bg-[var(--premium-bg)] text-[var(--text-muted)] group-hover:text-[var(--foreground)]'
                                 }`}>
-                                <sec.icon size={20} className={activeSection === sec.id ? 'text-[var(--background)]' : ''} />
+                                <sec.icon size={20} className={activeSection === sec.id ? 'text-white' : ''} />
                             </div>
                             <div className="flex-1">
                                 <div className={`text-sm font-semibold transition-colors ${activeSection === sec.id ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] group-hover:text-[var(--foreground)]'}`}>
@@ -710,7 +710,7 @@ export function Settings() {
                             {activeSection === sec.id && (
                                 <motion.div
                                     layoutId="activePill"
-                                    className="absolute left-0 w-1 h-8 bg-[var(--primary)] rounded-r-full"
+                                    className="absolute left-0 w-1 h-8 bg-blue-600 rounded-r-full"
                                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                 />
                             )}
@@ -743,7 +743,7 @@ export function Settings() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="md:col-span-2">
                                             <h4 className="font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
-                                                <Sun size={18} className="text-[var(--primary)]" />
+                                                <Sun size={18} className="text-blue-500" />
                                                 Theme Interface
                                             </h4>
                                             <div className="flex bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl p-1 w-full max-w-md">
@@ -760,12 +760,12 @@ export function Settings() {
                                                                 handleUpdateField('theme_preference', theme.id);
                                                                 previewTheme(theme.id as ThemePreference);
                                                             }}
-                                                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden ${isActive ? 'text-[var(--background)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--premium-bg-hover)]'}`}
+                                                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden ${isActive ? 'text-white font-semibold' : 'text-slate-400 daylight:text-slate-600 hover:text-white daylight:hover:text-slate-900 hover:bg-white/5 daylight:hover:bg-slate-100'}`}
                                                         >
                                                             {isActive && (
                                                                 <motion.div
                                                                     layoutId="theme-active"
-                                                                    className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-teal-500 rounded-lg shadow-md"
+                                                                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-md shadow-blue-500/25"
                                                                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
                                                                 />
                                                             )}
@@ -1181,10 +1181,10 @@ export function Settings() {
                                     </div>
 
                                     <div className="flex flex-col gap-6">
-                                        <div className="group p-6 rounded-xl bg-gradient-to-r from-[rgba(45,212,191,0.05)] to-transparent border border-[var(--premium-border)] hover:border-[var(--primary)] transition-all">
+                                        <div className="group p-6 rounded-xl bg-blue-500/5 border border-[var(--premium-border)] hover:border-blue-500/40 transition-all">
                                             <div className="flex items-center justify-between gap-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="p-3 rounded-lg bg-teal-500/10 text-[var(--primary)]">
+                                                    <div className="p-3 rounded-lg bg-blue-500/10 text-blue-500">
                                                         <UploadCloud size={20} />
                                                     </div>
                                                     <div>
@@ -1195,7 +1195,7 @@ export function Settings() {
                                                 <button
                                                     onClick={handleExportData}
                                                     disabled={isExporting}
-                                                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)] hover:text-[var(--background)] disabled:opacity-50 transition-all"
+                                                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-500 border border-blue-500/30 rounded-lg hover:bg-blue-600 hover:text-white disabled:opacity-50 transition-all"
                                                 >
                                                     {isExporting ? <Loader2 size={14} className="animate-spin" /> : null}
                                                     {isExporting ? 'Exporting...' : 'Export'}

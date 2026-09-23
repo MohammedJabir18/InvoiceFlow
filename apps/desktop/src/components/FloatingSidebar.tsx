@@ -22,9 +22,9 @@ const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
     { icon: FileText, label: "Invoices", path: "/invoices" },
     { icon: FileCheck2, label: "Quotations", path: "/quotations" },
-    { icon: BarChart3, label: "Reports", path: "/reports" },
+    { icon: BarChart3, label: "Analytics", path: "/reports" },
     { icon: Users, label: "Clients", path: "/clients" },
-    { icon: TrendingUp, label: "Deals (AI)", path: "/deals" },
+    { icon: TrendingUp, label: "Deals", path: "/deals" },
 ];
 
 const systemItems = [
@@ -39,51 +39,54 @@ export function FloatingSidebar() {
 
     return (
         <motion.aside
-            className="hidden md:flex fixed left-6 top-6 bottom-6 z-50 w-20 flex-col items-center justify-between rounded-3xl border border-white/10 bg-[var(--surface)]/50 py-8 shadow-2xl backdrop-blur-3xl dark:border-white/5 dark:bg-white/[0.02] sm:w-24 transition-colors duration-500"
+            className="hidden md:flex fixed left-6 top-6 bottom-6 z-50 w-20 flex-col items-center justify-between p-[1px] rounded-2xl bg-gradient-to-b from-white/[0.12] via-white/[0.04] to-transparent border border-white/[0.08] shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)] backdrop-blur-2xl daylight:from-slate-200 daylight:via-slate-100 daylight:to-slate-200 daylight:border-slate-300 daylight:shadow-[0_16px_35px_-8px_rgba(15,23,42,0.06)] sm:w-22 transition-all duration-300"
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ type: "spring", stiffness: 350, damping: 30 }}
         >
-            {/* Logo area */}
-            <div
-                className="group relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-[0_0_20px_color-mix(in_srgb,var(--primary)_40%,transparent)] transition-transform duration-300 hover:scale-110"
-                onClick={() => navigate('/dashboard')}
-            >
-                <span className="font-extrabold text-white text-lg tracking-tight">IF</span>
-                <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/20" />
-            </div>
+            <div className="relative w-full h-full flex flex-col items-center justify-between py-5 rounded-[calc(1rem-1px)] bg-[#0D0F15]/95 daylight:bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] daylight:shadow-[inset_0_1px_0_rgba(255,255,255,1)] transition-colors duration-300">
+                {/* Precision Monogram Badge */}
+                <motion.div
+                    className="group relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 shadow-[0_2px_10px_rgba(37,99,235,0.35),inset_0_1px_0_rgba(255,255,255,0.25)] border border-blue-400/30 transition-all duration-200"
+                    onClick={() => navigate('/dashboard')}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <span className="font-extrabold text-white text-lg tracking-tight select-none">IF</span>
+                </motion.div>
 
-            {/* Main Navigation */}
-            <nav className="flex flex-col items-center gap-4">
-                {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                        <NavItem
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            isActive={isActive}
-                            onClick={() => navigate(item.path)}
-                        />
-                    );
-                })}
-            </nav>
+                {/* Primary Navigation */}
+                <nav className="flex flex-col items-center gap-2.5 my-auto">
+                    {navItems.map((item) => {
+                        const isActive = location.pathname === item.path;
+                        return (
+                            <NavItem
+                                key={item.label}
+                                icon={item.icon}
+                                label={item.label}
+                                isActive={isActive}
+                                onClick={() => navigate(item.path)}
+                            />
+                        );
+                    })}
+                </nav>
 
-            {/* System Navigation */}
-            <div className="flex flex-col items-center gap-4">
-                <div className="h-px w-8 bg-black/10 dark:bg-white/10" />
-                {systemItems.map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                        <NavItem
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            isActive={isActive}
-                            onClick={() => navigate(item.path)}
-                        />
-                    );
-                })}
+                {/* System Navigation */}
+                <div className="flex flex-col items-center gap-2.5">
+                    <div className="h-px w-8 bg-white/[0.08] daylight:bg-slate-200" />
+                    {systemItems.map((item) => {
+                        const isActive = location.pathname === item.path;
+                        return (
+                            <NavItem
+                                key={item.label}
+                                icon={item.icon}
+                                label={item.label}
+                                isActive={isActive}
+                                onClick={() => navigate(item.path)}
+                            />
+                        );
+                    })}
+                </div>
             </div>
         </motion.aside>
     );
@@ -92,39 +95,39 @@ export function FloatingSidebar() {
 function NavItem({ icon: Icon, label, isActive, onClick }: { icon: any, label: string, isActive: boolean, onClick: () => void }) {
     return (
         <motion.button
-            className="group relative flex h-12 w-12 items-center justify-center rounded-xl transition-colors outline-none"
+            className="group relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 outline-none cursor-pointer"
             onClick={onClick}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.95 }}
             title={label}
         >
-            {/* Active Background Pill */}
+            {/* Active Precision Capsule */}
             <AnimatePresence>
                 {isActive && (
                     <motion.div
                         layoutId="active-nav-pill"
-                        className="absolute inset-0 rounded-xl bg-[var(--primary)]/15 dark:bg-[var(--primary)]/20"
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        className="absolute inset-0 rounded-xl bg-blue-600/15 border border-blue-500/30 daylight:bg-blue-50 daylight:border-blue-200 shadow-[0_2px_8px_rgba(37,99,235,0.15)]"
+                        initial={{ opacity: 0, scale: 0.85 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{ type: "spring", stiffness: 450, damping: 30 }}
                     />
                 )}
             </AnimatePresence>
 
             <Icon
-                strokeWidth={isActive ? 2.5 : 2}
+                strokeWidth={isActive ? 2.2 : 1.75}
                 className={cn(
-                    "relative z-10 h-5 w-5 transition-colors duration-300",
+                    "relative z-10 h-5 w-5 transition-all duration-200",
                     isActive
-                        ? "text-[var(--primary)] drop-shadow-[0_0_8px_color-mix(in_srgb,var(--primary)_50%,transparent)]"
-                        : "text-[var(--foreground)]/60 group-hover:text-[var(--foreground)]"
+                        ? "text-blue-500 daylight:text-blue-600"
+                        : "text-slate-400 group-hover:text-white daylight:text-slate-500 daylight:group-hover:text-slate-900"
                 )}
             />
 
-            {/* Hover tooltip - optional for awwwards-tier polish */}
-            <div className="pointer-events-none absolute left-full ml-4 flex origin-left items-center opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-1 z-50">
-                <div className="rounded-lg bg-[var(--surface)]/90 backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] shadow-xl ring-1 ring-white/10 dark:ring-white/5 uppercase tracking-wide">
+            {/* Swiss Precision Tooltip */}
+            <div className="pointer-events-none absolute left-full ml-3.5 flex origin-left items-center opacity-0 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-1 z-50">
+                <div className="rounded-lg bg-[#13161F] daylight:bg-white px-3 py-1.5 text-xs font-semibold text-slate-200 daylight:text-slate-800 shadow-xl border border-white/10 daylight:border-slate-200 tracking-tight whitespace-nowrap">
                     {label}
                 </div>
             </div>

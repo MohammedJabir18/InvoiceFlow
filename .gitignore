@@ -32,3 +32,5 @@ artifacts/
 # App user data
 Sample_Invoices/
 .playwright-mcp/
+__pycache__/
+*.pyc

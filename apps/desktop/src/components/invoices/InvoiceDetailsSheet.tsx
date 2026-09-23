@@ -357,7 +357,7 @@ Status: ${invoice.status}`;
                                     onClose();
                                     navigate(`/editor?id=${invoice?.id}`);
                                 }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 daylight:bg-slate-100 daylight:hover:bg-slate-200 daylight:border-slate-200 daylight:text-slate-700 transition-all"
                                 title="Edit Invoice"
                             >
                                 <Edit3 size={13} />
@@ -367,7 +367,7 @@ Status: ${invoice.status}`;
                             {/* Duplicate Button */}
                             <button
                                 onClick={handleDuplicate}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 daylight:bg-slate-100 daylight:hover:bg-slate-200 daylight:border-slate-200 daylight:text-slate-700 transition-all"
                                 title="Duplicate as new draft"
                             >
                                 <Copy size={13} />
@@ -377,7 +377,7 @@ Status: ${invoice.status}`;
                             {/* Download PDF */}
                             <button
                                 onClick={() => invoice && onDownloadPdf(invoice.id, invoice.number)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 transition-all shadow-[0_0_12px_rgba(59,130,246,0.2)]"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 daylight:bg-blue-50 daylight:hover:bg-blue-100 daylight:border-blue-200 daylight:text-blue-700 transition-all shadow-sm"
                                 title="Generate PDF"
                             >
                                 <Download size={13} />
@@ -388,7 +388,7 @@ Status: ${invoice.status}`;
                             {isPaid && (
                                 <button
                                     onClick={() => invoice && onDownloadPdf(invoice.id, `${invoice.number}_Receipt`)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 daylight:bg-emerald-50 daylight:hover:bg-emerald-100 daylight:border-emerald-200 daylight:text-emerald-700 transition-all shadow-sm"
                                     title="Download Payment Receipt"
                                 >
                                     <Receipt size={13} />
@@ -399,7 +399,7 @@ Status: ${invoice.status}`;
                             {/* Payment Link & QR Code */}
                             <button
                                 onClick={() => setShowPaymentLink(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 transition-all shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 daylight:bg-emerald-50 daylight:hover:bg-emerald-100 daylight:border-emerald-200 daylight:text-emerald-700 transition-all shadow-sm"
                                 title="Generate Shareable Payment Link & QR Code"
                             >
                                 <QrCode size={13} />
@@ -409,16 +409,16 @@ Status: ${invoice.status}`;
                             {/* Share Summary */}
                             <button
                                 onClick={handleCopySummary}
-                                className="p-2 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all"
+                                className="p-2 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 daylight:bg-slate-100 daylight:hover:bg-slate-200 daylight:border-slate-200 daylight:text-slate-700 transition-all"
                                 title="Copy Summary"
                             >
-                                {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                {copied ? <Check size={13} className="text-emerald-400 daylight:text-emerald-600" /> : <Copy size={13} />}
                             </button>
 
                             {/* Delete */}
                             <button
                                 onClick={handleDelete}
-                                className="p-2 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 transition-all"
+                                className="p-2 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 daylight:bg-rose-50 daylight:hover:bg-rose-100 daylight:border-rose-200 daylight:text-rose-700 transition-all"
                                 title="Delete Invoice"
                             >
                                 <Trash2 size={13} />

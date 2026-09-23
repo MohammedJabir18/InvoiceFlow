@@ -103,22 +103,22 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-lg my-auto bg-[#131b2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-white z-10 max-h-[90vh] flex flex-col"
+                    className="relative w-full max-w-lg my-auto bg-[#131b2e] daylight:bg-white border border-white/10 daylight:border-slate-200 rounded-2xl shadow-2xl overflow-hidden text-white daylight:text-slate-900 z-10 max-h-[90vh] flex flex-col"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0f172a] shrink-0">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 daylight:border-slate-200 bg-[#0f172a] daylight:bg-slate-50 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            <div className="p-2 rounded-xl bg-blue-500/10 daylight:bg-blue-50 text-blue-400 daylight:text-blue-600 border border-blue-500/20 daylight:border-blue-200">
                                 <QrCode size={20} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-white">Payment Link & QR Code</h3>
-                                <p className="text-xs text-gray-400">Shareable online checkout portal</p>
+                                <h3 className="text-sm font-bold text-white daylight:text-slate-900">Payment Link & QR Code</h3>
+                                <p className="text-xs text-gray-400 daylight:text-slate-500">Shareable online checkout portal</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 daylight:bg-slate-100 daylight:hover:bg-slate-200 text-gray-400 hover:text-white daylight:text-slate-600 daylight:hover:text-slate-900 transition-all"
                         >
                             <X size={18} />
                         </button>
@@ -127,44 +127,44 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
                     {/* Content */}
                     <div className="p-6 space-y-6 overflow-y-auto">
                         {/* Invoice Summary Card */}
-                        <div className="p-4 rounded-xl bg-[#0b0f19] border border-white/5 flex items-center justify-between">
+                        <div className="p-4 rounded-xl bg-[#0b0f19] daylight:bg-slate-50 border border-white/5 daylight:border-slate-200 flex items-center justify-between">
                             <div>
-                                <span className="text-[10px] uppercase font-bold text-gray-400">Invoice #{invoice.number}</span>
-                                <h4 className="text-sm font-bold text-white mt-0.5">{client?.name || "Client"}</h4>
-                                <span className="text-xs text-gray-400">Due: {invoice.due_date}</span>
+                                <span className="text-[10px] uppercase font-bold text-gray-400 daylight:text-slate-500">Invoice #{invoice.number}</span>
+                                <h4 className="text-sm font-bold text-white daylight:text-slate-900 mt-0.5">{client?.name || "Client"}</h4>
+                                <span className="text-xs text-gray-400 daylight:text-slate-500">Due: {invoice.due_date}</span>
                             </div>
                             <div className="text-right">
-                                <span className="text-[10px] uppercase font-bold text-gray-400">Amount Due</span>
-                                <div className="text-xl font-black text-blue-400 font-mono">
+                                <span className="text-[10px] uppercase font-bold text-gray-400 daylight:text-slate-500">Amount Due</span>
+                                <div className="text-xl font-black text-blue-400 daylight:text-blue-600 font-mono">
                                     {formatCurrencyAmount(parseFloat(invoice.amount_due || invoice.total), invoice.currency || "USD")}
                                 </div>
                             </div>
                         </div>
 
                         {/* Tabby BNPL Banner */}
-                        <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/40 to-[#0d1c24] border border-emerald-500/30 flex items-center justify-between">
+                        <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/40 to-[#0d1c24] daylight:from-emerald-50 daylight:to-teal-50 border border-emerald-500/30 daylight:border-emerald-200 flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                                 <div className="px-2 py-0.5 rounded bg-emerald-500 text-black font-black text-[10px] tracking-wider">
                                     tabby
                                 </div>
-                                <span className="text-xs text-gray-200">
-                                    or 4 interest-free payments of <span className="font-bold text-emerald-400 font-mono">{formatCurrencyAmount(tabby.perMonth, invoice.currency || "USD")}</span>
+                                <span className="text-xs text-gray-200 daylight:text-emerald-900">
+                                    or 4 interest-free payments of <span className="font-bold text-emerald-400 daylight:text-emerald-700 font-mono">{formatCurrencyAmount(tabby.perMonth, invoice.currency || "USD")}</span>
                                 </span>
                             </div>
-                            <span className="text-[10px] text-emerald-400 font-semibold uppercase">0% Interest</span>
+                            <span className="text-[10px] text-emerald-400 daylight:text-emerald-700 font-semibold uppercase">0% Interest</span>
                         </div>
 
                         {/* QR Code Section */}
-                        <div className="flex flex-col items-center justify-center p-4 bg-[#0b0f19] rounded-xl border border-white/5">
+                        <div className="flex flex-col items-center justify-center p-4 bg-[#0b0f19] daylight:bg-slate-50 rounded-xl border border-white/5 daylight:border-slate-200">
                             <SimpleSvgQr text={paymentUrl} size={160} />
-                            <p className="text-[11px] text-gray-400 mt-2.5 text-center">
+                            <p className="text-[11px] text-gray-400 daylight:text-slate-500 mt-2.5 text-center">
                                 Scan with any smartphone camera to open the payment page
                             </p>
                         </div>
 
                         {/* Link Input & Copy */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+                            <label className="block text-xs font-semibold text-gray-400 daylight:text-slate-600 mb-1.5">
                                 Direct Payment URL
                             </label>
                             <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
                                     type="text"
                                     readOnly
                                     value={paymentUrl}
-                                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#0b0f19] border border-white/10 text-xs font-mono text-gray-300 outline-none select-all"
+                                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#0b0f19] daylight:bg-slate-50 border border-white/10 daylight:border-slate-200 text-xs font-mono text-gray-300 daylight:text-slate-800 outline-none select-all"
                                 />
                                 <button
                                     onClick={handleCopy}

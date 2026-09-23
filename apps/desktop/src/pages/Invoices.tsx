@@ -41,7 +41,8 @@ import { DownloadProgressModal } from "../components/ui/DownloadProgressModal";
 import { InvoiceMetricsCards } from "../components/invoices/InvoiceMetricsCards";
 import { InvoiceDetailsSheet } from "../components/invoices/InvoiceDetailsSheet";
 import { PaymentLinkModal } from "../components/invoices/PaymentLinkModal";
-import { formatMoney } from "../lib/currencies";
+import { formatMoney, getCurrencyInfo } from "../lib/currencies";
+import { SpotlightButton } from "../components/ui/SpotlightButton";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -266,18 +267,18 @@ export function Invoices() {
     const statusPillConfig = (status: string) => {
         switch (status.toLowerCase()) {
             case "paid":
-                return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]";
+                return "bg-emerald-500/10 text-emerald-400 daylight:bg-emerald-50 daylight:text-emerald-700 daylight:border-emerald-200 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]";
             case "pending":
             case "sent":
-                return "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]";
+                return "bg-amber-500/10 text-amber-400 daylight:bg-amber-50 daylight:text-amber-800 daylight:border-amber-200 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]";
             case "overdue":
-                return "bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]";
+                return "bg-rose-500/10 text-rose-400 daylight:bg-rose-50 daylight:text-rose-700 daylight:border-rose-200 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]";
             case "draft":
-                return "bg-gray-500/10 text-gray-400 border-gray-500/30";
+                return "bg-gray-500/10 text-gray-400 daylight:bg-slate-100 daylight:text-slate-600 daylight:border-slate-200 border-gray-500/30";
             case "cancelled":
-                return "bg-zinc-800/60 text-zinc-500 border-zinc-700/40 line-through";
+                return "bg-zinc-800/60 text-zinc-500 daylight:bg-slate-100 daylight:text-slate-400 daylight:border-slate-200 border-zinc-700/40 line-through";
             default:
-                return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+                return "bg-gray-500/10 text-gray-400 daylight:bg-slate-100 daylight:text-slate-600 daylight:border-slate-200 border-gray-500/20";
         }
     };
 
@@ -348,35 +349,33 @@ export function Invoices() {
                 {/* Header Action Buttons */}
                 <div className="flex items-center gap-3">
                     {/* Export Dropdown */}
-                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl p-1">
+                    <div className="flex items-center gap-1.5 bg-white/5 daylight:bg-slate-100 border border-white/10 daylight:border-slate-200 rounded-xl p-1 shadow-sm">
                         <button
                             onClick={() => exportInvoicesToCsv(filtered, clients)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 daylight:text-slate-700 daylight:hover:bg-white daylight:hover:text-slate-900 transition-colors"
                             title="Export current view to CSV"
                         >
-                            <FileSpreadsheet size={14} className="text-emerald-400" />
+                            <FileSpreadsheet size={14} className="text-emerald-400 daylight:text-emerald-600" />
                             <span>CSV</span>
                         </button>
                         <button
                             onClick={() => exportInvoicesToJson(filtered)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/10 daylight:text-slate-700 daylight:hover:bg-white daylight:hover:text-slate-900 transition-colors"
                             title="Export current view to JSON"
                         >
-                            <FileCode size={14} className="text-blue-400" />
+                            <FileCode size={14} className="text-blue-400 daylight:text-blue-600" />
                             <span>JSON</span>
                         </button>
                     </div>
 
                     {/* New Invoice Button */}
-                    <motion.button
-                        className="btn btn-primary glass-panel"
+                    <SpotlightButton
+                        variant="primary"
                         onClick={() => navigate("/editor")}
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
-                        style={{ height: "2.75rem", padding: "0 1.25rem", borderRadius: "var(--radius-xl)" }}
+                        icon={<Plus size={14} />}
                     >
-                        <Plus size={16} /> New Invoice
-                    </motion.button>
+                        New Invoice
+                    </SpotlightButton>
                 </div>
             </motion.div>
 
@@ -430,7 +429,7 @@ export function Invoices() {
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                                     isActive
                                         ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]"
-                                        : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
+                                        : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white daylight:bg-slate-100 daylight:border-slate-200 daylight:text-slate-600 daylight:hover:bg-slate-200 daylight:hover:text-slate-900"
                                 }`}
                             >
                                 <Icon size={13} />
@@ -493,12 +492,12 @@ export function Invoices() {
                 ) : (
                     <motion.div
                         key="table"
-                        className="glass-panel w-full rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+                        className="doppelrand-chassis w-full shadow-2xl p-1.5"
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
                     >
-                        <div className="overflow-x-auto">
+                        <div className="doppelrand-core w-full overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[750px]">
                                 <thead>
                                     <tr className="bg-black/40 border-b border-white/10 text-xs uppercase tracking-wider font-semibold text-gray-400">
@@ -592,10 +591,13 @@ export function Invoices() {
                                                 </td>
 
                                                 {/* Amount */}
-                                                <td className="py-3.5 px-4 text-right font-mono font-bold text-sm text-white">
-                                                    <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
-                                                        {formatCurrency(inv.total, inv.currency)}
-                                                    </span>
+                                                <td className="py-3.5 px-4 text-right">
+                                                    <div className="flex items-center justify-end gap-1.5 font-mono font-bold text-sm text-[var(--foreground)]">
+                                                        <span className="text-xs">{getCurrencyInfo(inv.currency || "USD").flag}</span>
+                                                        <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
+                                                            {formatCurrency(inv.total, inv.currency)}
+                                                        </span>
+                                                    </div>
                                                 </td>
 
                                                 {/* Action Menu (Three dots) */}

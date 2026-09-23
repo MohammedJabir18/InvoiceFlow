@@ -60,6 +60,22 @@ Required checks:
 - `cd apps/desktop && bun run build`
 - `cargo check --workspace`
 
+## Installed Local Skills (`.agents/skills/` & `.claude/skills/`)
+
+The following local skill suites are installed for high-craft UI/UX, motion engineering, and rigorous review:
+- **Design & Taste**:
+  - `taste-skill` / `minimalist-skill` / `brutalist-skill` / `soft-skill`: Anti-slop frontend craftsmanship for landing pages, dashboards, and app views.
+  - `frontend-design`: Distinctive, intentional, production-quality visual design (Anthropic).
+  - `impeccable`: Design critique, typography, layout, and polish engine.
+  - `ui-ux-pro-max`: Multi-stack UI/UX design intelligence, design tokens, charts, color palettes, and component reasoning.
+  - `brand-guidelines` & `theme-factory`: Visual identity, theme palettes, and artifact styling.
+- **Motion & Interaction Engineering**:
+  - `design-motion-principles`: Deep motion design guidelines based on Emil Kowalski & Jakub Krehel.
+  - `animate`, `apple-design`, `emil-design-eng`, `improve-animations`, `review-animations`, `find-animation-opportunities`: Emil Kowalski's complete animation and interaction suite.
+- **gstack Production Suite (Garry Tan / YC)**:
+  - `gstack`: Central router for review, QA, shipping, and design consultation.
+  - Standalone skills: `gstack-design-review`, `gstack-plan-ceo-review`, `gstack-review`, `gstack-qa`, `gstack-ship`, `gstack-office-hours`, `gstack-investigate`.
+
 ## Escalation
 
 If you encounter:

@@ -30,7 +30,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
         { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
         { label: "Invoices", path: "/invoices", icon: FileText },
         { label: "Quotations & Estimates", path: "/quotations", icon: FileCheck2 },
-        { label: "Monthly Reports", path: "/reports", icon: BarChart3 },
+        { label: "Analytics Hub", path: "/reports", icon: BarChart3 },
         { label: "Clients Directory", path: "/clients", icon: Users },
         { label: "Deals & CRM (AI)", path: "/deals", icon: Sparkles },
         { label: "Subscription & Plans", path: "/subscription", icon: CreditCard, highlight: true },

@@ -69,9 +69,7 @@ export function InvoiceMetricsCards({
             count: invoices.length,
             subtitle: `${invoices.length} invoices issued`,
             icon: TrendingUp,
-            color: "text-blue-400",
-            bgGlow: "rgba(59, 130, 246, 0.08)",
-            border: "rgba(59, 130, 246, 0.2)",
+            color: "text-blue-400 daylight:text-blue-600",
             filter: null
         },
         {
@@ -79,11 +77,9 @@ export function InvoiceMetricsCards({
             title: "Paid to Date",
             amount: totalPaid,
             count: paidCount,
-            subtitle: `${paidPercentage}% collected`,
+            subtitle: `${paidPercentage}% settled`,
             icon: CheckCircle2,
-            color: "text-emerald-400",
-            bgGlow: "rgba(16, 185, 129, 0.08)",
-            border: "rgba(16, 185, 129, 0.2)",
+            color: "text-emerald-400 daylight:text-emerald-600",
             filter: "paid"
         },
         {
@@ -91,11 +87,9 @@ export function InvoiceMetricsCards({
             title: "Outstanding",
             amount: totalOutstanding,
             count: outstandingCount,
-            subtitle: `${outstandingCount} awaiting payment`,
+            subtitle: `${outstandingCount} in collection`,
             icon: Clock,
-            color: "text-amber-400",
-            bgGlow: "rgba(245, 158, 11, 0.08)",
-            border: "rgba(245, 158, 11, 0.2)",
+            color: "text-amber-400 daylight:text-amber-600",
             filter: "pending"
         },
         {
@@ -105,9 +99,7 @@ export function InvoiceMetricsCards({
             count: overdueCount,
             subtitle: overdueCount > 0 ? "Requires attention" : "All clear",
             icon: AlertCircle,
-            color: "text-rose-400",
-            bgGlow: overdueCount > 0 ? "rgba(244, 63, 94, 0.12)" : "rgba(244, 63, 94, 0.06)",
-            border: overdueCount > 0 ? "rgba(244, 63, 94, 0.35)" : "rgba(244, 63, 94, 0.15)",
+            color: "text-rose-400 daylight:text-rose-600",
             filter: "overdue",
             pulse: overdueCount > 0
         }
@@ -124,51 +116,86 @@ export function InvoiceMetricsCards({
                         key={card.id}
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: idx * 0.06 }}
+                        transition={{ duration: 0.25, delay: idx * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => onSelectFilter && onSelectFilter(card.filter)}
-                        className={`metric-card relative rounded-2xl p-5 cursor-pointer transition-all duration-300 backdrop-blur-xl border ${
+                        className={`group relative p-[1px] rounded-xl cursor-pointer transition-all duration-200 ${
                             isSelected
-                                ? "ring-2 ring-blue-400/50 scale-[1.02]"
-                                : "hover:scale-[1.01] hover:border-white/20"
+                                ? "bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 shadow-[0_4px_20px_rgba(37,99,235,0.25)] ring-2 ring-blue-500/40 daylight:ring-blue-600/30"
+                                : "bg-gradient-to-b from-white/[0.12] via-white/[0.04] to-transparent border border-white/[0.08] daylight:border-slate-200 shadow-sm hover:border-white/20"
                         }`}
-                        style={{
-                            background: `linear-gradient(135deg, ${card.bgGlow} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                            borderColor: card.border
-                        }}
                     >
-                        {/* Header */}
-                        <div className="flex justify-between items-start mb-3">
-                            <span className="text-xs font-semibold tracking-wider text-gray-400 uppercase">
-                                {card.title}
-                            </span>
-                            <div className={`p-2 rounded-xl bg-white/5 border border-white/10 ${card.color}`}>
-                                <Icon size={16} />
+                        <div className={`relative h-full w-full rounded-[calc(0.75rem-1px)] p-5 transition-colors duration-200 ${
+                            isSelected
+                                ? "bg-[#0C1322] daylight:bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] daylight:shadow-[inset_0_1px_0_rgba(255,255,255,1)]"
+                                : "bg-[#0D0F15] daylight:bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] daylight:shadow-[inset_0_1px_0_rgba(255,255,255,1)]"
+                        }`}>
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`text-[11px] font-bold tracking-[0.12em] uppercase transition-colors ${
+                                        isSelected
+                                            ? "text-blue-400 daylight:text-blue-700 font-extrabold"
+                                            : "text-slate-400 daylight:text-slate-600"
+                                    }`}>
+                                        {card.title}
+                                    </span>
+                                    {isSelected && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 daylight:bg-blue-600 animate-pulse" />
+                                    )}
+                                </div>
+                                <div className={`p-2 rounded-lg transition-colors ${
+                                    isSelected
+                                        ? "bg-blue-500/20 text-blue-400 daylight:bg-blue-600 daylight:text-white border border-blue-500/30 daylight:border-blue-600 shadow-sm"
+                                        : `bg-white/[0.04] daylight:bg-slate-100 border border-white/5 daylight:border-slate-200 ${card.color}`
+                                }`}>
+                                    <Icon size={15} />
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Amount */}
-                        <div className="flex items-baseline gap-2 mb-1 min-w-0">
-                            <span className="text-xl sm:text-2xl lg:text-2xl xl:text-3xl font-bold tracking-tight text-white font-mono truncate" title={formatAmount(card.amount)}>
-                                {formatAmount(card.amount)}
-                            </span>
-                        </div>
+                            {/* Amount */}
+                            <div className="flex items-baseline gap-2 mb-1 min-w-0">
+                                <span className={`text-xl sm:text-2xl lg:text-2xl xl:text-3xl font-black tracking-tight font-mono truncate ${
+                                    isSelected
+                                        ? "text-white daylight:text-blue-950"
+                                        : "text-[var(--foreground)] daylight:text-slate-900"
+                                }`} title={formatAmount(card.amount)}>
+                                    {formatAmount(card.amount)}
+                                </span>
+                            </div>
 
-                        {/* Footer Subtitle */}
-                        <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-white/5 mt-3">
-                            <span>{card.subtitle}</span>
-                            <span className="inline-flex items-center gap-1 font-medium text-gray-300">
-                                {card.count} inv
-                                <ArrowUpRight size={12} className="opacity-60" />
-                            </span>
-                        </div>
+                            {/* Footer Subtitle */}
+                            <div className={`flex items-center justify-between text-xs pt-2.5 border-t transition-colors mt-3 ${
+                                isSelected
+                                    ? "border-blue-500/20 daylight:border-blue-200/60"
+                                    : "border-white/5 daylight:border-slate-100"
+                            }`}>
+                                <span className={`font-medium ${
+                                    isSelected
+                                        ? "text-blue-300 daylight:text-blue-700 font-semibold"
+                                        : "text-slate-400 daylight:text-slate-600"
+                                }`}>
+                                    {card.subtitle}
+                                </span>
+                                <span className={`inline-flex items-center gap-1 font-mono font-bold ${
+                                    isSelected
+                                        ? "text-blue-400 daylight:text-blue-700"
+                                        : "text-[var(--foreground)] daylight:text-slate-900"
+                                }`}>
+                                    {card.count}
+                                    <ArrowUpRight size={12} className="opacity-60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                </span>
+                            </div>
 
-                        {/* Overdue Glow Pulse */}
-                        {card.pulse && (
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                            </span>
-                        )}
+                            {/* Overdue Diode */}
+                            {card.pulse && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 shadow-[0_0_8px_#f43f5e]" />
+                                </span>
+                            )}
+                        </div>
                     </motion.div>
                 );
             })}

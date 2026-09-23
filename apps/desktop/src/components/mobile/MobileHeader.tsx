@@ -30,7 +30,7 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
     };
 
     return (
-        <header className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-[#0c1322]/90 backdrop-blur-xl border-b border-white/10 px-3 sm:px-4 flex items-center justify-between">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-[#0c1322]/90 daylight:bg-white/95 backdrop-blur-xl border-b border-white/10 daylight:border-slate-200 px-3 sm:px-4 flex items-center justify-between transition-colors">
             {/* Left: Brand / Title */}
             <div className="flex items-center gap-2">
                 <button
@@ -40,7 +40,7 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
                     IF
                 </button>
                 <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white tracking-tight flex items-center gap-1">
+                    <span className="text-xs font-bold text-white daylight:text-slate-900 tracking-tight flex items-center gap-1">
                         {getTitle()}
                         <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 font-mono font-medium border border-blue-500/30">
                             {currentPlan.tier.toUpperCase()}

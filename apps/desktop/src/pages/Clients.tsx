@@ -16,6 +16,7 @@ import {
     AlertTriangle
 } from "lucide-react";
 import { getClients, createClient, deleteClient, updateClient, type ClientResponse } from "../lib/api";
+import { SpotlightButton } from "../components/ui/SpotlightButton";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -188,15 +189,13 @@ export function Clients() {
                             style={{ paddingLeft: '44px', borderRadius: 'var(--radius-xl)', height: '3rem', border: '1px solid rgba(255,255,255,0.08)' }}
                         />
                     </div>
-                    <motion.button
-                        className="btn btn-primary glass-panel"
+                    <SpotlightButton
+                        variant="primary"
                         onClick={() => setShowCreate(true)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{ height: '3rem', padding: '0 1.5rem', borderRadius: 'var(--radius-xl)' }}
+                        icon={<Plus size={16} />}
                     >
-                        <Plus size={18} /> New Client
-                    </motion.button>
+                        New Client
+                    </SpotlightButton>
                 </div>
             </motion.div>
 
@@ -351,18 +350,18 @@ export function Clients() {
                                             </div>
                                         </div>
 
-                                        <div style={{ display: "flex", flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                                <div style={{ width: 24, height: 24, borderRadius: '6px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                                        <div className="flex flex-col gap-3 p-4 rounded-xl bg-black/20 daylight:bg-slate-50 border border-white/5 daylight:border-slate-200/80">
+                                            <div className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] daylight:text-slate-600">
+                                                <div className="w-6 h-6 rounded-md bg-white/5 daylight:bg-blue-50 border border-white/5 daylight:border-blue-100 flex items-center justify-center text-[var(--primary)] daylight:text-blue-600 shrink-0">
                                                     <Mail size={12} />
                                                 </div>
-                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client.email || "No email provided"}</span>
+                                                <span className="truncate">{client.email || "No email provided"}</span>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                                <div style={{ width: 24, height: 24, borderRadius: '6px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--secondary)' }}>
+                                            <div className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] daylight:text-slate-600">
+                                                <div className="w-6 h-6 rounded-md bg-white/5 daylight:bg-emerald-50 border border-white/5 daylight:border-emerald-100 flex items-center justify-center text-[var(--secondary)] daylight:text-emerald-600 shrink-0">
                                                     <Building2 size={12} />
                                                 </div>
-                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client.company || "—"}</span>
+                                                <span className="truncate">{client.company || "—"}</span>
                                             </div>
                                         </div>
 
