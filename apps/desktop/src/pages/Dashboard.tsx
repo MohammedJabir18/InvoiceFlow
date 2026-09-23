@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { FilePlus2, Loader2, ArrowRight, TrendingUp, Users, DollarSign, Activity } from "lucide-react";
+import { FilePlus2, Loader2, ArrowRight, TrendingUp, Users, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { RevenuePulse } from "../components/dashboard/RevenuePulse";
@@ -10,6 +10,7 @@ import { useSettingsStore } from "../store/settingsStore";
 import { GlassCard } from "../components/ui/GlassCard";
 import { SpotlightButton } from "../components/ui/SpotlightButton";
 import { AnimatedBadge } from "../components/ui/AnimatedBadge";
+import { convertAmount, formatMoney, getCurrencyInfo } from "../lib/currencies";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -33,6 +34,7 @@ export function Dashboard() {
     const [activeDeals, setActiveDeals] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+    const currencyInfo = getCurrencyInfo(currency);
     const profile = useSettingsStore(state => state.profile);
 
     useEffect(() => {
@@ -62,23 +64,18 @@ export function Dashboard() {
 
     const totalRevenue = invoices
         .filter(inv => inv.status.toLowerCase() === 'paid')
-        .reduce((sum, inv) => sum + parseFloat(inv.total || "0"), 0);
+        .reduce((sum, inv) => sum + convertAmount(parseFloat(inv.total || "0"), inv.currency || "USD", currency), 0);
 
     const outstandingAmount = invoices
         .filter(inv => inv.status.toLowerCase() !== 'paid' && inv.status.toLowerCase() !== 'draft')
-        .reduce((sum, inv) => sum + parseFloat(inv.total || "0"), 0);
+        .reduce((sum, inv) => sum + convertAmount(parseFloat(inv.total || "0"), inv.currency || "USD", currency), 0);
 
     const recentInvoices = [...invoices]
         .sort((a, b) => b.issue_date.localeCompare(a.issue_date))
         .slice(0, 5);
 
     const formatCurrency = (num: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(num);
+        return formatMoney(num, currency);
     };
 
     const statusMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
@@ -140,7 +137,7 @@ export function Dashboard() {
                 className="flex flex-col gap-8"
             >
                 {/* METRICS ROW */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Net Revenue</h3>
@@ -149,7 +146,7 @@ export function Dashboard() {
                             </div>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-4xl font-mono font-bold tracking-tight text-[var(--foreground)]">
+                            <span className="text-2xl sm:text-3xl xl:text-4xl font-mono font-bold tracking-tight text-[var(--foreground)] truncate">
                                 {loading ? "..." : formatCurrency(totalRevenue)}
                             </span>
                             <span className="text-sm font-medium text-emerald-500">+12% from last cycle</span>
@@ -160,18 +157,20 @@ export function Dashboard() {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Outstanding</h3>
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 text-amber-500 ring-1 ring-amber-500/20">
-                                <DollarSign className="h-5 w-5" />
+                                <span className="font-mono font-black text-xs select-none">
+                                    {currencyInfo.symbol || currencyInfo.code}
+                                </span>
                             </div>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-4xl font-mono font-bold tracking-tight text-[var(--foreground)]">
+                            <span className="text-2xl sm:text-3xl xl:text-4xl font-mono font-bold tracking-tight text-[var(--foreground)] truncate">
                                 {loading ? "..." : formatCurrency(outstandingAmount)}
                             </span>
                             <span className="text-sm font-medium text-[var(--text-muted)]">Across active invoices</span>
                         </div>
                     </GlassCard>
 
-                    <GlassCard className="p-6 overflow-hidden group">
+                    <GlassCard className="p-6 overflow-hidden group sm:col-span-2 lg:col-span-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-4">
@@ -181,7 +180,7 @@ export function Dashboard() {
                                 </div>
                             </div>
                             <div className="flex flex-col gap-1">
-                                <span className="text-4xl font-mono font-bold tracking-tight text-[var(--foreground)] drop-shadow-[0_0_10px_color-mix(in_srgb,var(--primary)_30%,transparent)]">
+                                <span className="text-2xl sm:text-3xl xl:text-4xl font-mono font-bold tracking-tight text-[var(--foreground)] drop-shadow-[0_0_10px_color-mix(in_srgb,var(--primary)_30%,transparent)]">
                                     {loading ? "..." : activeDeals}
                                 </span>
                                 <span className="text-sm font-medium text-[var(--primary)] cursor-pointer hover:underline flex items-center gap-1" onClick={() => navigate('/deals')}>
@@ -275,7 +274,7 @@ export function Dashboard() {
                                                 </AnimatedBadge>
                                             </td>
                                             <td className="px-6 py-5 text-right font-mono text-[1.1rem] font-bold text-[var(--foreground)] tracking-tight">
-                                                {formatCurrency(parseFloat(inv.total))}
+                                                {formatMoney(parseFloat(inv.total), currency, inv.currency || "USD")}
                                             </td>
                                         </tr>
                                     ))}

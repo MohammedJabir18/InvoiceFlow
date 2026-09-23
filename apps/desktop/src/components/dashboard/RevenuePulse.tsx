@@ -1,8 +1,9 @@
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
-import { DollarSign, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import type { InvoiceSummary } from "../../lib/api";
 import { useSettingsStore } from "../../store/settingsStore";
+import { convertAmount, formatMoney, getCurrencyInfo } from "../../lib/currencies";
 
 interface Props {
     totalRevenue: number;
@@ -11,14 +12,10 @@ interface Props {
 
 export function RevenuePulse({ totalRevenue, invoices }: Props) {
     const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+    const currencyInfo = getCurrencyInfo(currency);
 
     const formatCurrency = (num: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(num);
+        return formatMoney(num, currency);
     };
 
     // Build monthly revenue data from real invoices
@@ -31,7 +28,7 @@ export function RevenuePulse({ totalRevenue, invoices }: Props) {
             const date = new Date(inv.issue_date);
             const month = monthNames[date.getMonth()];
             if (month && inv.status.toLowerCase() === 'paid') {
-                monthlyMap[month] += parseFloat(inv.total || "0");
+                monthlyMap[month] += convertAmount(parseFloat(inv.total || "0"), inv.currency || "USD", currency);
             }
         } catch { /* skip bad dates */ }
     });
@@ -70,7 +67,9 @@ export function RevenuePulse({ totalRevenue, invoices }: Props) {
                     </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/5 text-[var(--primary)] ring-1 ring-[var(--primary)]/30 shadow-[0_0_20px_color-mix(in_srgb,var(--primary)_30%,transparent)]">
-                    <DollarSign size={24} strokeWidth={2.5} />
+                    <span className="font-mono font-black text-sm tracking-tight select-none">
+                        {currencyInfo.symbol || currencyInfo.code}
+                    </span>
                 </div>
             </div>
 

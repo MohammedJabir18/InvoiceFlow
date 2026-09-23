@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Check, ShieldCheck, Zap, Sparkles, Key, AlertCircle, ArrowRight } from "lucide-react";
 import { useSubscriptionStore, SUBSCRIPTION_PLANS, type SubscriptionTier } from "../store/subscriptionStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { formatMoney } from "../lib/currencies";
 import { motion } from "framer-motion";
 
 export function Subscription() {
@@ -15,6 +17,9 @@ export function Subscription() {
         setBillingCycle,
         activateLicense
     } = useSubscriptionStore();
+
+    const profile = useSettingsStore(state => state.profile);
+    const activeCurrency = profile?.default_currency || "USD";
 
     const [inputKey, setInputKey] = useState("");
     const [keyMessage, setKeyMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -130,6 +135,7 @@ export function Subscription() {
                 {SUBSCRIPTION_PLANS.map((plan) => {
                     const isCurrent = currentPlan.tier === plan.tier;
                     const price = billingCycle === "annual" ? plan.annualPrice : plan.monthlyPrice;
+                    const formattedPrice = formatMoney(price, activeCurrency, "USD");
 
                     return (
                         <div
@@ -158,7 +164,7 @@ export function Subscription() {
                                 {/* Price */}
                                 <div className="mb-6 flex items-baseline gap-1">
                                     <span className="text-3xl md:text-4xl font-black text-white">
-                                        {plan.currency}{price}
+                                        {formattedPrice}
                                     </span>
                                     <span className="text-xs text-gray-400 font-medium">/ month</span>
                                     {billingCycle === "annual" && (

@@ -17,6 +17,7 @@ import {
 import { getInvoiceById, getClients, updateInvoiceStatus, type FullInvoice, type ClientResponse } from "../lib/api";
 import { getTabbyInstallments, createTabbySession } from "../lib/tabby";
 import { useSettingsStore } from "../store/settingsStore";
+import { formatMoney } from "../lib/currencies";
 import { motion } from "framer-motion";
 
 export function PaymentLinkView() {
@@ -141,7 +142,7 @@ export function PaymentLinkView() {
                         <div className="text-right">
                             <span className="text-[10px] uppercase font-bold text-gray-400 block">Total Due</span>
                             <div className="text-2xl sm:text-3xl font-black text-white font-mono">
-                                ${parseFloat(invoice.total).toFixed(2)}
+                                {formatMoney(invoice.total, currency, invoice.currency || "USD")}
                             </div>
                             <span className="text-[11px] text-gray-400 font-mono">Due: {invoice.due_date}</span>
                         </div>
@@ -160,7 +161,7 @@ export function PaymentLinkView() {
                         </div>
                         <h2 className="text-xl font-black text-white">Payment Completed!</h2>
                         <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
-                            Thank you! Your payment of <strong className="text-white">${parseFloat(invoice.total).toFixed(2)}</strong> for Invoice #{invoice.number} has been settled and verified.
+                            Thank you! Your payment of <strong className="text-white">{formatMoney(invoice.total, currency, invoice.currency || "USD")}</strong> for Invoice #{invoice.number} has been settled and verified.
                         </p>
                         <div className="p-4 rounded-xl bg-[#0b0f19] border border-white/10 max-w-sm mx-auto text-xs space-y-1 font-mono text-gray-300">
                             <div className="flex justify-between">
@@ -262,7 +263,7 @@ export function PaymentLinkView() {
                                             <div key={i} className="p-2.5 rounded-lg bg-black/40 border border-emerald-500/20">
                                                 <span className="text-[10px] text-gray-400 block">{sch.date}</span>
                                                 <span className="font-mono font-bold text-emerald-400 text-sm">
-                                                    ${sch.amount.toFixed(2)}
+                                                    {formatMoney(sch.amount, currency, currency)}
                                                 </span>
                                             </div>
                                         ))}
@@ -274,7 +275,7 @@ export function PaymentLinkView() {
                                     disabled={processing}
                                     className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50"
                                 >
-                                    <span>{processing ? "Connecting to Tabby..." : `Pay 1st Installment of $${tabby.perMonth.toFixed(2)} with Tabby`}</span>
+                                    <span>{processing ? "Connecting to Tabby..." : `Pay 1st Installment of ${formatMoney(tabby.perMonth, currency, currency)} with Tabby`}</span>
                                 </button>
                             </motion.div>
                         )}
@@ -333,7 +334,7 @@ export function PaymentLinkView() {
                                     disabled={processing}
                                     className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/25 disabled:opacity-50"
                                 >
-                                    <span>{processing ? "Authorizing Card..." : `Pay $${parseFloat(invoice.total).toFixed(2)} Securely`}</span>
+                                    <span>{processing ? "Authorizing Card..." : `Pay ${formatMoney(invoice.total, currency, invoice.currency || "USD")} Securely`}</span>
                                 </button>
                             </motion.div>
                         )}

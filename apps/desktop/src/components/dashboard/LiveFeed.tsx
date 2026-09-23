@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, FilePlus2, ArrowRight } from "lucide-react";
 import type { InvoiceSummary, ClientResponse } from "../../lib/api";
 import { useSettingsStore } from "../../store/settingsStore";
+import { formatMoney } from "../../lib/currencies";
 
 interface Props {
     invoices: InvoiceSummary[];
@@ -12,15 +13,10 @@ export function LiveFeed({ invoices, clients }: Props) {
     const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
     const clientName = (id: string) => clients.find((c) => c.id === id)?.name || "Unknown";
 
-    const formatCurrency = (total: string) => {
+    const formatCurrency = (total: string, fromCurrency?: string) => {
         const num = parseFloat(total);
         if (isNaN(num)) return total;
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(num);
+        return formatMoney(num, currency, fromCurrency || "USD");
     };
 
     // Generate events from real invoice data
@@ -33,7 +29,7 @@ export function LiveFeed({ invoices, clients }: Props) {
                 case "paid":
                     return {
                         id: inv.id,
-                        message: `Payment received: ${formatCurrency(inv.total)} from ${clientName(inv.client_id)}`,
+                        message: `Payment received: ${formatCurrency(inv.total, inv.currency)} from ${clientName(inv.client_id)}`,
                         time: inv.issue_date,
                         icon: CheckCircle2,
                         color: "text-emerald-500",

@@ -11,6 +11,7 @@ import {
     Loader2
 } from "lucide-react";
 import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
+import { SUPPORTED_CURRENCIES } from "../lib/currencies";
 
 interface OnboardingWizardProps {
     onComplete: () => void;
@@ -288,13 +289,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                                         onChange={e => setProfileData({ ...profileData, default_currency: e.target.value })}
                                         className="w-full bg-[var(--background)] border border-[var(--premium-border)] rounded-xl px-4 py-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none transition-colors"
                                     >
-                                        <option value="USD">USD - US Dollar ($)</option>
-                                        <option value="EUR">EUR - Euro (€)</option>
-                                        <option value="GBP">GBP - British Pound (£)</option>
-                                        <option value="INR">INR - Indian Rupee (₹)</option>
-                                        <option value="JPY">JPY - Japanese Yen (¥)</option>
-                                        <option value="CAD">CAD - Canadian Dollar ($)</option>
-                                        <option value="AUD">AUD - Australian Dollar ($)</option>
+                                        {SUPPORTED_CURRENCIES.map(c => (
+                                            <option key={c.code} value={c.code}>
+                                                {c.flag} {c.code} - {c.name} ({c.symbol})
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>

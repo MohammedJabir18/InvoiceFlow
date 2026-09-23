@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
+import { CurrencySelector } from "./CurrencySelector";
 
 export function TopNavbar() {
     const { scrollY } = useScroll();
@@ -23,8 +24,8 @@ export function TopNavbar() {
                 background: scrolled ? 'color-mix(in srgb, var(--surface) 60%, transparent)' : 'transparent',
             }}
         >
-            <div className="flex items-center gap-4">
-                {/* Could add a global search button here later */}
+            <div className="flex items-center gap-3">
+                <CurrencySelector />
                 <ThemeToggle />
             </div>
         </motion.header>

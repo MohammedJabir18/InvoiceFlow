@@ -136,7 +136,7 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
                             <div className="text-right">
                                 <span className="text-[10px] uppercase font-bold text-gray-400">Amount Due</span>
                                 <div className="text-xl font-black text-blue-400 font-mono">
-                                    ${parseFloat(invoice.amount_due || invoice.total).toFixed(2)}
+                                    {formatCurrencyAmount(parseFloat(invoice.amount_due || invoice.total), invoice.currency || "USD")}
                                 </div>
                             </div>
                         </div>
@@ -148,7 +148,7 @@ export function PaymentLinkModal({ invoice, client, isOpen, onClose }: PaymentLi
                                     tabby
                                 </div>
                                 <span className="text-xs text-gray-200">
-                                    or 4 interest-free payments of <span className="font-bold text-emerald-400 font-mono">${tabby.perMonth.toFixed(2)}</span>
+                                    or 4 interest-free payments of <span className="font-bold text-emerald-400 font-mono">{formatCurrencyAmount(tabby.perMonth, invoice.currency || "USD")}</span>
                                 </span>
                             </div>
                             <span className="text-[10px] text-emerald-400 font-semibold uppercase">0% Interest</span>

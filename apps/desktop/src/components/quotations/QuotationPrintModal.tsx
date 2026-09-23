@@ -1,6 +1,7 @@
 import { Printer, X, Download, CheckCircle, Calendar, Building, User, Mail } from "lucide-react";
 import { type FullQuotation, type ClientResponse } from "../../lib/api";
 import { useSettingsStore } from "../../store/settingsStore";
+import { formatMoney } from "../../lib/currencies";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface QuotationPrintModalProps {
@@ -13,6 +14,7 @@ interface QuotationPrintModalProps {
 
 export function QuotationPrintModal({ quotation, client, isOpen, onClose, onConvert }: QuotationPrintModalProps) {
     const profile = useSettingsStore(state => state.profile);
+    const currency = quotation?.currency || profile?.default_currency || "USD";
 
     if (!isOpen || !quotation) return null;
 
@@ -162,10 +164,10 @@ export function QuotationPrintModal({ quotation, client, isOpen, onClose, onConv
                                             <td className="py-3 px-2 text-center text-gray-500 font-mono">{item.unit || "unit"}</td>
                                             <td className="py-3 px-2 text-center text-gray-800 font-bold">{item.quantity}</td>
                                             <td className="py-3 px-2 text-right text-gray-700 font-mono">
-                                                ${parseFloat(String(item.unit_price)).toFixed(2)}
+                                                {formatMoney(item.unit_price, currency, currency)}
                                             </td>
                                             <td className="py-3 px-2 text-right font-bold text-gray-950 font-mono">
-                                                ${parseFloat(String(item.amount)).toFixed(2)}
+                                                {formatMoney(item.amount, currency, currency)}
                                             </td>
                                         </tr>
                                     ))}
@@ -177,15 +179,15 @@ export function QuotationPrintModal({ quotation, client, isOpen, onClose, onConv
                                 <div className="w-64 space-y-2 text-xs">
                                     <div className="flex justify-between text-gray-600">
                                         <span>Subtotal:</span>
-                                        <span className="font-semibold text-gray-900 font-mono">${quotation.total}</span>
+                                        <span className="font-semibold text-gray-900 font-mono">{formatMoney(quotation.total, currency, currency)}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-600">
                                         <span>Estimated Tax:</span>
-                                        <span className="font-semibold text-gray-900 font-mono">$0.00</span>
+                                        <span className="font-semibold text-gray-900 font-mono">{formatMoney(0, currency, currency)}</span>
                                     </div>
                                     <div className="flex justify-between border-t-2 border-gray-900 pt-2 text-sm font-extrabold text-gray-950">
                                         <span>TOTAL ESTIMATE:</span>
-                                        <span className="font-mono text-base text-blue-700">${quotation.total}</span>
+                                        <span className="font-mono text-base text-blue-700">{formatMoney(quotation.total, currency, currency)}</span>
                                     </div>
                                 </div>
                             </div>

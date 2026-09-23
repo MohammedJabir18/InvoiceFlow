@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Menu, FileText, FileCheck2, Zap } from "lucide-react";
 import { useSubscriptionStore } from "../../store/subscriptionStore";
 import { ThemeToggle } from "../ThemeToggle";
+import { CurrencySelector } from "../CurrencySelector";
 
 interface MobileHeaderProps {
     onOpenMenu: () => void;
@@ -29,9 +30,9 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
     };
 
     return (
-        <header className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-[#0c1322]/90 backdrop-blur-xl border-b border-white/10 px-4 flex items-center justify-between">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-[#0c1322]/90 backdrop-blur-xl border-b border-white/10 px-3 sm:px-4 flex items-center justify-between">
             {/* Left: Brand / Title */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
                 <button
                     onClick={() => navigate("/dashboard")}
                     className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-xs text-white shadow-md shadow-blue-500/20"
@@ -39,7 +40,7 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
                     IF
                 </button>
                 <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white tracking-tight flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-white tracking-tight flex items-center gap-1">
                         {getTitle()}
                         <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 font-mono font-medium border border-blue-500/30">
                             {currentPlan.tier.toUpperCase()}
@@ -49,7 +50,10 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Global Currency Selector */}
+                <CurrencySelector compact={true} />
+
                 {/* Theme Toggle */}
                 <ThemeToggle />
 

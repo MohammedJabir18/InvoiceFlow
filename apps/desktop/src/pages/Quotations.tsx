@@ -9,7 +9,6 @@ import {
     Trash2,
     CheckCircle2,
     Clock,
-    DollarSign,
     Layers,
     ArrowRight,
     Sparkles,
@@ -28,10 +27,14 @@ import {
 import { QuotationPrintModal } from "../components/quotations/QuotationPrintModal";
 import { QuotationEditor } from "../components/quotations/QuotationEditor";
 import { useSubscriptionStore } from "../store/subscriptionStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { convertAmount, formatMoney, getCurrencyInfo } from "../lib/currencies";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Quotations() {
     const navigate = useNavigate();
+    const currency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+    const currencyInfo = getCurrencyInfo(currency);
     const [searchParams] = useSearchParams();
     const autoCreate = searchParams.get("create") === "true";
 
@@ -84,7 +87,10 @@ export function Quotations() {
 
     // Metrics
     const metrics = useMemo(() => {
-        const totalValue = quotations.reduce((sum, q) => sum + parseFloat(q.total || "0"), 0);
+        const totalValue = quotations.reduce(
+            (sum, q) => sum + convertAmount(parseFloat(q.total || "0"), q.currency || "USD", currency),
+            0
+        );
         const accepted = quotations.filter(q => q.status === "Accepted" || q.status === "Converted");
         const pending = quotations.filter(q => q.status === "Sent" || q.status === "Draft");
         const converted = quotations.filter(q => q.status === "Converted");
@@ -92,10 +98,13 @@ export function Quotations() {
         return {
             totalValue,
             acceptedCount: accepted.length,
-            pendingValue: pending.reduce((sum, q) => sum + parseFloat(q.total || "0"), 0),
+            pendingValue: pending.reduce(
+                (sum, q) => sum + convertAmount(parseFloat(q.total || "0"), q.currency || "USD", currency),
+                0
+            ),
             convertedCount: converted.length
         };
-    }, [quotations]);
+    }, [quotations, currency]);
 
     const handleOpenPrint = async (id: string) => {
         const full = await getQuotationById(id);
@@ -175,24 +184,26 @@ export function Quotations() {
 
             {/* Metric KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className="p-4 rounded-2xl bg-[#111927] border border-white/10 shadow-lg">
+                <div className="p-4 rounded-2xl bg-[#111927] border border-white/10 shadow-lg min-w-0">
                     <div className="flex items-center justify-between text-gray-400 text-xs mb-1">
                         <span>Total Quoted</span>
-                        <DollarSign size={16} className="text-amber-400" />
+                        <span className="font-mono font-bold text-xs text-amber-400 select-none">
+                            {currencyInfo.symbol || currencyInfo.code}
+                        </span>
                     </div>
-                    <div className="text-lg sm:text-2xl font-black text-white font-mono">
-                        ${metrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div className="text-lg sm:text-2xl font-black text-white font-mono truncate" title={formatMoney(metrics.totalValue, currency, currency)}>
+                        {formatMoney(metrics.totalValue, currency, currency)}
                     </div>
                     <span className="text-[10px] text-gray-500 mt-1 block">{quotations.length} total proposals</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#111927] border border-white/10 shadow-lg">
+                <div className="p-4 rounded-2xl bg-[#111927] border border-white/10 shadow-lg min-w-0">
                     <div className="flex items-center justify-between text-gray-400 text-xs mb-1">
                         <span>Pending Approval</span>
                         <Clock size={16} className="text-blue-400" />
                     </div>
-                    <div className="text-lg sm:text-2xl font-black text-white font-mono">
-                        ${metrics.pendingValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div className="text-lg sm:text-2xl font-black text-white font-mono truncate" title={formatMoney(metrics.pendingValue, currency, currency)}>
+                        {formatMoney(metrics.pendingValue, currency, currency)}
                     </div>
                     <span className="text-[10px] text-blue-400 mt-1 block">Awaiting customer signoff</span>
                 </div>
@@ -324,7 +335,7 @@ export function Quotations() {
                                                 </span>
                                             </td>
                                             <td className="py-3.5 px-4 text-right font-mono font-bold text-white text-sm">
-                                                ${parseFloat(q.total).toFixed(2)}
+                                                {formatMoney(q.total, currency, q.currency || "USD")}
                                             </td>
                                             <td className="py-3.5 px-4 text-center">
                                                 <div className="flex items-center justify-center gap-1.5">
@@ -402,7 +413,7 @@ export function Quotations() {
 
                                     <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5 font-mono">
                                         <span className="text-gray-400">Valid: {q.valid_until}</span>
-                                        <span className="text-base font-extrabold text-white">${parseFloat(q.total).toFixed(2)}</span>
+                                        <span className="text-base font-extrabold text-white font-mono">{formatMoney(q.total, currency, q.currency || "USD")}</span>
                                     </div>
 
                                     {/* Action Buttons */}

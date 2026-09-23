@@ -4,7 +4,6 @@ import {
     Calendar,
     Printer,
     Download,
-    DollarSign,
     TrendingUp,
     CheckCircle,
     Clock,
@@ -12,12 +11,13 @@ import {
     Building,
     Percent
 } from "lucide-react";
-import { getInvoices, getClients, type InvoiceSummary, type ClientResponse } from "../lib/api";
+import { getInvoices, getClients, type InvoiceSummary, type ClientResponse, exportInvoicesToCsv } from "../lib/api";
 import { useSettingsStore } from "../store/settingsStore";
-import { exportInvoicesToCsv } from "../lib/api";
+import { convertAmount, formatMoney } from "../lib/currencies";
 
 export function MonthlyReport() {
     const profile = useSettingsStore(state => state.profile);
+    const currency = profile?.default_currency || "USD";
     const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
     const [clients, setClients] = useState<ClientResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,13 +68,15 @@ export function MonthlyReport() {
         let paidCount = 0;
 
         monthlyInvoices.forEach(inv => {
-            const tot = parseFloat(inv.total || "0");
+            const rawTot = parseFloat(inv.total || "0");
+            const tot = convertAmount(rawTot, inv.currency || "USD", currency);
             totalBilled += tot;
             if (inv.status === "Paid") {
                 cashCollected += tot;
                 paidCount++;
             } else {
-                outstanding += parseFloat(inv.amount_due || inv.total || "0");
+                const rawDue = parseFloat(inv.amount_due || inv.total || "0");
+                outstanding += convertAmount(rawDue, inv.currency || "USD", currency);
             }
         });
 
@@ -89,7 +91,7 @@ export function MonthlyReport() {
             paidCount,
             estimatedTax
         };
-    }, [monthlyInvoices]);
+    }, [monthlyInvoices, currency]);
 
     // Client Breakdown
     const clientBreakdown = useMemo(() => {
@@ -99,7 +101,8 @@ export function MonthlyReport() {
             const client = clients.find(c => c.id === inv.client_id);
             const name = client?.name || "Other";
             const company = client?.company || undefined;
-            const amount = parseFloat(inv.total || "0");
+            const rawAmount = parseFloat(inv.total || "0");
+            const amount = convertAmount(rawAmount, inv.currency || "USD", currency);
 
             if (!map[inv.client_id]) {
                 map[inv.client_id] = { name, company, total: 0, count: 0 };
@@ -109,7 +112,7 @@ export function MonthlyReport() {
         });
 
         return Object.values(map).sort((a, b) => b.total - a.total);
-    }, [monthlyInvoices, clients]);
+    }, [monthlyInvoices, clients, currency]);
 
     const handlePrint = () => {
         window.print();
@@ -206,7 +209,7 @@ export function MonthlyReport() {
                     <div className="p-4 rounded-xl bg-[#0b0f19] print:bg-gray-50 border border-white/5 print:border-gray-200">
                         <div className="text-xs text-gray-400 print:text-gray-600 font-medium mb-1">Total Invoiced (Gross)</div>
                         <div className="text-xl sm:text-2xl font-black text-white print:text-gray-950 font-mono">
-                            ${stats.totalBilled.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {formatMoney(stats.totalBilled, currency, currency)}
                         </div>
                         <span className="text-[10px] text-gray-500 mt-1 block">{monthlyInvoices.length} invoices issued</span>
                     </div>
@@ -214,7 +217,7 @@ export function MonthlyReport() {
                     <div className="p-4 rounded-xl bg-[#0b0f19] print:bg-gray-50 border border-white/5 print:border-gray-200">
                         <div className="text-xs text-emerald-400 print:text-emerald-700 font-medium mb-1">Cash Collected</div>
                         <div className="text-xl sm:text-2xl font-black text-emerald-400 print:text-emerald-700 font-mono">
-                            ${stats.cashCollected.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {formatMoney(stats.cashCollected, currency, currency)}
                         </div>
                         <span className="text-[10px] text-emerald-400/80 mt-1 block">{stats.collectionRate}% collected</span>
                     </div>
@@ -222,7 +225,7 @@ export function MonthlyReport() {
                     <div className="p-4 rounded-xl bg-[#0b0f19] print:bg-gray-50 border border-white/5 print:border-gray-200">
                         <div className="text-xs text-amber-400 print:text-amber-700 font-medium mb-1">Outstanding Balance</div>
                         <div className="text-xl sm:text-2xl font-black text-amber-400 print:text-amber-700 font-mono">
-                            ${stats.outstanding.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {formatMoney(stats.outstanding, currency, currency)}
                         </div>
                         <span className="text-[10px] text-gray-500 mt-1 block">Pending settlements</span>
                     </div>
@@ -230,7 +233,7 @@ export function MonthlyReport() {
                     <div className="p-4 rounded-xl bg-[#0b0f19] print:bg-gray-50 border border-white/5 print:border-gray-200">
                         <div className="text-xs text-purple-400 print:text-purple-700 font-medium mb-1">Est. Statutory Tax / VAT</div>
                         <div className="text-xl sm:text-2xl font-black text-purple-400 print:text-purple-700 font-mono">
-                            ${stats.estimatedTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {formatMoney(stats.estimatedTax, currency, currency)}
                         </div>
                         <span className="text-[10px] text-gray-500 mt-1 block">Standard 18% filing provision</span>
                     </div>
@@ -257,7 +260,7 @@ export function MonthlyReport() {
                                                 )}
                                             </div>
                                             <div className="font-mono font-bold text-white print:text-gray-900">
-                                                ${item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} ({pct}%)
+                                                {formatMoney(item.total, currency, currency)} ({pct}%)
                                             </div>
                                         </div>
                                         <div className="w-full h-1.5 rounded-full bg-white/10 print:bg-gray-200 overflow-hidden">
@@ -327,10 +330,10 @@ export function MonthlyReport() {
                                                     </span>
                                                 </td>
                                                 <td className="py-2.5 px-3 text-right font-mono text-gray-400 print:text-gray-600">
-                                                    ${parseFloat(inv.amount_due || "0").toFixed(2)}
+                                                    {formatMoney(inv.amount_due || "0", currency, inv.currency || "USD")}
                                                 </td>
                                                 <td className="py-2.5 px-3 text-right font-mono font-bold text-white print:text-gray-950">
-                                                    ${parseFloat(inv.total || "0").toFixed(2)}
+                                                    {formatMoney(inv.total || "0", currency, inv.currency || "USD")}
                                                 </td>
                                             </tr>
                                         );

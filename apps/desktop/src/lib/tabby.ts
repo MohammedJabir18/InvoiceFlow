@@ -13,19 +13,10 @@ export interface TabbyInstallmentPlan {
     }[];
 }
 
+import { formatMoney } from "./currencies";
+
 export function formatCurrencyAmount(amount: number, currency: string = "AED"): string {
-    const symbolMap: Record<string, string> = {
-        AED: "AED",
-        SAR: "SAR",
-        USD: "$",
-        EUR: "€",
-        GBP: "£",
-        INR: "₹",
-        KWD: "KWD",
-        BHD: "BHD",
-    };
-    const sym = symbolMap[currency] || currency;
-    return `${sym} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatMoney(amount, currency, currency);
 }
 
 export function getTabbyInstallments(total: number, currency: string = "AED"): TabbyInstallmentPlan {

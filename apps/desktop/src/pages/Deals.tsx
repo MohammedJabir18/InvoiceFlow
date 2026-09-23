@@ -4,6 +4,8 @@ import { Loader2, Sparkles, Activity, Target, BrainCircuit, RefreshCw } from "lu
 import { getClients, getDealsByClient, generateDealInsights, type ClientResponse, type Deal, type DealInsights } from "../lib/api";
 import { AILoadingState } from "../components/ui/AILoadingState";
 import { TypewriterReveal } from "../components/ui/TypewriterReveal";
+import { useSettingsStore } from "../store/settingsStore";
+import { formatMoney } from "../lib/currencies";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -74,8 +76,11 @@ export function Deals() {
         }
     };
 
+    const profile = useSettingsStore(state => state.profile);
+    const activeCurrency = profile?.default_currency || "USD";
+
     const formatCurrency = (amount: string) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(amount));
+        return formatMoney(amount, activeCurrency, "USD");
     };
 
     // UI Helpers

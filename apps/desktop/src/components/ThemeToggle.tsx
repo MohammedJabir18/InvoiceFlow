@@ -2,39 +2,41 @@ import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useSettingsStore } from "../store/settingsStore";
+import { getEffectiveTheme, commitThemePreference, THEME_CHANGE_EVENT, EffectiveTheme } from "../lib/theme";
 
 export function ThemeToggle() {
     const profile = useSettingsStore(state => state.profile);
     const updateSettings = useSettingsStore(state => state.updateSettings);
 
-    const [theme, setTheme] = useState<"midnight" | "daylight">(() => {
-        const saved = localStorage.getItem("invoiceflow_theme");
-        if (saved === "daylight" || saved === "midnight") return saved;
-        return profile?.theme_preference === "light" ? "daylight" : "midnight";
+    const [theme, setTheme] = useState<EffectiveTheme>(() => {
+        return getEffectiveTheme(profile?.theme_preference);
     });
 
     useEffect(() => {
-        localStorage.setItem("invoiceflow_theme", theme);
-        const root = window.document.documentElement;
-        const body = window.document.body;
+        const syncCurrentTheme = () => {
+            setTheme(getEffectiveTheme(profile?.theme_preference));
+        };
+        syncCurrentTheme();
 
-        if (theme === "daylight") {
-            root.classList.add("daylight");
-            body.classList.add("daylight");
-        } else {
-            root.classList.remove("daylight");
-            body.classList.remove("daylight");
-        }
-    }, [theme]);
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        mediaQuery.addEventListener("change", syncCurrentTheme);
+        window.addEventListener(THEME_CHANGE_EVENT, syncCurrentTheme);
+        window.addEventListener("storage", syncCurrentTheme);
+
+        return () => {
+            mediaQuery.removeEventListener("change", syncCurrentTheme);
+            window.removeEventListener(THEME_CHANGE_EVENT, syncCurrentTheme);
+            window.removeEventListener("storage", syncCurrentTheme);
+        };
+    }, [profile?.theme_preference]);
 
     const toggleTheme = () => {
-        setTheme((prev) => {
-            const next = prev === "midnight" ? "daylight" : "midnight";
-            if (profile) {
-                updateSettings({ ...profile, theme_preference: next === "daylight" ? "light" : "dark" });
-            }
-            return next;
-        });
+        const nextMode = theme === "midnight" ? "light" : "dark";
+        const applied = commitThemePreference(nextMode);
+        setTheme(applied);
+        if (profile) {
+            updateSettings({ ...profile, theme_preference: nextMode });
+        }
     };
 
     return (

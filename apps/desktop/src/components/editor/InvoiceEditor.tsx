@@ -2,6 +2,7 @@ import { useState, useImperativeHandle, forwardRef, useEffect, useRef } from "re
 import { Plus, Trash2, ImagePlus, X, ArrowUp, ArrowDown, Percent, FileText } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "../../store/settingsStore";
+import { formatCurrency } from "../../lib/currencies";
 import type { ClientResponse } from "../../lib/api";
 
 export interface InvoiceData {
@@ -311,12 +312,7 @@ export const InvoiceEditor = forwardRef<InvoiceEditorRef, Props>(({ clients, ini
 
     // Currency Formatter
     const formatCurrencyDisplay = (num: number) => {
-        return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: defaultCurrency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(num);
+        return formatCurrency(num, defaultCurrency);
     };
 
     // Serialize data function

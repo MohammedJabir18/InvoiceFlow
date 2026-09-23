@@ -34,6 +34,7 @@ import {
 } from "../../lib/api";
 import { PaymentLinkModal } from "./PaymentLinkModal";
 import { getTabbyInstallments } from "../../lib/tabby";
+import { formatMoney } from "../../lib/currencies";
 
 interface Props {
     invoiceId: string | null;
@@ -106,12 +107,7 @@ export function InvoiceDetailsSheet({
     const formatAmount = (amt: string | number) => {
         const num = typeof amt === "string" ? parseFloat(amt) : amt;
         if (isNaN(num)) return "0.00";
-        return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: invoice?.currency || currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(num);
+        return formatMoney(num, currency, invoice?.currency || "USD");
     };
 
     // Relative Due Date computation
@@ -438,7 +434,7 @@ Status: ${invoice.status}`;
                                     tabby
                                 </span>
                                 <span className="text-gray-300 text-[11px]">
-                                    or 4 interest-free payments of <span className="font-bold text-emerald-400 font-mono">${(parseFloat(invoice.total || "0") / 4).toFixed(2)}</span>
+                                    or 4 interest-free payments of <span className="font-bold text-emerald-400 font-mono">{formatAmount(parseFloat(invoice.total || "0") / 4)}</span>
                                 </span>
                             </div>
                             <button

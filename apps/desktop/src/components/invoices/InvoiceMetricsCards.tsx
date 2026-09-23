@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, CheckCircle2, Clock, AlertCircle, ArrowUpRight } from "lucide-react";
 import type { InvoiceSummary } from "../../lib/api";
+import { convertAmount, formatMoney } from "../../lib/currencies";
 
 interface Props {
     invoices: InvoiceSummary[];
@@ -20,11 +21,7 @@ export function InvoiceMetricsCards({
     today.setHours(0, 0, 0, 0);
 
     const formatAmount = (val: number) => {
-        return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: currency,
-            maximumFractionDigits: 0
-        }).format(val);
+        return formatMoney(val, currency, currency, { maximumFractionDigits: 0 });
     };
 
     // Calculate metrics
@@ -37,7 +34,8 @@ export function InvoiceMetricsCards({
     let overdueCount = 0;
 
     invoices.forEach((inv) => {
-        const amt = parseFloat(inv.total || "0");
+        const rawAmt = parseFloat(inv.total || "0");
+        const amt = convertAmount(rawAmt, inv.currency || "USD", currency);
         const status = inv.status.toLowerCase();
 
         if (status === "cancelled") return;
@@ -149,8 +147,8 @@ export function InvoiceMetricsCards({
                         </div>
 
                         {/* Amount */}
-                        <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
+                        <div className="flex items-baseline gap-2 mb-1 min-w-0">
+                            <span className="text-xl sm:text-2xl lg:text-2xl xl:text-3xl font-bold tracking-tight text-white font-mono truncate" title={formatAmount(card.amount)}>
                                 {formatAmount(card.amount)}
                             </span>
                         </div>

@@ -55,7 +55,7 @@ const DEFAULT_PROFILE: BusinessProfile = {
     logo_path: null,
     default_currency: 'USD',
     default_payment_terms: 'Net30',
-    theme_preference: 'dark',
+    theme_preference: 'system',
     pdf_export_dir: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -109,12 +109,13 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         if (isTauri()) {
             try {
                 await invoke('save_settings', { profile });
+                localStorage.setItem('invoiceflow_profile', JSON.stringify(profile));
                 set({ profile, isLoading: false });
                 return;
             } catch (error) {
                 console.error("Failed to save settings:", error);
                 set({ error: String(error), isLoading: false });
-                return;
+                throw error;
             }
         }
         localStorage.setItem('invoiceflow_profile', JSON.stringify(profile));
@@ -141,10 +142,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         if (isTauri()) {
             try {
                 await invoke('save_bank_details', { jsonData: JSON.stringify(details) });
+                localStorage.setItem('invoiceflow_bank_details', JSON.stringify(details));
                 set({ bankDetails: details });
                 return;
             } catch (error) {
                 console.error("Failed to save bank details:", error);
+                throw error;
             }
         }
         localStorage.setItem('invoiceflow_bank_details', JSON.stringify(details));

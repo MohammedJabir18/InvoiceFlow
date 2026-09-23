@@ -298,6 +298,14 @@ export async function createInvoice(request: CreateInvoiceRequest): Promise<stri
     const newId = "inv-" + Date.now();
     const total = request.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toFixed(2);
 
+    let invoiceCurrency = "USD";
+    try {
+        if (request.notes) {
+            const parsedNotes = typeof request.notes === "string" ? JSON.parse(request.notes) : request.notes;
+            if (parsedNotes?.currency) invoiceCurrency = parsedNotes.currency;
+        }
+    } catch {}
+
     const newSummary: InvoiceSummary = {
         id: newId,
         number: invoiceNumber,
@@ -305,7 +313,7 @@ export async function createInvoice(request: CreateInvoiceRequest): Promise<stri
         client_id: request.client_id,
         issue_date: request.issue_date || new Date().toISOString().split("T")[0],
         due_date: request.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-        currency: "USD",
+        currency: invoiceCurrency,
         total,
         amount_due: request.status === "Paid" ? "0.00" : total
     };
@@ -727,6 +735,14 @@ export async function createQuotation(request: CreateQuotationRequest): Promise<
     const newId = "quo-" + Date.now();
     const total = request.items.reduce((acc, it) => acc + (it.quantity * it.unit_price), 0).toFixed(2);
 
+    let quoteCurrency = "USD";
+    try {
+        if (request.notes) {
+            const parsed = typeof request.notes === "string" ? JSON.parse(request.notes) : request.notes;
+            if (parsed?.currency) quoteCurrency = parsed.currency;
+        }
+    } catch {}
+
     const newSummary: QuotationSummary = {
         id: newId,
         number: num,
@@ -734,7 +750,7 @@ export async function createQuotation(request: CreateQuotationRequest): Promise<
         client_id: request.client_id,
         issue_date: request.issue_date || new Date().toISOString().split("T")[0],
         valid_until: request.valid_until || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-        currency: "USD",
+        currency: quoteCurrency,
         total
     };
 

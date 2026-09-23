@@ -41,6 +41,7 @@ import { DownloadProgressModal } from "../components/ui/DownloadProgressModal";
 import { InvoiceMetricsCards } from "../components/invoices/InvoiceMetricsCards";
 import { InvoiceDetailsSheet } from "../components/invoices/InvoiceDetailsSheet";
 import { PaymentLinkModal } from "../components/invoices/PaymentLinkModal";
+import { formatMoney } from "../lib/currencies";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -246,15 +247,10 @@ export function Invoices() {
         }
     };
 
-    const formatCurrency = (total: string) => {
+    const formatCurrency = (total: string, fromCurrency?: string) => {
         const num = parseFloat(total);
         if (isNaN(num)) return total;
-        return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(num);
+        return formatMoney(num, currency, fromCurrency || "USD");
     };
 
     // Filter & search invoices
@@ -598,7 +594,7 @@ export function Invoices() {
                                                 {/* Amount */}
                                                 <td className="py-3.5 px-4 text-right font-mono font-bold text-sm text-white">
                                                     <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
-                                                        {formatCurrency(inv.total)}
+                                                        {formatCurrency(inv.total, inv.currency)}
                                                     </span>
                                                 </td>
 

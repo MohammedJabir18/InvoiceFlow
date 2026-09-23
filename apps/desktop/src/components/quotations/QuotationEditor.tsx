@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { X, Plus, Trash2, Save, FileCheck2, Calendar, User, DollarSign } from "lucide-react";
+import { X, Plus, Trash2, Save, FileCheck2, Calendar, User } from "lucide-react";
 import { type ClientResponse, type FullQuotation, createQuotation, updateQuotation } from "../../lib/api";
+import { useSettingsStore } from "../../store/settingsStore";
+import { formatMoney } from "../../lib/currencies";
 
 interface QuotationEditorProps {
     clients: ClientResponse[];
@@ -20,6 +22,8 @@ interface ItemRow {
 
 export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved }: QuotationEditorProps) {
     const isEdit = Boolean(initialData);
+    const defaultCurrency = useSettingsStore(state => state.profile?.default_currency) || "USD";
+    const currency = initialData?.currency || defaultCurrency;
 
     const [number, setNumber] = useState(initialData?.number || `QUO-${new Date().getFullYear()}-00${Math.floor(Math.random() * 90 + 10)}`);
     const [clientId, setClientId] = useState(initialData?.client_id || (clients[0]?.id || ""));
@@ -283,7 +287,7 @@ export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved
                                         className="w-24 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-right text-white outline-none"
                                     />
                                     <div className="w-24 text-right font-bold text-xs font-mono text-emerald-400 self-center">
-                                        ${(it.quantity * it.unit_price).toFixed(2)}
+                                        {formatMoney(it.quantity * it.unit_price, currency, currency)}
                                     </div>
                                     <button
                                         type="button"
@@ -302,7 +306,7 @@ export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved
                     <div className="flex justify-end pt-2 border-t border-white/10">
                         <div className="text-right">
                             <span className="text-xs text-gray-400 block">Total Quotation Value:</span>
-                            <span className="text-xl font-black text-white font-mono">${subtotal.toFixed(2)}</span>
+                            <span className="text-xl font-black text-white font-mono">{formatMoney(subtotal, currency, currency)}</span>
                         </div>
                     </div>
 

@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { motion, AnimatePresence, useMotionTemplate, useMotionValue } from "framer-motion";
 import {
     Building2,
@@ -36,6 +36,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
 import { resetDatabase, exportData } from "../lib/api";
+import { SUPPORTED_CURRENCIES } from "../lib/currencies";
+import { previewTheme, commitThemePreference, applyEffectiveTheme, ThemePreference } from "../lib/theme";
 
 // --- Types ---
 interface SectionHeader {
@@ -423,6 +425,7 @@ export function Settings() {
     const [activeSection, setActiveSection] = useState('preferences');
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [saveError, setSaveError] = useState(false);
 
     // Tabby State
     const [tabbyConfig, setTabbyConfig] = useState(() => {
@@ -459,16 +462,38 @@ export function Settings() {
     const updateSettings = useSettingsStore(state => state.updateSettings);
     const updateBankDetails = useSettingsStore(state => state.updateBankDetails);
 
-    // Fetch initial data
-    useState(() => {
+    const isSavedRef = useRef(false);
+
+    // Fetch initial data & handle unmount revert if changes were not saved
+    useEffect(() => {
         useSettingsStore.getState().fetchBankDetails();
-    });
+        isSavedRef.current = false;
+
+        return () => {
+            if (!isSavedRef.current) {
+                // If user leaves settings without saving, restore saved theme and profile
+                const savedProfileStr = localStorage.getItem('invoiceflow_profile');
+                if (savedProfileStr) {
+                    try {
+                        const saved = JSON.parse(savedProfileStr);
+                        useSettingsStore.setState({ profile: saved });
+                        applyEffectiveTheme(saved.theme_preference);
+                        return;
+                    } catch {}
+                }
+                applyEffectiveTheme('system');
+            }
+        };
+    }, []);
 
     const handleSave = async () => {
         if (!profile) return;
         setIsSaving(true);
+        setSaveError(false);
         try {
             await updateSettings(profile);
+            commitThemePreference(profile.theme_preference);
+            isSavedRef.current = true;
             if (bankDetails) {
                 await updateBankDetails(bankDetails);
             } else {
@@ -479,9 +504,11 @@ export function Settings() {
             }
             localStorage.setItem("invoiceflow_tabby_config", JSON.stringify(tabbyConfig));
             setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 2000);
+            setTimeout(() => setShowSuccess(false), 2500);
         } catch (error) {
             console.error("Failed to save settings:", error);
+            setSaveError(true);
+            setTimeout(() => setSaveError(false), 3000);
         } finally {
             setIsSaving(false);
         }
@@ -498,6 +525,7 @@ export function Settings() {
         try {
             await resetDatabase();
             localStorage.removeItem('has_skipped_onboarding');
+            localStorage.removeItem('invoiceflow_theme');
             // Force a full app reload to trigger the onboarding wizard overlay
             window.location.reload();
         } catch (error) {
@@ -616,6 +644,17 @@ export function Settings() {
                                     <CheckCircle2 size={18} />
                                     <span>Saved!</span>
                                 </motion.div>
+                            ) : saveError ? (
+                                <motion.div
+                                    key="error"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    className="flex items-center gap-2 text-rose-300"
+                                >
+                                    <AlertTriangle size={18} />
+                                    <span>Failed to Save</span>
+                                </motion.div>
                             ) : (
                                 <motion.div
                                     key="save"
@@ -713,11 +752,14 @@ export function Settings() {
                                                     { id: 'dark', icon: Moon, label: 'Dark' },
                                                     { id: 'light', icon: Sun, label: 'Light' }
                                                 ].map(theme => {
-                                                    const isActive = profile.theme_preference === theme.id;
+                                                    const isActive = (profile.theme_preference || 'system') === theme.id;
                                                     return (
                                                         <button
                                                             key={theme.id}
-                                                            onClick={() => handleUpdateField('theme_preference', theme.id)}
+                                                            onClick={() => {
+                                                                handleUpdateField('theme_preference', theme.id);
+                                                                previewTheme(theme.id as ThemePreference);
+                                                            }}
                                                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden ${isActive ? 'text-[var(--background)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--premium-bg-hover)]'}`}
                                                         >
                                                             {isActive && (
@@ -888,15 +930,10 @@ export function Settings() {
                                         <PremiumSelect
                                             label="Default Currency"
                                             icon={CreditCard}
-                                            options={[
-                                                { value: "USD", label: "USD - US Dollar ($)" },
-                                                { value: "EUR", label: "EUR - Euro (€)" },
-                                                { value: "GBP", label: "GBP - British Pound (£)" },
-                                                { value: "INR", label: "INR - Indian Rupee (₹)" },
-                                                { value: "JPY", label: "JPY - Japanese Yen (¥)" },
-                                                { value: "CAD", label: "CAD - Canadian Dollar ($)" },
-                                                { value: "AUD", label: "AUD - Australian Dollar ($)" },
-                                            ]}
+                                            options={SUPPORTED_CURRENCIES.map(c => ({
+                                                value: c.code,
+                                                label: `${c.flag} ${c.code} - ${c.name} (${c.symbol})`
+                                            }))}
                                             value={profile.default_currency}
                                             onChange={(e) => handleUpdateField('default_currency', e.target.value)}
                                         />

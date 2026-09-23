@@ -20,6 +20,7 @@ import { useSettingsStore } from "./store/settingsStore";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { UpdaterNotification } from "./components/ui/UpdaterNotification";
 import { CommandPalette } from "./components/ui/CommandPalette";
+import { applyEffectiveTheme, THEME_CHANGE_EVENT } from "./lib/theme";
 
 function App() {
     const fetchSettings = useSettingsStore(state => state.fetchSettings);
@@ -36,22 +37,23 @@ function App() {
         fetchBankDetails();
     }, [fetchSettings, fetchBankDetails]);
 
-    // Synchronize Daylight / Midnight theme globally
+    // Synchronize Daylight / Midnight theme globally and react to OS prefers-color-scheme changes
     useEffect(() => {
         const syncTheme = () => {
-            const saved = localStorage.getItem("invoiceflow_theme");
-            const isDaylight = saved === "daylight" || (profile?.theme_preference === "light" && saved !== "midnight");
-            if (isDaylight) {
-                document.documentElement.classList.add("daylight");
-                document.body.classList.add("daylight");
-            } else {
-                document.documentElement.classList.remove("daylight");
-                document.body.classList.remove("daylight");
-            }
+            applyEffectiveTheme(profile?.theme_preference);
         };
         syncTheme();
+
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        mediaQuery.addEventListener("change", syncTheme);
+        window.addEventListener(THEME_CHANGE_EVENT, syncTheme);
         window.addEventListener("storage", syncTheme);
-        return () => window.removeEventListener("storage", syncTheme);
+
+        return () => {
+            mediaQuery.removeEventListener("change", syncTheme);
+            window.removeEventListener(THEME_CHANGE_EVENT, syncTheme);
+            window.removeEventListener("storage", syncTheme);
+        };
     }, [profile?.theme_preference]);
 
     return (

@@ -199,7 +199,7 @@ export function CommandPalette() {
                                             <p className="text-xs font-medium tracking-wider text-gray-500 dark:text-gray-500 uppercase px-2 mb-3">
                                                 Suggested Actions
                                             </p>
-                                            {['"Create an invoice for ACME corp for $500"', '"Add a new Lead for Platform Redesign"', '"Summarize my revenue this month"'].map((suggestion, i) => (
+                                            {['"Create a new invoice for ACME Corp"', '"Add a new Lead for Platform Redesign"', '"Summarize my revenue this month"'].map((suggestion, i) => (
                                                 <button
                                                     key={i}
                                                     onClick={() => setQuery(suggestion.replace(/"/g, ''))}
