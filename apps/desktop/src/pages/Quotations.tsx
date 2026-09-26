@@ -346,7 +346,6 @@ export function Quotations() {
                                                 </td>
                                                 <td className="py-3.5 px-4 text-right">
                                                     <div className="flex items-center justify-end gap-1.5 font-mono font-bold text-sm text-[var(--foreground)]">
-                                                        <span className="text-xs">{getCurrencyInfo(q.currency || "USD").flag}</span>
                                                         <span>{formatMoney(q.total, currency, q.currency || "USD")}</span>
                                                     </div>
                                                 </td>
@@ -422,32 +421,31 @@ export function Quotations() {
                                         </div>
 
                                         <div>
-                                            <h4 className="text-sm font-semibold text-white">{client?.name || "Client"}</h4>
+                                            <h4 className="text-sm font-semibold text-white daylight:text-slate-900">{client?.name || "Client"}</h4>
                                             {client?.company && (
-                                                <p className="text-xs text-gray-400">{client.company}</p>
+                                                <p className="text-xs text-gray-400 daylight:text-slate-500">{client.company}</p>
                                             )}
                                         </div>
 
-                                        <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5 font-mono">
-                                            <span className="text-gray-400">Valid: {q.valid_until}</span>
-                                            <div className="flex items-center gap-1.5 font-mono font-extrabold text-white text-base">
-                                                <span className="text-xs">{getCurrencyInfo(q.currency || "USD").flag}</span>
+                                        <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5 daylight:border-slate-100 font-mono">
+                                            <span className="text-gray-400 daylight:text-slate-500">Valid: {q.valid_until}</span>
+                                            <div className="flex items-center gap-1.5 font-mono font-extrabold text-white daylight:text-slate-900 text-base">
                                                 <span>{formatMoney(q.total, currency, q.currency || "USD")}</span>
                                             </div>
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5 daylight:border-slate-100">
                                             <button
                                                 onClick={() => handleOpenPrint(q.id)}
-                                                className="py-2 rounded-xl bg-blue-600/20 text-blue-400 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-blue-600/30 transition-colors"
+                                                className="py-2 rounded-xl bg-blue-600/20 daylight:bg-blue-50 text-blue-400 daylight:text-blue-700 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-blue-600/30 daylight:hover:bg-blue-100 transition-colors border border-blue-500/30 daylight:border-blue-200"
                                             >
                                                 <Printer size={14} />
                                                 <span>Print</span>
                                             </button>
                                             <button
                                                 onClick={() => handleOpenEdit(q.id)}
-                                                className="py-2 rounded-xl bg-white/5 text-gray-300 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-white/10 transition-colors"
+                                                className="py-2 rounded-xl bg-white/5 daylight:bg-slate-100 text-gray-300 daylight:text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-white/10 daylight:hover:bg-slate-200 transition-colors border border-white/5 daylight:border-slate-200"
                                             >
                                                 <Edit3 size={14} />
                                                 <span>Edit</span>
@@ -455,7 +453,7 @@ export function Quotations() {
                                             {q.status !== "Converted" ? (
                                                 <button
                                                     onClick={() => handleConvert(q.id)}
-                                                    className="py-2 rounded-xl bg-emerald-600/20 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-emerald-600/30 transition-colors"
+                                                    className="py-2 rounded-xl bg-emerald-600/20 daylight:bg-emerald-50 text-emerald-300 daylight:text-emerald-700 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-emerald-600/30 daylight:hover:bg-emerald-100 transition-colors border border-emerald-500/30 daylight:border-emerald-200"
                                                 >
                                                     <CheckCircle2 size={14} />
                                                     <span>Invoice</span>
@@ -463,7 +461,7 @@ export function Quotations() {
                                             ) : (
                                                 <button
                                                     onClick={() => handleDelete(q.id)}
-                                                    className="py-2 rounded-xl bg-rose-600/20 text-rose-300 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-rose-600/30 transition-colors"
+                                                    className="py-2 rounded-xl bg-rose-600/20 daylight:bg-rose-50 text-rose-300 daylight:text-rose-700 text-xs font-semibold flex items-center justify-center gap-1 hover:bg-rose-600/30 daylight:hover:bg-rose-100 transition-colors border border-rose-500/30 daylight:border-rose-200"
                                                 >
                                                     <Trash2 size={14} />
                                                     <span>Delete</span>

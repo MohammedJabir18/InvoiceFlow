@@ -35,9 +35,11 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore, BusinessProfile, BankDetails } from "../store/settingsStore";
-import { resetDatabase, exportData } from "../lib/api";
+import { resetDatabase, exportData, isTauri } from "../lib/api";
 import { SUPPORTED_CURRENCIES } from "../lib/currencies";
 import { previewTheme, commitThemePreference, applyEffectiveTheme, ThemePreference } from "../lib/theme";
+import { getDeviceEnvironment } from "../lib/device";
+import { triggerSampleDeviceExport } from "../lib/invoicePdfGenerator";
 
 // --- Types ---
 interface SectionHeader {
@@ -112,7 +114,7 @@ function PremiumInput({ label, type = "text", placeholder, value, onChange, rows
                     <div className="relative flex items-center">
                         <input
                             type={type}
-                            className={`premium-input-field w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 pt-6 pb-2 text-[var(--foreground)] placeholder-transparent focus:outline-none focus:bg-[var(--premium-bg-hover)] transition-all ${Icon ? 'pl-11' : ''}`}
+                            className={`premium-input-field w-full bg-[var(--premium-bg)] border border-[var(--premium-border)] rounded-xl px-4 pt-6 pb-2 text-[var(--foreground)] placeholder-transparent focus:outline-none focus:bg-[var(--premium-bg-hover)] transition-all truncate ${Icon ? 'pl-11' : ''}`}
                             placeholder={placeholder}
                             value={value || ''}
                             onChange={onChange}
@@ -129,7 +131,7 @@ function PremiumInput({ label, type = "text", placeholder, value, onChange, rows
                     </div>
                 )}
                 <label
-                    className={`absolute left-4 transition-all duration-300 pointer-events-none ${focused || hasValue
+                    className={`absolute transition-all duration-300 pointer-events-none whitespace-nowrap truncate max-w-[calc(100%-3rem)] ${focused || hasValue
                         ? `top-2 text-[10px] uppercase tracking-wider font-bold text-[var(--primary)] ${Icon ? 'left-11' : 'left-4'}`
                         : `top-4 text-sm text-[var(--text-muted)] ${Icon ? 'left-11' : 'left-4'}`
                         }`}
@@ -456,6 +458,8 @@ export function Settings() {
 
     // Export State
     const [isExporting, setIsExporting] = useState(false);
+    const [testDownloadSuccess, setTestDownloadSuccess] = useState(false);
+    const deviceEnv = getDeviceEnvironment();
 
     const profile = useSettingsStore(state => state.profile);
     const bankDetails = useSettingsStore(state => state.bankDetails);
@@ -546,6 +550,7 @@ export function Settings() {
     };
 
     const handleSelectPdfExportDir = async () => {
+        if (!isTauri()) return;
         try {
             const selectedPath = await open({
                 directory: true,
@@ -557,6 +562,16 @@ export function Settings() {
             }
         } catch (err) {
             console.error("Failed to open dialog:", err);
+        }
+    };
+
+    const handleTestDownload = () => {
+        try {
+            triggerSampleDeviceExport(profile);
+            setTestDownloadSuccess(true);
+            setTimeout(() => setTestDownloadSuccess(false), 3000);
+        } catch (err) {
+            console.error("Failed to export test invoice:", err);
         }
     };
 
@@ -779,34 +794,101 @@ export function Settings() {
                                             </div>
                                         </div>
 
-                                        <div className="md:col-span-2 mt-4">
-                                            <h4 className="font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
-                                                <FolderOpen size={18} className="text-[var(--primary)]" />
-                                                Default PDF Export Location
-                                            </h4>
-
-                                            <div className="flex gap-4">
-                                                <div className="flex-1 relative">
-                                                    <PremiumInput
-                                                        label="Save Invoices To"
-                                                        icon={HardDrive}
-                                                        placeholder="C:\Users\jabir\Downloads"
-                                                        value={profile.pdf_export_dir || 'C:\\Users\\jabir\\Downloads'}
-                                                        onChange={(e) => handleUpdateField('pdf_export_dir', e.target.value)}
-                                                    />
+                                        <div className="md:col-span-2 mt-6 pt-6 border-t border-[var(--premium-border)]">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                                <div>
+                                                    <h4 className="font-semibold text-[var(--foreground)] flex items-center gap-2 text-base">
+                                                        <FolderOpen size={18} className="text-[var(--primary)]" />
+                                                        Default PDF Export Location
+                                                    </h4>
+                                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                                                        Configure where invoice PDFs and documents are saved on your device
+                                                    </p>
                                                 </div>
-                                                <button
-                                                    onClick={handleSelectPdfExportDir}
-                                                    className="shrink-0 group relative overflow-hidden bg-[var(--premium-bg)] border border-[var(--premium-border)] hover:border-[var(--primary)] text-[var(--foreground)] font-bold py-3 px-6 rounded-xl shadow-sm transition-all h-[56px] mt-1 flex items-center gap-2"
-                                                >
-                                                    <FolderOpen size={18} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors" />
-                                                    Browse...
-                                                    <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-[var(--primary)]/10 to-transparent z-0" />
-                                                </button>
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 w-fit">
+                                                    {deviceEnv.deviceBadge}
+                                                </span>
                                             </div>
-                                            <p className="text-xs text-[var(--text-muted)] mt-2">
-                                                Leave blank to default to your Downloads folder: <code>C:\Users\jabir\Downloads</code>.
-                                            </p>
+
+                                            {deviceEnv.isTauri ? (
+                                                <div>
+                                                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+                                                        <div className="flex-1 min-w-0 relative">
+                                                            <PremiumInput
+                                                                label="Save Invoices To"
+                                                                icon={HardDrive}
+                                                                placeholder="System Downloads Folder (~/Downloads)"
+                                                                value={profile.pdf_export_dir || ''}
+                                                                onChange={(e) => handleUpdateField('pdf_export_dir', e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleSelectPdfExportDir}
+                                                            className="shrink-0 group relative overflow-hidden bg-[var(--premium-bg)] border border-[var(--premium-border)] hover:border-[var(--primary)] text-[var(--foreground)] font-bold py-3 px-6 rounded-xl shadow-sm transition-all h-[52px] flex items-center justify-center gap-2"
+                                                        >
+                                                            <FolderOpen size={18} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors" />
+                                                            Browse...
+                                                            <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-[var(--primary)]/10 to-transparent z-0" />
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-xs text-[var(--text-muted)] mt-2">
+                                                        Leave blank to save invoices directly to your system's default Downloads folder automatically.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-2xl p-5 bg-[var(--premium-bg)] border border-[var(--premium-border)] space-y-4">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                        <div className="flex items-start gap-3.5">
+                                                            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0 mt-0.5">
+                                                                <HardDrive size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="font-semibold text-sm text-[var(--foreground)]">
+                                                                        {deviceEnv.storageDescription}
+                                                                    </span>
+                                                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                                                        Active & Ready
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xs text-[var(--text-muted)] mt-1.5 leading-relaxed">
+                                                                    {deviceEnv.isMobile
+                                                                        ? "Invoices export directly to your mobile device's native Downloads folder or Files app. You can preview, share via WhatsApp/AirDrop, or print with one tap."
+                                                                        : "In web browsers, invoices and quotations automatically download to your browser's default Downloads folder without requiring local file-system permissions."}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleTestDownload}
+                                                            className={`shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                                                                testDownloadSuccess
+                                                                    ? "bg-emerald-600 text-white"
+                                                                    : "bg-[var(--primary)] hover:opacity-90 text-white shadow-blue-500/20 active:scale-95"
+                                                            }`}
+                                                        >
+                                                            {testDownloadSuccess ? (
+                                                                <>
+                                                                    <CheckCircle2 size={16} />
+                                                                    Downloaded to Device!
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <UploadCloud size={16} className="rotate-180" />
+                                                                    Test Device Download
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="text-[11px] text-[var(--text-muted)] pt-3 border-t border-[var(--premium-border)] flex items-center justify-between flex-wrap gap-2">
+                                                        <span>💡 Custom storage paths (e.g., custom network drives) are supported in the native Desktop App.</span>
+                                                        <span className="font-mono text-[10px] opacity-75">OS: {deviceEnv.osName} • {deviceEnv.browserName}</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                     </div>

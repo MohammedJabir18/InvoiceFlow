@@ -73,15 +73,15 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
                                 className="fixed inset-0 z-40"
                                 onClick={() => setShowQuickCreate(false)}
                             />
-                            <div className="absolute right-0 top-10 w-48 bg-[#161f30] border border-white/10 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-white">
+                            <div className="absolute right-0 top-10 w-48 bg-[#161f30] daylight:bg-white border border-white/10 daylight:border-slate-200 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-white daylight:text-slate-900">
                                 <button
                                     onClick={() => {
                                         setShowQuickCreate(false);
                                         navigate("/editor");
                                     }}
-                                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-600/20 text-gray-200 hover:text-white transition-all text-left"
+                                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-600/20 daylight:hover:bg-blue-50 text-gray-200 daylight:text-slate-700 hover:text-white daylight:hover:text-blue-700 transition-all text-left"
                                 >
-                                    <FileText size={15} className="text-blue-400" />
+                                    <FileText size={15} className="text-blue-400 daylight:text-blue-600" />
                                     <span>New Invoice</span>
                                 </button>
                                 <button
@@ -89,9 +89,9 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
                                         setShowQuickCreate(false);
                                         navigate("/quotations?create=true");
                                     }}
-                                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-amber-600/20 text-gray-200 hover:text-white transition-all text-left"
+                                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-amber-600/20 daylight:hover:bg-amber-50 text-gray-200 daylight:text-slate-700 hover:text-white daylight:hover:text-amber-800 transition-all text-left"
                                 >
-                                    <FileCheck2 size={15} className="text-amber-400" />
+                                    <FileCheck2 size={15} className="text-amber-400 daylight:text-amber-600" />
                                     <span>New Quotation</span>
                                 </button>
                             </div>
@@ -102,7 +102,7 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
                 {/* Menu Toggle */}
                 <button
                     onClick={onOpenMenu}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-all"
+                    className="p-2 rounded-lg bg-white/5 daylight:bg-slate-100 hover:bg-white/10 daylight:hover:bg-slate-200 text-gray-300 daylight:text-slate-700 hover:text-white daylight:hover:text-slate-900 transition-all border border-transparent daylight:border-slate-200"
                     title="Menu"
                 >
                     <Menu size={18} />

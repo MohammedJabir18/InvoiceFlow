@@ -151,7 +151,6 @@ export function LiveFeed({ invoices, clients }: Props) {
                                      </div>
                                      <div className="min-w-0">
                                          <div className="flex items-center gap-2">
-                                             <span className="text-xs">{event.flag}</span>
                                              <span className="font-bold text-sm text-[var(--foreground)] truncate tracking-tight">
                                                  {event.client}
                                              </span>

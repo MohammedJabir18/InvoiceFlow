@@ -292,7 +292,7 @@ export function PaymentLinkView() {
                                         <label className="text-gray-400 block mb-1 font-semibold">Cardholder Name</label>
                                         <input
                                             type="text"
-                                            defaultValue={client?.name || "Mohammed Jabir"}
+                                            defaultValue={client?.name || "Valued Client"}
                                             className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white outline-none focus:border-blue-500"
                                         />
                                     </div>
@@ -349,11 +349,11 @@ export function PaymentLinkView() {
                                 <div className="p-4 rounded-xl bg-[#0b0f19] border border-white/5 text-xs space-y-3">
                                     <div className="flex justify-between items-center pb-2 border-b border-white/5">
                                         <span className="text-gray-400">Account Holder:</span>
-                                        <span className="font-bold text-white">{bankDetails?.accountHolder || "Mohammed Jabir"}</span>
+                                        <span className="font-bold text-white">{bankDetails?.accountHolder || "Authorized Merchant"}</span>
                                     </div>
                                     <div className="flex justify-between items-center pb-2 border-b border-white/5">
                                         <span className="text-gray-400">Bank Name:</span>
-                                        <span className="font-bold text-white">{bankDetails?.bankName || "HDFC Bank / Emirates NBD"}</span>
+                                        <span className="font-bold text-white">{bankDetails?.bankName || "Commercial Bank"}</span>
                                     </div>
                                     <div className="flex justify-between items-center pb-2 border-b border-white/5">
                                         <span className="text-gray-400">Account / IBAN:</span>

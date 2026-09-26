@@ -589,28 +589,21 @@ body.daylight {
   color: #0f172a !important;
 }
 
-/* Base text contrast & headings */
-.daylight h1,
-.daylight h2,
-.daylight h3,
-.daylight h4,
-.daylight h5,
-.daylight h6 {
+/* Base text contrast & headings (excluding dark surfaces/modals) */
+.daylight :not(.force-dark *):not([data-theme="dark"] *):not(.dark-panel *):is(h1, h2, h3, h4, h5, h6) {
   color: #0f172a !important;
 }
 
-/* Text color transformations in Daylight mode (excluding solid colored badges/buttons) */
-.daylight .text-white:not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not(.btn-primary):not([class*="badge"]) {
+/* Text color transformations in Daylight mode (excluding solid colored badges/buttons and dark surfaces) */
+.daylight :not(.force-dark *):not([data-theme="dark"] *):not(.dark-panel *).text-white:not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not(.btn-primary):not([class*="badge"]) {
   color: #0f172a !important;
 }
 
-.daylight .text-gray-100,
-.daylight .text-gray-200,
-.daylight .text-gray-300 {
+.daylight :not(.force-dark *):not([data-theme="dark"] *):not(.dark-panel *):is(.text-gray-100, .text-gray-200, .text-gray-300) {
   color: #1e293b !important;
 }
 
-.daylight .text-gray-400 {
+.daylight :not(.force-dark *):not([data-theme="dark"] *):not(.dark-panel *).text-gray-400 {
   color: #475569 !important;
 }
 
@@ -767,10 +760,48 @@ body.daylight {
   color: #ffffff !important;
 }
 
-/* Specific pill buttons that are active blue */
-.daylight button[class*="bg-blue-600"],
-.daylight button[class*="bg-blue-600"] * {
+/* Solid blue buttons get white text in Daylight mode */
+.daylight button.bg-blue-600,
+.daylight button.bg-blue-600 *,
+.daylight button[class*="bg-blue-600"]:not([class*="/"]),
+.daylight button[class*="bg-blue-600"]:not([class*="/"]) * {
   color: #ffffff !important;
+}
+
+/* Translucent tinted buttons (like bg-blue-600/20, bg-blue-600/15) must have crisp dark blue text */
+.daylight button[class*="bg-blue-"][class*="/"],
+.daylight button[class*="bg-indigo-"][class*="/"] {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #bfdbfe !important;
+}
+
+.daylight button[class*="bg-blue-"][class*="/"] > span,
+.daylight button[class*="bg-blue-"][class*="/"] span:not([class*="bg-"]),
+.daylight button[class*="bg-blue-"][class*="/"] p,
+.daylight button[class*="bg-indigo-"][class*="/"] > span,
+.daylight button[class*="bg-indigo-"][class*="/"] span:not([class*="bg-"]) {
+  color: #1d4ed8 !important;
+}
+
+/* Explicit developer daylight:text-white overrides */
+.daylight .daylight\:text-white,
+.daylight [class*="daylight:text-white"] {
+  color: #ffffff !important;
+}
+
+/* Remap light pastel blue and amber text colors for crisp contrast on light backgrounds */
+.daylight .text-blue-400 {
+  color: #2563eb !important;
+}
+
+.daylight .text-blue-300 {
+  color: #1d4ed8 !important;
+}
+
+.daylight .text-amber-300,
+.daylight .text-amber-400 {
+  color: #b45309 !important;
 }
 
 /* Guard: Containers, cards, and wrappers with white/light backgrounds in Daylight mode
@@ -880,19 +911,60 @@ body.daylight {
 }
 
 /* Actions Dropdown in Daylight */
-.daylight .actions-dropdown {
+.daylight .actions-dropdown,
+.daylight [data-actions-dropdown] {
   background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
 }
 
-.daylight .actions-dropdown button {
-  color: #334155 !important;
+.daylight .actions-dropdown button,
+.daylight [data-actions-dropdown] button {
+  color: #1e293b !important;
 }
 
-.daylight .actions-dropdown button:hover {
+.daylight .actions-dropdown button:hover,
+.daylight [data-actions-dropdown] button:hover {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
+}
+
+.daylight .actions-dropdown .border-t,
+.daylight [data-actions-dropdown] .border-t {
+  border-color: #e2e8f0 !important;
+}
+
+.daylight .actions-dropdown button.btn-danger,
+.daylight [data-actions-dropdown] button.btn-danger {
+  color: #e11d48 !important;
+}
+
+.daylight .actions-dropdown button.btn-danger:hover,
+.daylight [data-actions-dropdown] button.btn-danger:hover {
+  background-color: #ffe4e6 !important;
+  color: #be123c !important;
+}
+
+.daylight .actions-dropdown button.btn-success,
+.daylight [data-actions-dropdown] button.btn-success {
+  color: #059669 !important;
+}
+
+.daylight .actions-dropdown button.btn-success:hover,
+.daylight [data-actions-dropdown] button.btn-success:hover {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+}
+
+/* Selected option and row visibility in Daylight */
+.daylight select option:checked,
+.daylight select option:focus {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.daylight tr.row-selected {
+  background-color: rgba(59, 130, 246, 0.09) !important;
 }
 
 /* Public Checkout, Subscription, & Report Panels in Daylight */

@@ -121,7 +121,7 @@ export function Dashboard() {
                             <span>Financial Engine Online</span>
                         </div>
                         <span className="text-xs font-mono text-slate-400 tracking-tight">
-                            {currencyInfo.flag} Base Currency: <strong className="text-[var(--foreground)]">{currencyInfo.code}</strong>
+                            Base Currency: <strong className="text-[var(--foreground)]">{currencyInfo.code}</strong> ({currencyInfo.symbol})
                         </span>
                     </motion.div>
 
@@ -484,7 +484,6 @@ export function Dashboard() {
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <span className="text-xs">{currInfo.flag}</span>
                                                         <span className="font-mono text-base font-black text-[var(--foreground)] tracking-tight">
                                                             {formatMoney(parseFloat(inv.total), currency, inv.currency || "USD")}
                                                         </span>

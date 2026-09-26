@@ -221,19 +221,19 @@ export function Editor() {
 
                 <div className="flex items-center gap-3">
                     {/* Status Selector */}
-                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs">
-                        <span className="text-gray-400">Status:</span>
+                    <div className="flex items-center gap-1.5 bg-white/5 daylight:bg-slate-100 border border-white/10 daylight:border-slate-200 rounded-xl px-3 py-1.5 text-xs">
+                        <span className="text-gray-400 daylight:text-slate-500 font-medium">Status:</span>
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value)}
-                            className="bg-transparent text-white font-semibold outline-none cursor-pointer"
+                            className="bg-transparent text-white daylight:text-slate-900 font-semibold outline-none cursor-pointer"
                         >
-                            <option value="Draft" className="bg-[#1e293b]">Draft</option>
-                            <option value="Pending" className="bg-[#1e293b]">Pending</option>
-                            <option value="Sent" className="bg-[#1e293b]">Sent</option>
-                            <option value="Paid" className="bg-[#1e293b]">Paid</option>
-                            <option value="Overdue" className="bg-[#1e293b]">Overdue</option>
-                            <option value="Cancelled" className="bg-[#1e293b]">Cancelled</option>
+                            <option value="Draft" className="bg-[#1e293b] daylight:bg-white text-white daylight:text-slate-900">Draft</option>
+                            <option value="Pending" className="bg-[#1e293b] daylight:bg-white text-white daylight:text-slate-900">Pending</option>
+                            <option value="Sent" className="bg-[#1e293b] daylight:bg-white text-white daylight:text-slate-900">Sent</option>
+                            <option value="Paid" className="bg-[#1e293b] daylight:bg-white text-white daylight:text-slate-900">Paid</option>
+                            <option value="Overdue" className="bg-[#1e293b] daylight:bg-white text-white daylight:text-slate-900">Overdue</option>
+                            <option value="Cancelled" className="bg-[#1e293b] daylight:bg-white text-white daylight:text-slate-900">Cancelled</option>
                         </select>
                     </div>
 

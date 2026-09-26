@@ -68,18 +68,18 @@ export function CurrencySelector({ compact = false }: Props) {
                 data-testid="currency-trigger"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label="Change currency"
-                className={`flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 hover:bg-black/35 px-3 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md shadow-sm active:scale-95 ${
+                className={`flex items-center gap-1.5 rounded-full border border-white/10 daylight:border-slate-200 bg-black/20 daylight:bg-slate-100 hover:bg-black/35 daylight:hover:bg-slate-200 px-3 py-1.5 text-xs font-bold text-white daylight:text-slate-800 transition-all backdrop-blur-md shadow-sm active:scale-95 ${
                     compact ? "h-8 px-2 text-[11px]" : "h-9"
                 }`}
             >
                 <span className="text-sm leading-none">{activeCurrency.flag}</span>
                 <span className="font-mono tracking-tight">{activeCurrency.code}</span>
-                <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">
+                <span className="text-[10px] text-gray-400 daylight:text-slate-500 font-mono hidden sm:inline">
                     ({activeCurrency.symbol})
                 </span>
                 <ChevronDown
                     size={13}
-                    className={`text-gray-400 transition-transform duration-200 ${
+                    className={`text-gray-400 daylight:text-slate-500 transition-transform duration-200 ${
                         isOpen ? "rotate-180" : ""
                     }`}
                 />
@@ -93,13 +93,13 @@ export function CurrencySelector({ compact = false }: Props) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 4, scale: 0.96 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-72 max-w-[90vw] rounded-2xl bg-[#111927] border border-white/15 p-2 shadow-2xl z-50 backdrop-blur-xl overflow-hidden text-white"
+                        className="absolute left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-[#111927] daylight:bg-white border border-white/15 daylight:border-slate-200 p-2 shadow-2xl z-50 backdrop-blur-xl overflow-hidden text-white daylight:text-slate-900"
                     >
                         {/* Search Input */}
                         <div className="relative mb-2">
                             <Search
                                 size={14}
-                                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 daylight:text-slate-500"
                             />
                             <input
                                 ref={searchInputRef}
@@ -107,14 +107,14 @@ export function CurrencySelector({ compact = false }: Props) {
                                 placeholder="Search 50+ currencies..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-8 pr-3 py-1.5 bg-[#0b0f19] border border-white/10 rounded-xl text-xs text-white placeholder:text-gray-500 outline-none focus:border-blue-500 transition-colors"
+                                className="w-full pl-8 pr-3 py-1.5 bg-[#0b0f19] daylight:bg-slate-50 border border-white/10 daylight:border-slate-200 rounded-xl text-xs text-white daylight:text-slate-900 placeholder:text-gray-500 daylight:placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
                             />
                         </div>
 
                         {/* Currency List */}
                         <div className="max-h-64 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-white/10 pr-1">
                             {filteredCurrencies.length === 0 ? (
-                                <div className="p-3 text-center text-xs text-gray-400 italic">
+                                <div className="p-3 text-center text-xs text-gray-400 daylight:text-slate-500 italic">
                                     No currencies matching "{searchQuery}"
                                 </div>
                             ) : (
@@ -128,26 +128,26 @@ export function CurrencySelector({ compact = false }: Props) {
                                             onClick={() => handleSelect(curr.code)}
                                             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors text-left ${
                                                 isSelected
-                                                    ? "bg-blue-600/20 text-blue-300 font-bold border border-blue-500/30"
-                                                    : "hover:bg-white/5 text-gray-300"
+                                                    ? "bg-blue-600/20 daylight:bg-blue-50 text-blue-300 daylight:text-blue-700 font-bold border border-blue-500/30 daylight:border-blue-200 shadow-sm"
+                                                    : "hover:bg-white/5 daylight:hover:bg-slate-100 text-gray-300 daylight:text-slate-700"
                                             }`}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="text-base">{curr.flag}</span>
                                                 <div>
-                                                    <span className="font-mono font-bold text-white mr-1.5">
+                                                    <span className="font-mono font-bold text-white daylight:text-slate-900 mr-1.5">
                                                         {curr.code}
                                                     </span>
-                                                    <span className="text-[11px] text-gray-400 font-normal">
+                                                    <span className="text-[11px] text-gray-400 daylight:text-slate-500 font-normal">
                                                         {curr.name}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-xs font-mono text-gray-400 font-bold">
+                                                <span className="text-xs font-mono text-gray-400 daylight:text-slate-500 font-bold">
                                                     {curr.symbol}
                                                 </span>
-                                                {isSelected && <Check size={14} className="text-blue-400" />}
+                                                {isSelected && <Check size={14} className="text-blue-400 daylight:text-blue-600" />}
                                             </div>
                                         </button>
                                     );
@@ -156,9 +156,9 @@ export function CurrencySelector({ compact = false }: Props) {
                         </div>
 
                         {/* Footer Info */}
-                        <div className="pt-2 mt-1 border-t border-white/10 px-2 flex items-center justify-between text-[10px] text-gray-500">
+                        <div className="pt-2 mt-1 border-t border-white/10 daylight:border-slate-200 px-2 flex items-center justify-between text-[10px] text-gray-500 daylight:text-slate-500">
                             <span>50+ Global ISO Currencies</span>
-                            <span className="text-emerald-400 font-medium">Real-time Rates</span>
+                            <span className="text-emerald-400 daylight:text-emerald-600 font-medium">Real-time Rates</span>
                         </div>
                     </motion.div>
                 )}

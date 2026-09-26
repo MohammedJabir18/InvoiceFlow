@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { openPdf } from '../../lib/api';
+import { openPdf, isTauri } from '../../lib/api';
 
 interface DownloadProgressModalProps {
     isOpen: boolean;
@@ -48,7 +48,7 @@ export function DownloadProgressModal({ isOpen, status, invoiceNumber, path, err
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 350 }}
-                        className="relative w-full max-w-sm bg-[#0a0f1a]/90 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 overflow-hidden shadow-[0_0_120px_rgba(56,189,248,0.15)]"
+                        className="relative w-full max-w-sm bg-[#0a0f1a]/95 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 overflow-hidden shadow-[0_0_120px_rgba(56,189,248,0.15)] force-dark text-white"
                     >
                         {/* Dynamic Top Glow */}
                         <motion.div
@@ -104,12 +104,14 @@ export function DownloadProgressModal({ isOpen, status, invoiceNumber, path, err
                             </motion.div>
 
                             {/* Header Text */}
-                            <motion.h2 layout className="text-2xl font-bold text-white mb-2 tracking-tight">
+                            <motion.h2 layout className="text-2xl font-bold !text-white mb-2 tracking-tight">
                                 {status === 'complete' ? 'Export Successful' : status === 'error' ? 'Export Failed' : 'Exporting PDF'}
                             </motion.h2>
                             <motion.p layout className="text-sm text-slate-400 mb-8 max-w-[280px]">
                                 {status === 'complete'
-                                    ? `Invoice ${invoiceNumber} has been securely saved to your local drive.`
+                                    ? (isTauri()
+                                        ? `Invoice ${invoiceNumber} has been securely saved to your local drive.`
+                                        : `Invoice ${invoiceNumber} downloaded directly to your device.`)
                                     : status === 'error'
                                         ? error
                                         : `Please wait while we generate a high-quality print layout.`}
@@ -179,7 +181,7 @@ export function DownloadProgressModal({ isOpen, status, invoiceNumber, path, err
                                             className="group w-full flex items-center justify-center py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] hover:shadow-[0_0_40px_rgba(56,189,248,0.5)] active:scale-[0.98]"
                                         >
                                             <FileText className="w-4 h-4 mr-2 opacity-80 group-hover:opacity-100 transition-opacity" />
-                                            Open Document
+                                            {isTauri() ? "Open Document" : "View & Print Document"}
                                         </button>
                                         <button
                                             onClick={onClose}

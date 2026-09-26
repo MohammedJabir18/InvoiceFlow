@@ -16,11 +16,21 @@ export interface BusinessProfile {
     name: string;
     email?: string | null;
     phone?: string | null;
+    website?: string | null;
     address: Address;
     tax_id?: string | null;
     logo_path?: string | null;
+    logo_url?: string | null;
     default_currency: string;
     default_payment_terms: string;
+    bank_details?: {
+        bank_name?: string;
+        account_holder?: string;
+        account_number?: string;
+        routing_number?: string;
+        branch?: string;
+        upi_id?: string;
+    } | null;
 
     // Preferences
     theme_preference: "system" | "dark" | "light";
@@ -53,7 +63,7 @@ const DEFAULT_PROFILE: BusinessProfile = {
     },
     tax_id: 'US-TAX-892144',
     logo_path: null,
-    default_currency: 'USD',
+    default_currency: 'INR',
     default_payment_terms: 'Net30',
     theme_preference: 'system',
     pdf_export_dir: null,
@@ -62,12 +72,12 @@ const DEFAULT_PROFILE: BusinessProfile = {
 };
 
 const DEFAULT_BANK_DETAILS: BankDetails = {
-    accountHolder: 'Mohammed Jabir',
+    accountHolder: 'InvoiceFlow Labs',
     accountNumber: '501004589231',
     ifscCode: 'HDFC0001234',
-    bankName: 'HDFC Bank',
-    branch: 'Cyber City',
-    upiId: 'jabir@upi'
+    bankName: 'Commercial Business Bank',
+    branch: 'Downtown Branch',
+    upiId: 'billing@okhdfcbank'
 };
 
 interface SettingsState {
@@ -83,7 +93,7 @@ interface SettingsState {
     updateBankDetails: (details: BankDetails) => Promise<void>;
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
+export const useSettingsStore = create<SettingsState>((set, get) => ({
     profile: null,
     bankDetails: null,
     isLoading: true,
@@ -135,7 +145,18 @@ export const useSettingsStore = create<SettingsState>((set) => ({
             }
         }
         const saved = localStorage.getItem('invoiceflow_bank_details');
-        set({ bankDetails: saved ? JSON.parse(saved) : DEFAULT_BANK_DETAILS });
+        let details: BankDetails = saved ? JSON.parse(saved) : DEFAULT_BANK_DETAILS;
+        // Dynamically sanitize legacy hardcoded developer name if present in localStorage
+        if (details && (details.accountHolder === 'Mohammed Jabir' || details.upiId === 'jabir@upi')) {
+            const currentProfile = get().profile;
+            details = {
+                ...details,
+                accountHolder: currentProfile?.name || 'InvoiceFlow Labs',
+                upiId: 'billing@okhdfcbank'
+            };
+            localStorage.setItem('invoiceflow_bank_details', JSON.stringify(details));
+        }
+        set({ bankDetails: details });
     },
 
     updateBankDetails: async (details: BankDetails) => {

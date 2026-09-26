@@ -13,6 +13,7 @@ export interface ClientResponse {
     email: string | null;
     company: string | null;
     phone?: string | null;
+    tax_id?: string | null;
     address?: {
         line1: string;
         line2?: string | null;
@@ -22,6 +23,17 @@ export interface ClientResponse {
         country: string;
     };
     total_ltv?: string;
+}
+
+export interface InvoiceItemResponse {
+    id: string;
+    invoice_id: string;
+    description: string;
+    quantity: string | number;
+    unit_price: string | number;
+    amount: string | number;
+    tax_rate_name?: string | null;
+    sort_order: number;
 }
 
 export interface CreateClientRequest {
@@ -147,9 +159,55 @@ function setMockStorage<T>(key: string, val: T): void {
 }
 
 const DEFAULT_MOCK_CLIENTS: ClientResponse[] = [
-    { id: "c-001", name: "Acme Corp", email: "billing@acme.com", company: "Acme Industries", total_ltv: "14500" },
-    { id: "c-002", name: "Starlight Digital", email: "finance@starlight.io", company: "Starlight Media", total_ltv: "8200" },
-    { id: "c-003", name: "Nexus Labs", email: "accounts@nexuslabs.co", company: "Nexus Robotics", total_ltv: "23000" }
+    {
+        id: "c-001",
+        name: "Acme Corp",
+        email: "billing@acme.com",
+        company: "Acme Industries Ltd.",
+        phone: "+91 98200 12345",
+        tax_id: "GSTIN: 27AABCA1234F1Z1",
+        address: {
+            line1: "42 Financial Tower, Cyber City",
+            line2: "Sector 18",
+            city: "Gurugram",
+            state: "Haryana",
+            postal_code: "122002",
+            country: "India"
+        },
+        total_ltv: "14500"
+    },
+    {
+        id: "c-002",
+        name: "Starlight Digital",
+        email: "finance@starlight.io",
+        company: "Starlight Media Inc.",
+        phone: "+1 (415) 555-0199",
+        tax_id: "EIN: 12-3456789",
+        address: {
+            line1: "750 Market Street, Suite 400",
+            city: "San Francisco",
+            state: "CA",
+            postal_code: "94103",
+            country: "United States"
+        },
+        total_ltv: "8200"
+    },
+    {
+        id: "c-003",
+        name: "Nexus Labs",
+        email: "accounts@nexuslabs.co",
+        company: "Nexus Robotics Solutions",
+        phone: "+44 20 7946 0912",
+        tax_id: "GB999999973",
+        address: {
+            line1: "12 King William Street",
+            city: "London",
+            state: "Greater London",
+            postal_code: "EC4N 7TW",
+            country: "United Kingdom"
+        },
+        total_ltv: "23000"
+    }
 ];
 
 const DEFAULT_MOCK_INVOICES: InvoiceSummary[] = [
@@ -238,9 +296,47 @@ export async function getInvoiceById(id: string): Promise<FullInvoice | null> {
 
     // Check if detailed data exists in mock storage
     const detailed = getMockStorage<FullInvoice | null>(`invoice_${summary.id}`, null);
-    if (detailed) return detailed;
+    if (detailed) {
+        if (typeof detailed.notes === "string" && (detailed.notes.includes("Mohammed Jabir") || detailed.notes.includes("jabir@upi"))) {
+            detailed.notes = detailed.notes
+                .replace(/Mohammed Jabir/g, "InvoiceFlow Labs")
+                .replace(/jabir@upi/g, "billing@okhdfcbank");
+            setMockStorage(`invoice_${summary.id}`, detailed);
+        }
+        return detailed;
+    }
 
     // Construct a fallback FullInvoice from summary
+    const sampleItemsMap: Record<string, InvoiceItemResponse[]> = {
+        "inv-001": [
+            { id: "item-1-1", invoice_id: summary.id, description: "Enterprise Cloud Infrastructure Architecture", quantity: 40, unit_price: "85.00", amount: "3400.00", sort_order: 0 },
+            { id: "item-1-2", invoice_id: summary.id, description: "DevOps & Continuous Deployment Automation", quantity: 11, unit_price: "100.00", amount: "1100.00", sort_order: 1 }
+        ],
+        "inv-002": [
+            { id: "item-2-1", invoice_id: summary.id, description: "Frontend UI/UX Systems Implementation", quantity: 20, unit_price: "75.00", amount: "1500.00", sort_order: 0 },
+            { id: "item-2-2", invoice_id: summary.id, description: "Quality Assurance & Performance Auditing", quantity: 7, unit_price: "100.00", amount: "700.00", sort_order: 1 }
+        ],
+        "inv-003": [
+            { id: "item-3-1", invoice_id: summary.id, description: "High-Performance Rust Backend Microservices", quantity: 50, unit_price: "120.00", amount: "6000.00", sort_order: 0 },
+            { id: "item-3-2", invoice_id: summary.id, description: "Distributed Database Optimization & Sharding", quantity: 15, unit_price: "120.00", amount: "1800.00", sort_order: 1 }
+        ],
+        "inv-004": [
+            { id: "item-4-1", invoice_id: summary.id, description: "Technical Consultation & Architecture Review", quantity: 15, unit_price: "100.00", amount: "1500.00", sort_order: 0 }
+        ]
+    };
+
+    const items = sampleItemsMap[summary.id] || [
+        {
+            id: "item-1",
+            invoice_id: summary.id,
+            description: "Professional Engineering & Consulting Services",
+            quantity: 1,
+            unit_price: summary.total,
+            amount: summary.total,
+            sort_order: 0
+        }
+    ];
+
     return {
         id: summary.id,
         number: summary.number,
@@ -249,30 +345,32 @@ export async function getInvoiceById(id: string): Promise<FullInvoice | null> {
         issue_date: summary.issue_date,
         due_date: summary.due_date,
         currency: summary.currency,
-        items: [
-            {
-                id: "item-1",
-                invoice_id: summary.id,
-                description: "Professional Services & Engineering",
-                quantity: "1",
-                unit_price: summary.total,
-                amount: summary.total,
-                tax_rate_name: null,
-                sort_order: 0
-            }
-        ],
+        items,
         subtotal: summary.total,
         tax_total: "0.00",
         discount_total: "0.00",
         total: summary.total,
         amount_paid: summary.status === "Paid" ? summary.total : "0.00",
         amount_due: summary.amount_due,
-        payment_terms: "Net30",
+        payment_terms: "Net 30 Days",
         notes: JSON.stringify({
-            developer: "Mohammed Jabir",
-            projectDetails: [{ id: 1, label: "Deliverable", value: "Custom SaaS Platform" }],
-            bankDetails: { bankName: "HDFC Bank", accountHolder: "Mohammed Jabir", accountNumber: "501004589231", ifscCode: "HDFC0001234", upiId: "jabir@upi" },
-            internalNotes: "Standard consulting agreement.",
+            developer: "InvoiceFlow Technologies",
+            projectDetails: [
+                { id: 1, label: "Scope of Work", value: "Enterprise SaaS & Digital Operations" },
+                { id: 2, label: "Deliverable Ref", value: "Phase 1 Production Release" },
+                { id: 3, label: "Contract Identifier", value: "MSA-2026-HQ" }
+            ],
+            bankDetails: {
+                bankName: "HDFC Bank Ltd",
+                branch: "Financial District",
+                accountHolder: "InvoiceFlow Technologies",
+                accountNumber: "50200088923412",
+                ifscCode: "HDFC0000240",
+                upiId: "billing@okhdfcbank"
+            },
+            paymentTermsNote: "Payment is kindly requested within 30 days of invoice date.",
+            termsAndConditions: "1. All payments should reference the invoice number. 2. Standard commercial warranties apply. 3. Thank you for your partnership!",
+            internalNotes: "Verified and approved by finance department.",
             activityLog: [
                 { id: "act-1", timestamp: new Date(summary.issue_date).toISOString(), action: "Invoice Created", details: `Initial total ${summary.total}` }
             ]
@@ -296,15 +394,58 @@ export async function createInvoice(request: CreateInvoiceRequest): Promise<stri
     const invoices = getMockStorage("invoices", DEFAULT_MOCK_INVOICES);
     const invoiceNumber = request.invoice_number || `INV-${new Date().getFullYear()}-${String(invoices.length + 1).padStart(3, "0")}`;
     const newId = "inv-" + Date.now();
-    const total = request.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toFixed(2);
 
-    let invoiceCurrency = "USD";
+    // Financial calculations
+    const rawSubtotal = request.items.reduce((sum, item) => sum + (Number(item.quantity || 1) * Number(item.unit_price || 0)), 0);
+
+    let invoiceCurrency = "INR";
+    let discountTotal = 0;
+    let taxTotal = 0;
+    let paymentTerms = "Due on Receipt";
+    let termsAndConditions: string | null = null;
+
     try {
         if (request.notes) {
             const parsedNotes = typeof request.notes === "string" ? JSON.parse(request.notes) : request.notes;
             if (parsedNotes?.currency) invoiceCurrency = parsedNotes.currency;
+            if (parsedNotes?.paymentTermsNote) paymentTerms = parsedNotes.paymentTermsNote;
+            if (parsedNotes?.termsAndConditions) termsAndConditions = parsedNotes.termsAndConditions;
+
+            // Handle discounts
+            if (parsedNotes?.includeDiscount) {
+                const discVal = Number(parsedNotes.discountValue || 0);
+                if (parsedNotes.discountType === "percentage") {
+                    discountTotal = (rawSubtotal * discVal) / 100;
+                } else {
+                    discountTotal = discVal;
+                }
+            }
+
+            // Handle taxes
+            if (parsedNotes?.includeTax) {
+                const taxRate = Number(parsedNotes.taxRate || 0);
+                const taxable = Math.max(0, rawSubtotal - discountTotal);
+                taxTotal = (taxable * taxRate) / 100;
+            }
         }
     } catch {}
+
+    // Check saved profile currency if notes didn't specify one
+    if (!invoiceCurrency || invoiceCurrency === "USD") {
+        try {
+            const rawProfile = localStorage.getItem("invoiceflow_profile");
+            if (rawProfile) {
+                const prof = JSON.parse(rawProfile);
+                if (prof.default_currency) invoiceCurrency = prof.default_currency;
+            }
+        } catch {}
+    }
+
+    const calculatedTotal = Math.max(0, (rawSubtotal - discountTotal) + taxTotal);
+    const subtotalStr = rawSubtotal.toFixed(2);
+    const discountStr = discountTotal.toFixed(2);
+    const taxStr = taxTotal.toFixed(2);
+    const totalStr = calculatedTotal.toFixed(2);
 
     const newSummary: InvoiceSummary = {
         id: newId,
@@ -314,8 +455,8 @@ export async function createInvoice(request: CreateInvoiceRequest): Promise<stri
         issue_date: request.issue_date || new Date().toISOString().split("T")[0],
         due_date: request.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
         currency: invoiceCurrency,
-        total,
-        amount_due: request.status === "Paid" ? "0.00" : total
+        total: totalStr,
+        amount_due: request.status === "Paid" ? "0.00" : totalStr
     };
 
     invoices.unshift(newSummary);
@@ -330,16 +471,18 @@ export async function createInvoice(request: CreateInvoiceRequest): Promise<stri
             description: it.description,
             quantity: it.quantity,
             unit_price: it.unit_price,
-            amount: (it.quantity * it.unit_price).toFixed(2),
+            amount: (Number(it.quantity || 1) * Number(it.unit_price || 0)).toFixed(2),
             sort_order: idx
         })),
-        subtotal: total,
-        tax_total: "0.00",
-        discount_total: "0.00",
-        amount_paid: request.status === "Paid" ? total : "0.00",
-        payment_terms: "Net30",
+        subtotal: subtotalStr,
+        tax_total: taxStr,
+        discount_total: discountStr,
+        total: totalStr,
+        amount_paid: request.status === "Paid" ? totalStr : "0.00",
+        amount_due: request.status === "Paid" ? "0.00" : totalStr,
+        payment_terms: paymentTerms,
         notes: request.notes,
-        terms_and_conditions: null,
+        terms_and_conditions: termsAndConditions,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
     };
@@ -355,7 +498,44 @@ export async function updateInvoice(request: UpdateInvoiceRequest): Promise<void
 
     const invoices = getMockStorage("invoices", DEFAULT_MOCK_INVOICES);
     const index = invoices.findIndex(i => i.id === request.id);
-    const total = request.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toFixed(2);
+
+    const rawSubtotal = request.items.reduce((sum, item) => sum + (Number(item.quantity || 1) * Number(item.unit_price || 0)), 0);
+
+    let invoiceCurrency = "INR";
+    let discountTotal = 0;
+    let taxTotal = 0;
+    let paymentTerms = "Due on Receipt";
+    let termsAndConditions: string | null = null;
+
+    try {
+        if (request.notes) {
+            const parsedNotes = typeof request.notes === "string" ? JSON.parse(request.notes) : request.notes;
+            if (parsedNotes?.currency) invoiceCurrency = parsedNotes.currency;
+            if (parsedNotes?.paymentTermsNote) paymentTerms = parsedNotes.paymentTermsNote;
+            if (parsedNotes?.termsAndConditions) termsAndConditions = parsedNotes.termsAndConditions;
+
+            if (parsedNotes?.includeDiscount) {
+                const discVal = Number(parsedNotes.discountValue || 0);
+                if (parsedNotes.discountType === "percentage") {
+                    discountTotal = (rawSubtotal * discVal) / 100;
+                } else {
+                    discountTotal = discVal;
+                }
+            }
+
+            if (parsedNotes?.includeTax) {
+                const taxRate = Number(parsedNotes.taxRate || 0);
+                const taxable = Math.max(0, rawSubtotal - discountTotal);
+                taxTotal = (taxable * taxRate) / 100;
+            }
+        }
+    } catch {}
+
+    const calculatedTotal = Math.max(0, (rawSubtotal - discountTotal) + taxTotal);
+    const subtotalStr = rawSubtotal.toFixed(2);
+    const discountStr = discountTotal.toFixed(2);
+    const taxStr = taxTotal.toFixed(2);
+    const totalStr = calculatedTotal.toFixed(2);
 
     if (index !== -1) {
         invoices[index] = {
@@ -364,8 +544,9 @@ export async function updateInvoice(request: UpdateInvoiceRequest): Promise<void
             status: request.status || invoices[index].status,
             issue_date: request.issue_date || invoices[index].issue_date,
             due_date: request.due_date || invoices[index].due_date,
-            total,
-            amount_due: request.status === "Paid" ? "0.00" : total
+            currency: invoiceCurrency,
+            total: totalStr,
+            amount_due: request.status === "Paid" ? "0.00" : totalStr
         };
         setMockStorage("invoices", invoices);
 
@@ -376,19 +557,25 @@ export async function updateInvoice(request: UpdateInvoiceRequest): Promise<void
             full.status = request.status || full.status;
             full.issue_date = request.issue_date || full.issue_date;
             full.due_date = request.due_date || full.due_date;
+            full.currency = invoiceCurrency;
             full.items = request.items.map((it, idx) => ({
                 id: it.id || `item-${idx + 1}`,
                 invoice_id: request.id,
                 description: it.description,
                 quantity: it.quantity,
                 unit_price: it.unit_price,
-                amount: (it.quantity * it.unit_price).toFixed(2),
+                amount: (Number(it.quantity || 1) * Number(it.unit_price || 0)).toFixed(2),
                 sort_order: idx
             }));
-            full.subtotal = total;
-            full.total = total;
-            full.amount_due = request.status === "Paid" ? "0.00" : total;
+            full.subtotal = subtotalStr;
+            full.discount_total = discountStr;
+            full.tax_total = taxStr;
+            full.total = totalStr;
+            full.amount_paid = request.status === "Paid" ? totalStr : "0.00";
+            full.amount_due = request.status === "Paid" ? "0.00" : totalStr;
+            full.payment_terms = paymentTerms;
             full.notes = request.notes;
+            if (termsAndConditions) full.terms_and_conditions = termsAndConditions;
             full.updated_at = new Date().toISOString();
             setMockStorage(`invoice_${request.id}`, full);
         }
@@ -460,6 +647,16 @@ export async function updateInvoiceStatus(id: string, status: string): Promise<v
             invoices[index].amount_due = "0.00";
         }
         setMockStorage("invoices", invoices);
+
+        // Also update FullInvoice
+        const full = getMockStorage<FullInvoice | null>(`invoice_${invoices[index].id}`, null);
+        if (full) {
+            full.status = status;
+            full.amount_due = status === "Paid" ? "0.00" : full.total;
+            full.amount_paid = status === "Paid" ? full.total : "0.00";
+            full.updated_at = new Date().toISOString();
+            setMockStorage(`invoice_${invoices[index].id}`, full);
+        }
     }
 }
 
@@ -506,7 +703,28 @@ export async function generatePdf(id: string): Promise<string> {
     if (isTauri()) {
         return invoke<string>("generate_pdf", { invoiceId: id });
     }
-    return `/mock-exports/Invoice_${id}.pdf`;
+    // Web & Mobile: dynamically render standalone invoice HTML and trigger browser/device download
+    try {
+        const invoice = await getInvoiceById(id);
+        const clients = await getClients();
+        const client = invoice ? clients.find(c => c.id === invoice.client_id) || null : null;
+        let profile = null;
+        try {
+            const rawProfile = localStorage.getItem("invoiceflow_profile");
+            if (rawProfile) profile = JSON.parse(rawProfile);
+        } catch {
+            // ignore
+        }
+        const { buildInvoiceHtml, triggerBrowserDownload } = await import("./invoicePdfGenerator");
+        const html = buildInvoiceHtml(invoice || { id, number: `INV-${id}` }, client, profile);
+        const fileName = `Invoice_${invoice?.number || id}.html`;
+        return triggerBrowserDownload(html, fileName);
+    } catch (e) {
+        console.error("Web/Mobile export fallback:", e);
+        const { buildInvoiceHtml, triggerBrowserDownload } = await import("./invoicePdfGenerator");
+        const html = buildInvoiceHtml({ id, number: `INV-${id}` }, null, null);
+        return triggerBrowserDownload(html, `Invoice_${id}.html`);
+    }
 }
 
 export async function openPdf(path: string): Promise<void> {

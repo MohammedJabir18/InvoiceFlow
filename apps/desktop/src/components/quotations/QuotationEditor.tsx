@@ -177,12 +177,12 @@ export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved
                             <select
                                 value={clientId}
                                 onChange={(e) => setClientId(e.target.value)}
-                                className="w-full px-3.5 py-2 rounded-xl bg-[#0b0f19] border border-white/10 text-xs text-white focus:border-blue-500 outline-none cursor-pointer"
+                                className="w-full px-3.5 py-2 rounded-xl bg-[#0b0f19] daylight:bg-white border border-white/10 daylight:border-slate-300 text-xs text-white daylight:text-slate-900 focus:border-blue-500 outline-none cursor-pointer"
                                 required
                             >
-                                <option value="" disabled>Select a client...</option>
+                                <option value="" disabled className="daylight:bg-white daylight:text-slate-500">Select a client...</option>
                                 {clients.map(c => (
-                                    <option key={c.id} value={c.id}>
+                                    <option key={c.id} value={c.id} className="daylight:bg-white daylight:text-slate-900">
                                         {c.name} {c.company ? `(${c.company})` : ""}
                                     </option>
                                 ))}
@@ -197,7 +197,7 @@ export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved
                                 type="date"
                                 value={issueDate}
                                 onChange={(e) => setIssueDate(e.target.value)}
-                                className="w-full px-3.5 py-2 rounded-xl bg-[#0b0f19] border border-white/10 text-xs font-mono text-white focus:border-blue-500 outline-none"
+                                className="w-full px-3.5 py-2 rounded-xl bg-[#0b0f19] daylight:bg-white border border-white/10 daylight:border-slate-300 text-xs font-mono text-white daylight:text-slate-900 focus:border-blue-500 outline-none"
                             />
                         </div>
 
@@ -209,7 +209,7 @@ export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved
                                 type="date"
                                 value={validUntil}
                                 onChange={(e) => setValidUntil(e.target.value)}
-                                className="w-full px-3.5 py-2 rounded-xl bg-[#0b0f19] border border-white/10 text-xs font-mono text-white focus:border-blue-500 outline-none"
+                                className="w-full px-3.5 py-2 rounded-xl bg-[#0b0f19] daylight:bg-white border border-white/10 daylight:border-slate-300 text-xs font-mono text-white daylight:text-slate-900 focus:border-blue-500 outline-none"
                             />
                         </div>
                     </div>
@@ -222,13 +222,13 @@ export function QuotationEditor({ clients, initialData, isOpen, onClose, onSaved
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value as any)}
-                            className="w-full sm:w-1/2 px-3.5 py-2 rounded-xl bg-[#0b0f19] border border-white/10 text-xs text-white focus:border-blue-500 outline-none cursor-pointer"
+                            className="w-full sm:w-1/2 px-3.5 py-2 rounded-xl bg-[#0b0f19] daylight:bg-white border border-white/10 daylight:border-slate-300 text-xs text-white daylight:text-slate-900 focus:border-blue-500 outline-none cursor-pointer"
                         >
-                            <option value="Draft">Draft (Internal)</option>
-                            <option value="Sent">Sent to Client</option>
-                            <option value="Accepted">Accepted by Client</option>
-                            <option value="Declined">Declined</option>
-                            <option value="Converted">Converted to Invoice</option>
+                            <option value="Draft" className="daylight:bg-white daylight:text-slate-900">Draft (Internal)</option>
+                            <option value="Sent" className="daylight:bg-white daylight:text-slate-900">Sent to Client</option>
+                            <option value="Accepted" className="daylight:bg-white daylight:text-slate-900">Accepted by Client</option>
+                            <option value="Declined" className="daylight:bg-white daylight:text-slate-900">Declined</option>
+                            <option value="Converted" className="daylight:bg-white daylight:text-slate-900">Converted to Invoice</option>
                         </select>
                     </div>
 

@@ -210,7 +210,7 @@ export function QuotationPrintModal({ quotation, client, isOpen, onClose, onConv
                                 <div>
                                     <p className="font-bold text-gray-900 mb-10">Issued By (Authorized Signatory):</p>
                                     <div className="w-48 border-b border-gray-400 mb-1" />
-                                    <p className="font-medium">{profile?.name || "Mohammed Jabir"}</p>
+                                    <p className="font-medium">{profile?.name || "Authorized Representative"}</p>
                                     <p className="text-gray-400 text-[10px]">Title: Managing Director / Contractor</p>
                                 </div>
 

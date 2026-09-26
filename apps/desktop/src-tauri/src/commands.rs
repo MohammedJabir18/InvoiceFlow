@@ -493,6 +493,28 @@ pub async fn get_analytics(state: State<'_, AppState>) -> Result<RevenueMetrics,
     engine.get_revenue_metrics(&state.db_path).map_err(|e| e.to_string())
 }
 
+fn get_default_download_dir() -> std::path::PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+            let p = std::path::PathBuf::from(profile).join("Downloads");
+            if p.exists() {
+                return p;
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let p = std::path::PathBuf::from(home).join("Downloads");
+            if p.exists() {
+                return p;
+            }
+        }
+    }
+    std::env::temp_dir()
+}
+
 #[tauri::command]
 pub async fn generate_pdf(state: State<'_, AppState>, invoice_id: String) -> Result<String, String> {
     // Get the active profile
@@ -501,12 +523,12 @@ pub async fn generate_pdf(state: State<'_, AppState>, invoice_id: String) -> Res
 
     let output_dir = if let Some(dir) = profile.pdf_export_dir.clone() {
         if dir.trim().is_empty() {
-            std::path::PathBuf::from(r#"C:\Users\jabir\Downloads"#)
+            get_default_download_dir()
         } else {
             std::path::PathBuf::from(dir)
         }
     } else {
-        std::path::PathBuf::from(r#"C:\Users\jabir\Downloads"#)
+        get_default_download_dir()
     };
 
     // Get full Invoice and Client objects

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -62,7 +63,10 @@ export function Invoices() {
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<string | null>(null);
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
-    const [menuId, setMenuId] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<{
+        invoice: InvoiceSummary;
+        rect: DOMRect;
+    } | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [linkModalInvoice, setLinkModalInvoice] = useState<InvoiceSummary | null>(null);
     const currency = useSettingsStore((state) => state.profile?.default_currency) || "USD";
@@ -98,20 +102,50 @@ export function Invoices() {
         fetchData();
     }, []);
 
-    // Click outside listener to close contextual action menus
+    // Dismiss contextual menu on scroll, resize, or Escape
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (menuId && !target.closest(".actions-dropdown") && !target.closest(".btn-action-trigger")) {
-                setMenuId(null);
-            }
+        if (!menuAnchor) return;
+        const handleDismiss = () => setMenuAnchor(null);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setMenuAnchor(null);
         };
 
-        if (menuId) {
-            document.addEventListener("mousedown", handleClickOutside);
+        window.addEventListener("scroll", handleDismiss, true);
+        window.addEventListener("resize", handleDismiss);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("scroll", handleDismiss, true);
+            window.removeEventListener("resize", handleDismiss);
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [menuAnchor]);
+
+    const getMenuPosition = (rect: DOMRect): React.CSSProperties => {
+        const MENU_HEIGHT = 330;
+        const MENU_WIDTH = 210;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const openUpward = spaceBelow < MENU_HEIGHT && rect.top > MENU_HEIGHT;
+
+        if (window.innerWidth < 640) {
+            const left = Math.max(12, Math.min(window.innerWidth - MENU_WIDTH - 12, rect.right - MENU_WIDTH));
+            return {
+                position: "fixed",
+                top: openUpward ? undefined : `${rect.bottom + 6}px`,
+                bottom: openUpward ? `${window.innerHeight - rect.top + 6}px` : undefined,
+                left: `${left}px`,
+                zIndex: 9999,
+            };
         }
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [menuId]);
+
+        const right = Math.max(12, window.innerWidth - rect.right);
+        return {
+            position: "fixed",
+            top: openUpward ? undefined : `${rect.bottom + 6}px`,
+            bottom: openUpward ? `${window.innerHeight - rect.top + 6}px` : undefined,
+            right: `${right}px`,
+            zIndex: 9999,
+        };
+    };
 
     // Client name lookup
     const clientName = (id: string) => {
@@ -130,7 +164,7 @@ export function Invoices() {
         if (!confirm("Are you sure you want to delete this invoice?")) return;
         try {
             await deleteInvoice(id);
-            setMenuId(null);
+            setMenuAnchor(null);
             setSelectedIds((prev) => prev.filter((i) => i !== id));
             await fetchData();
         } catch (err) {
@@ -144,7 +178,7 @@ export function Invoices() {
         if (e) e.stopPropagation();
         try {
             const newId = await duplicateInvoice(id);
-            setMenuId(null);
+            setMenuAnchor(null);
             await fetchData();
             navigate(`/editor?id=${newId}`);
         } catch (err) {
@@ -159,7 +193,7 @@ export function Invoices() {
         try {
             await updateInvoiceStatus(id, newStatus);
             await fetchData();
-            setMenuId(null);
+            setMenuAnchor(null);
         } catch (err) {
             console.error("Failed to update status:", err);
         }
@@ -167,7 +201,7 @@ export function Invoices() {
 
     // Download PDF with simulated high-tech progress modal
     const handleDownload = async (id: string, invoiceNumber: string) => {
-        setMenuId(null);
+        setMenuAnchor(null);
         setDownloadState({ isOpen: true, status: "initializing", invoiceNumber, path: null, error: null });
 
         const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -528,15 +562,15 @@ export function Invoices() {
                                                 key={inv.id}
                                                 variants={rowVariants}
                                                 onClick={() => setSelectedInvoiceId(inv.id)}
-                                                className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${
-                                                    isRowSelected ? "bg-blue-500/[0.07]" : ""
-                                                } ${menuId === inv.id ? "relative z-30" : ""}`}
+                                                className={`cursor-pointer transition-colors hover:bg-white/[0.03] daylight:hover:bg-slate-100/60 ${
+                                                    isRowSelected ? "bg-blue-500/[0.07] row-selected daylight:bg-blue-50/80" : ""
+                                                } ${menuAnchor?.invoice.id === inv.id ? "relative z-30" : ""}`}
                                             >
                                                 {/* Checkbox */}
                                                 <td className="py-3.5 px-4 text-center" onClick={(e) => toggleSelectRow(inv.id, e)}>
                                                     <button className="text-gray-400 hover:text-white">
                                                         {isRowSelected ? (
-                                                            <CheckSquare size={16} className="text-blue-400" />
+                                                            <CheckSquare size={16} className="text-blue-400 daylight:text-blue-600" />
                                                         ) : (
                                                             <Square size={16} />
                                                         )}
@@ -544,7 +578,7 @@ export function Invoices() {
                                                 </td>
 
                                                 {/* Invoice Number */}
-                                                <td className="py-3.5 px-4 font-mono font-bold text-white">
+                                                <td className="py-3.5 px-4 font-mono font-bold text-white daylight:text-slate-900">
                                                     <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
                                                         {inv.number}
                                                     </span>
@@ -557,11 +591,11 @@ export function Invoices() {
                                                             {clientName(inv.client_id).charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
-                                                            <span className="font-semibold text-white block">
+                                                            <span className="font-semibold text-white daylight:text-slate-900 block">
                                                                 {clientName(inv.client_id)}
                                                             </span>
                                                             {clientCompany(inv.client_id) && (
-                                                                <span className="text-[11px] text-gray-400">
+                                                                <span className="text-[11px] text-gray-400 daylight:text-slate-500">
                                                                     {clientCompany(inv.client_id)}
                                                                 </span>
                                                             )}
@@ -593,7 +627,6 @@ export function Invoices() {
                                                 {/* Amount */}
                                                 <td className="py-3.5 px-4 text-right">
                                                     <div className="flex items-center justify-end gap-1.5 font-mono font-bold text-sm text-[var(--foreground)]">
-                                                        <span className="text-xs">{getCurrencyInfo(inv.currency || "USD").flag}</span>
                                                         <span className={displayStatus === "Cancelled" ? "line-through text-gray-500" : ""}>
                                                             {formatCurrency(inv.total, inv.currency)}
                                                         </span>
@@ -601,107 +634,22 @@ export function Invoices() {
                                                 </td>
 
                                                 {/* Action Menu (Three dots) */}
-                                                <td className={`py-3.5 px-4 text-center relative ${menuId === inv.id ? "z-30" : ""}`} onClick={(e) => e.stopPropagation()}>
+                                                <td className="py-3.5 px-4 text-center relative" onClick={(e) => e.stopPropagation()}>
                                                     <button
-                                                        onClick={() => setMenuId(menuId === inv.id ? null : inv.id)}
-                                                        className="btn-action-trigger p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (menuAnchor?.invoice.id === inv.id) {
+                                                                setMenuAnchor(null);
+                                                            } else {
+                                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                                setMenuAnchor({ invoice: inv, rect });
+                                                            }
+                                                        }}
+                                                        className="btn-action-trigger p-1.5 rounded-lg text-gray-400 hover:text-white daylight:hover:text-slate-900 hover:bg-white/10 daylight:hover:bg-slate-200 transition-colors"
+                                                        title="Invoice Actions"
                                                     >
                                                         <MoreHorizontal size={16} />
                                                     </button>
-
-                                                    {/* Context Dropdown */}
-                                                    {menuId === inv.id && (
-                                                        <div className="actions-dropdown absolute right-4 top-10 w-48 bg-[#141b2d] border border-white/10 rounded-xl shadow-2xl py-1.5 z-40 backdrop-blur-xl">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedInvoiceId(inv.id);
-                                                                    setMenuId(null);
-                                                                }}
-                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
-                                                            >
-                                                                <FileText size={13} className="text-blue-400" />
-                                                                <span>View Details</span>
-                                                            </button>
-
-                                                            <button
-                                                                onClick={() => {
-                                                                    setMenuId(null);
-                                                                    navigate(`/editor?id=${inv.id}`);
-                                                                }}
-                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
-                                                            >
-                                                                <Edit3 size={13} className="text-amber-400" />
-                                                                <span>Edit Invoice</span>
-                                                            </button>
-
-                                                            <button
-                                                                onClick={(e) => handleDuplicate(inv.id, e)}
-                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
-                                                            >
-                                                                <Copy size={13} className="text-purple-400" />
-                                                                <span>Duplicate Invoice</span>
-                                                            </button>
-
-                                                            <button
-                                                                onClick={() => handleDownload(inv.id, inv.number)}
-                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
-                                                            >
-                                                                <Download size={13} className="text-teal-400" />
-                                                                <span>Download PDF</span>
-                                                            </button>
-
-                                                            <button
-                                                                onClick={() => {
-                                                                    setMenuId(null);
-                                                                    setLinkModalInvoice(inv);
-                                                                }}
-                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2"
-                                                            >
-                                                                <QrCode size={13} className="text-emerald-400" />
-                                                                <span>Payment Link & QR</span>
-                                                            </button>
-
-                                                            {displayStatus === "Paid" && (
-                                                                <button
-                                                                    onClick={() => handleDownload(inv.id, `${inv.number}_Receipt`)}
-                                                                    className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-white/10 flex items-center gap-2"
-                                                                >
-                                                                    <Receipt size={13} />
-                                                                    <span>Download Receipt</span>
-                                                                </button>
-                                                            )}
-
-                                                            <div className="my-1 border-t border-white/5" />
-
-                                                            {displayStatus !== "Paid" ? (
-                                                                <button
-                                                                    onClick={(e) => handleStatusChange(inv.id, "Paid", e)}
-                                                                    className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-emerald-400 hover:bg-white/10 flex items-center gap-2"
-                                                                >
-                                                                    <CheckCircle2 size={13} />
-                                                                    <span>Mark as Paid</span>
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={(e) => handleStatusChange(inv.id, "Pending", e)}
-                                                                    className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-amber-400 hover:bg-white/10 flex items-center gap-2"
-                                                                >
-                                                                    <Clock size={13} />
-                                                                    <span>Mark as Pending</span>
-                                                                </button>
-                                                            )}
-
-                                                            <div className="my-1 border-t border-white/5" />
-
-                                                            <button
-                                                                onClick={(e) => handleDelete(inv.id, e)}
-                                                                className="w-full px-3.5 py-1.5 text-left text-xs font-medium text-rose-400 hover:bg-rose-500/10 flex items-center gap-2"
-                                                            >
-                                                                <Trash2 size={13} />
-                                                                <span>Delete Invoice</span>
-                                                            </button>
-                                                        </div>
-                                                    )}
                                                 </td>
                                             </motion.tr>
                                         );
@@ -771,6 +719,149 @@ export function Invoices() {
                 isOpen={Boolean(linkModalInvoice)}
                 onClose={() => setLinkModalInvoice(null)}
             />
+
+            {/* Non-Clipping Portal Context Menu */}
+            {menuAnchor && createPortal(
+                <>
+                    <div
+                        className="fixed inset-0 z-[9998] bg-black/10 backdrop-blur-[0.5px]"
+                        onClick={() => setMenuAnchor(null)}
+                        onContextMenu={(e) => { e.preventDefault(); setMenuAnchor(null); }}
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ duration: 0.12, ease: "easeOut" }}
+                        style={getMenuPosition(menuAnchor.rect)}
+                        data-actions-dropdown
+                        className="actions-dropdown w-52 bg-[#141b2d] border border-white/10 rounded-2xl shadow-2xl py-2 z-[9999] backdrop-blur-2xl text-left"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-3.5 py-1 mb-1 border-b border-white/5 daylight:border-slate-200 text-[10px] font-mono text-gray-400 daylight:text-slate-500 font-semibold uppercase tracking-wider flex items-center justify-between">
+                            <span>{menuAnchor.invoice.number}</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 daylight:bg-slate-200">{getDisplayStatus(menuAnchor.invoice)}</span>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const id = menuAnchor.invoice.id;
+                                setMenuAnchor(null);
+                                setSelectedInvoiceId(id);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                        >
+                            <FileText size={14} className="text-blue-400" />
+                            <span>View Details</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const id = menuAnchor.invoice.id;
+                                setMenuAnchor(null);
+                                navigate(`/editor?id=${id}`);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                        >
+                            <Edit3 size={14} className="text-amber-400" />
+                            <span>Edit Invoice</span>
+                        </button>
+
+                        <button
+                            onClick={(e) => {
+                                const id = menuAnchor.invoice.id;
+                                setMenuAnchor(null);
+                                handleDuplicate(id, e);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                        >
+                            <Copy size={14} className="text-purple-400" />
+                            <span>Duplicate Invoice</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const inv = menuAnchor.invoice;
+                                setMenuAnchor(null);
+                                handleDownload(inv.id, inv.number);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                        >
+                            <Download size={14} className="text-teal-400" />
+                            <span>Download PDF / Print</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const inv = menuAnchor.invoice;
+                                setMenuAnchor(null);
+                                setLinkModalInvoice(inv);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                        >
+                            <QrCode size={14} className="text-emerald-400" />
+                            <span>Payment Link &amp; QR</span>
+                        </button>
+
+                        {getDisplayStatus(menuAnchor.invoice) === "Paid" && (
+                            <button
+                                onClick={() => {
+                                    const inv = menuAnchor.invoice;
+                                    setMenuAnchor(null);
+                                    handleDownload(inv.id, `${inv.number}_Receipt`);
+                                }}
+                                className="w-full px-3.5 py-2 text-left text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                            >
+                                <Receipt size={14} />
+                                <span>Download Receipt</span>
+                            </button>
+                        )}
+
+                        <div className="my-1 border-t border-white/5 daylight:border-slate-200" />
+
+                        {getDisplayStatus(menuAnchor.invoice) !== "Paid" ? (
+                            <button
+                                onClick={(e) => {
+                                    const id = menuAnchor.invoice.id;
+                                    setMenuAnchor(null);
+                                    handleStatusChange(id, "Paid", e);
+                                }}
+                                className="btn-success w-full px-3.5 py-2 text-left text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 flex items-center gap-2.5 transition-colors"
+                            >
+                                <CheckCircle2 size={14} />
+                                <span>Mark as Paid</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    const id = menuAnchor.invoice.id;
+                                    setMenuAnchor(null);
+                                    handleStatusChange(id, "Pending", e);
+                                }}
+                                className="w-full px-3.5 py-2 text-left text-xs font-medium text-amber-400 hover:bg-amber-500/10 flex items-center gap-2.5 transition-colors"
+                            >
+                                <Clock size={14} />
+                                <span>Mark as Pending</span>
+                            </button>
+                        )}
+
+                        <div className="my-1 border-t border-white/5 daylight:border-slate-200" />
+
+                        <button
+                            onClick={(e) => {
+                                const id = menuAnchor.invoice.id;
+                                setMenuAnchor(null);
+                                handleDelete(id, e);
+                            }}
+                            className="btn-danger w-full px-3.5 py-2 text-left text-xs font-medium text-rose-400 hover:bg-rose-500/10 flex items-center gap-2.5 transition-colors"
+                        >
+                            <Trash2 size={14} />
+                            <span>Delete Invoice</span>
+                        </button>
+                    </motion.div>
+                </>,
+                document.body
+            )}
         </div>
     );
 }
