@@ -1,0 +1,20 @@
+{
+  "name": "invoiceflow-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "InvoiceFlow Multi-Tenant SaaS Monorepo",
+  "workspaces": [
+    "packages/*",
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

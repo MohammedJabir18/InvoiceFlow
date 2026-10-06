@@ -7,6 +7,7 @@ Cargo.lock
 node_modules/
 dist/
 build/
+*.tsbuildinfo
 .env
 .env.local
 .DS_Store
@@ -34,3 +35,7 @@ Sample_Invoices/
 .playwright-mcp/
 __pycache__/
 *.pyc
+.local-pg/
+MD/
+test-results/
+playwright-report/
