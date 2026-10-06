@@ -553,4 +553,120 @@ describe('Milestone 1A: Security, RLS & Multi-Tenant Isolation Suite', () => {
       expect(afterTimezone.timezone).toBe('Europe/London');
     });
   });
+
+  // ============================================================================
+  // 8. User Directory Privacy & Cross-Tenant Profile Isolation
+  // ============================================================================
+  describe('8. User Directory Privacy & Cross-Tenant Profile Isolation', () => {
+    it('restricts direct SELECT on users to self and current-org members under runtime role', async () => {
+      const client = await appPool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [userAliceId]);
+        await client.query(`SELECT set_config('app.current_org_id', $1, true)`, [orgAId]);
+
+        const res = await client.query('SELECT id, email FROM users');
+        const ids = res.rows.map((r) => r.id);
+
+        // Alice must see herself and members of Org A
+        expect(ids).toContain(userAliceId);
+
+        // Alice must strictly NOT see Bob (who is only in Org B)
+        expect(ids).not.toContain(userBobId);
+
+        await client.query('COMMIT');
+      } finally {
+        client.release();
+      }
+    });
+
+    it('restricts direct SELECT on users to strictly self when no org context is active', async () => {
+      const client = await appPool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [userAliceId]);
+
+        const res = await client.query('SELECT id, email FROM users');
+        expect(res.rows.length).toBe(1);
+        expect(res.rows[0].id).toBe(userAliceId);
+
+        await client.query('COMMIT');
+      } finally {
+        client.release();
+      }
+    });
+
+    it('fails closed: direct SELECT on users with no user context returns zero rows', async () => {
+      const client = await appPool.connect();
+      try {
+        const res = await client.query('SELECT id, email FROM users');
+        expect(res.rows.length).toBe(0);
+      } finally {
+        client.release();
+      }
+    });
+
+    it('prevents cross-tenant leak when caller spoofs app.current_org_id for an org they do not belong to', async () => {
+      const client = await appPool.connect();
+      try {
+        await client.query('BEGIN');
+        // Alice sets context for Bob's organization Org B
+        await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [userAliceId]);
+        await client.query(`SELECT set_config('app.current_org_id', $1, true)`, [orgBId]);
+
+        const res = await client.query('SELECT id, email FROM users');
+        const ids = res.rows.map((r) => r.id);
+
+        // Alice sees only herself because she is not a member of Org B
+        expect(ids).toContain(userAliceId);
+        expect(ids).not.toContain(userBobId);
+        expect(res.rows.length).toBe(1);
+
+        await client.query('COMMIT');
+      } finally {
+        client.release();
+      }
+    });
+
+    it('returns 404 when adding a non-existent user ID without exposing directory details', async () => {
+      const nonExistentId = '00000000-0000-4000-8000-000000000099';
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/organizations/${orgAId}/members`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+        payload: {
+          userId: nonExistentId,
+          role: 'VIEWER',
+        },
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.json().error.code).toBe('NOT_FOUND');
+      expect(res.json().error.message).toBe('User does not exist');
+    });
+
+    it('verifies that GET /api/organizations/:id/members isolates member profiles across tenants', async () => {
+      // Alice queries Org A members
+      const resA = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgAId}/members`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(resA.statusCode).toBe(200);
+      const membersA = resA.json().data;
+      expect(membersA.some((m: any) => m.userId === userAliceId)).toBe(true);
+      expect(membersA.some((m: any) => m.userId === userBobId)).toBe(false);
+
+      // Bob queries Org B members
+      const resB = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgBId}/members`,
+        headers: { authorization: `Bearer ${tokenBob}` },
+      });
+      expect(resB.statusCode).toBe(200);
+      const membersB = resB.json().data;
+      expect(membersB.some((m: any) => m.userId === userBobId)).toBe(true);
+      expect(membersB.some((m: any) => m.userId === userAliceId)).toBe(false);
+    });
+  });
 });

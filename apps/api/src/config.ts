@@ -16,6 +16,7 @@ const baseEnvSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL connection string'),
   MIGRATOR_DATABASE_URL: z.string().url().optional(),
+  TEST_PROVISIONER_DATABASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().default('http://127.0.0.1:54321'),
   SUPABASE_ANON_KEY: z.string().default('placeholder_anon_key'),
   // Asymmetric verification endpoint (Required in production)

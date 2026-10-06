@@ -32,7 +32,8 @@ export function createKyselyDb(pool: Pool): Kysely<Database> {
 export async function withTenantContext<T>(
   orgId: string,
   db: Kysely<Database>,
-  operation: (tx: Transaction<Database>) => Promise<T>
+  operation: (tx: Transaction<Database>) => Promise<T>,
+  userId?: string
 ): Promise<T> {
   if (!orgId || typeof orgId !== 'string') {
     throw new Error('Tenant context requires a valid non-empty organization ID');
@@ -41,6 +42,9 @@ export async function withTenantContext<T>(
   return await db.transaction().execute(async (tx) => {
     // Parameterized transaction-local context: SELECT set_config('app.current_org_id', $1, true)
     await sql`SELECT set_config('app.current_org_id', ${orgId}, true)`.execute(tx);
+    if (userId) {
+      await sql`SELECT set_config('app.current_user_id', ${userId}, true)`.execute(tx);
+    }
     return await operation(tx);
   });
 }

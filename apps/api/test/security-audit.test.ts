@@ -189,7 +189,7 @@ describe('Milestone 1A Hardening: Database Security Audit & Asymmetric Auth Suit
       expect(role.rolcreatedb).toBe(false);
     });
 
-    it('verifies that users table has Row-Level Security active', async () => {
+    it('verifies that users table has Row-Level Security active with tightened profile isolation', async () => {
       const checkRls = await appPool.query(`
         SELECT relrowsecurity, relforcerowsecurity
         FROM pg_class
@@ -198,6 +198,23 @@ describe('Milestone 1A Hardening: Database Security Audit & Asymmetric Auth Suit
 
       expect(checkRls.rows.length).toBe(1);
       expect(checkRls.rows[0].relrowsecurity).toBe(true);
+
+      // Verify policy is NOT permissive USING (true)
+      const policyCheck = await appPool.query(`
+        SELECT policyname, qual
+        FROM pg_policies
+        WHERE tablename = 'users' AND policyname = 'users_read_policy'
+      `);
+
+      expect(policyCheck.rows.length).toBe(1);
+      const qual = policyCheck.rows[0].qual.toLowerCase();
+      expect(qual).not.toBe('true');
+      expect(qual).not.toBe('(true)');
+      expect(qual).toContain('current_user_id');
+
+      // Verify uncontextualized query fails closed (0 rows)
+      const uncontextualized = await appPool.query('SELECT * FROM users');
+      expect(uncontextualized.rows.length).toBe(0);
     });
   });
 

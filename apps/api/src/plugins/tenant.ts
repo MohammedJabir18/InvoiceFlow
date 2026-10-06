@@ -95,7 +95,7 @@ export function requireOrganizationMembership(
     request.withTenantContext = async <T>(
       operation: (tx: Transaction<Database>) => Promise<T>
     ): Promise<T> => {
-      return await withTenantContext(targetOrgId, db, operation);
+      return await withTenantContext(targetOrgId, db, operation, request.user?.id);
     };
   };
 }

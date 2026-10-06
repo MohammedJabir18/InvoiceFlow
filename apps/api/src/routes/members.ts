@@ -75,17 +75,6 @@ export async function memberRoutes(app: FastifyInstance, opts: { db: Kysely<Data
       const { userId, role } = parseResult.data;
 
       const created = await request.withTenantContext!(async (tx) => {
-        // Ensure user exists
-        const userExists = await tx
-          .selectFrom('users')
-          .select('id')
-          .where('id', '=', userId)
-          .executeTakeFirst();
-
-        if (!userExists) {
-          throw new Error('User does not exist');
-        }
-
         return await tx
           .insertInto('organization_memberships')
           .values({
@@ -95,13 +84,23 @@ export async function memberRoutes(app: FastifyInstance, opts: { db: Kysely<Data
           })
           .returningAll()
           .executeTakeFirst();
-      }).catch((err) => {
-        if (err.message.includes('unique') || err.message.includes('duplicate')) {
+      }).catch((err: any) => {
+        if (err?.code === '23505' || err?.message?.includes('unique') || err?.message?.includes('duplicate')) {
           reply.status(409).send({
             success: false,
             error: {
               code: 'CONFLICT',
               message: 'User is already a member of this organization',
+            },
+          });
+          return null;
+        }
+        if (err?.code === '23503' || err?.message?.includes('foreign key') || err?.message?.includes('violates foreign key constraint') || err?.message === 'User does not exist') {
+          reply.status(404).send({
+            success: false,
+            error: {
+              code: 'NOT_FOUND',
+              message: 'User does not exist',
             },
           });
           return null;
