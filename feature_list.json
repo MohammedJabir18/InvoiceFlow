@@ -106,5 +106,13 @@
     "document": "docs/planning/2026-10-10-connected-invoicing-research.md",
     "status": "recommendations_pending_scope_decisions",
     "feature_statuses_changed": false
+  },
+  "latest_memory_save": {
+    "date": "2026-10-12",
+    "summary": "brain/project-summary.md",
+    "architecture": "brain/architecture.md",
+    "foundation_commit": "4b33153",
+    "feature_statuses_changed": false,
+    "graph_status": "retained older graph; fresh rebuild pending"
   }
 }

@@ -127,3 +127,13 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
 - Commit follow-up: repository-local identity configured as Mohammed Jabir with user-supplied email. Final reviewed changes ready for commit. Graphify update was interrupted during processing; existing graph.json remains the older valid graph and analysis metadata is stale. Obsidian export was attempted against that graph; do not treat it as a fresh architecture audit. Graph refresh is a remaining documentation-tool limitation, separate from passed build/test checks.
 
 - Obsidian export completed (exit 0) using the retained older graph; fresh graph reconstruction remains pending.
+
+
+## 2026-10-12 — Consolidated conversation memory saved
+- Added brain/project-summary.md covering owner context, confirmed requirements, superseded template scope, researched recommendations, Laya boundaries, setup/tooling history, verified results and open questions.
+- Reconciled brain/architecture.md against current source; preserved old notes in brain/architecture-history-2026-10-12.md. Corrected tenant context, schema/roles, auth/validation stack and migration ledger assertions.
+- Foundation commit is 4b33153; commit succeeded locally after repository identity configuration. Earlier log entries describing failed commit/staging are historical checkpoints, now superseded. No GitHub push was performed.
+- No product feature changed in this memory task. Fresh startup verification launched; result recorded below on completion.
+- Next: browser validation/completion of sign-in/business onboarding/client management; fresh Graphify rebuild remains pending and old graph must not be treated as current.
+
+- Memory-save verification: ./init.sh completed successfully (exit 0); required memory files and feature JSON validated. Evidence: artifacts/foundation/brain-save-startup.log. Graph retained unchanged because this task updates narrative memory; no fresh graph coverage claim.
