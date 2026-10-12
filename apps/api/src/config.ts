@@ -6,8 +6,11 @@ import { dirname, resolve } from 'node:path';
 // Load .env from project root if not already loaded
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-dotenv.config({ path: resolve(__dirname, '../../../.env') });
-dotenv.config(); // fallback to current working directory
+// Tests must receive explicit isolated settings, never credentials from local .env files.
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config({ path: resolve(__dirname, '../../../.env') });
+  dotenv.config(); // fallback to current working directory
+}
 
 const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

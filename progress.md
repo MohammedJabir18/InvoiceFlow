@@ -41,3 +41,54 @@
 - **Backend Check**: `cargo check --workspace` -> clean compile with `0 errors`.
 - **E2E Playwright**: Validated mobile routes (`/quotations`, `/reports`, `/subscription`, `/pay/:id`) in mobile viewport (`390x844`).
 - **Harness Benchmark**: `validate-harness.mjs` -> Score: **100/100** (PASS on all 25 checkpoints).
+
+
+## 2026-10-10 — Codex startup check and first-step guidance
+
+- Restored session/architecture context and inspected project instructions, planning documents, feature tracker, and recent commits.
+- Ran `./init.sh`: exit 127 at line 7, `bun: command not found`. Desktop build and Cargo check did not complete. This is an environment blocker, not evidence of a product-code defect.
+- No product code changed; no feature marked complete. Existing feature statuses are historical and not reverified this session.
+- Next: reconcile existing SaaS requirements with current implementation, establish the intended toolchain, restore baseline verification, and add explicit SaaS checks before product implementation.
+- User guidance: define the first sellable release and its acceptance criteria using existing planning documents; country/payment onboarding decisions remain open.
+
+
+### 2026-10-10 — India/GCC connected invoicing research
+- Confirmed India-based user, Indian primary audience and GCC target; custom templates and minimal dashboard with daily/monthly/yearly filters.
+- Added `docs/planning/2026-10-10-connected-invoicing-research.md` with primary sources, lifecycle, dashboard semantics, template versioning and optional Laya recommendations. Recommendations are not approved implementation decisions.
+- No product code changed, tests/model inference not run, no feature completed; prior missing-bun startup blocker remains unresolved.
+- Next: clarify custom template editor scope, reconcile PRD/backlog and restore baseline verification.
+
+
+### 2026-10-10 — Template scope clarification and Bun guidance
+- User confirmed existing 2–3 built-in invoice templates with editing only for initial release; no custom template creation/builder. Research note amended.
+- Checked Bun official installation instructions; unzip available, bun absent from PATH. Installation not performed; startup blocker remains. No product code or feature completion changes.
+
+
+## 2026-10-11 — Baseline verification after Bun installation
+- Confirmed Bun 1.4.3 at /home/jabir/.bun/bin/bun. Current Codex PATH does not include it; checks used an explicit PATH prefix.
+- Identified cross-platform dependency mismatch: Windows esbuild present, Linux Rollup/lightningcss absent. Root npm ci --include=optional completed but root lock lacks Linux Rollup package entry; restored exact Rollup 4.64.0 locally. Desktop bun install --frozen-lockfile restored 9 packages. No substantive lockfile changes. Root clean-install reproducibility still needs repair.
+- Downloaded official Node 24.21.0 LTS to /tmp and verified SHA256 against official SHASUMS256.txt. This is a temporary validation runtime, not a permanent system upgrade; default Node remains 20.18.0 while Kysely/Supabase packages require >=22.
+- npm run typecheck: all four SaaS workspaces PASS, including rerun on Node 24.
+- ./init.sh with Node 24 and Bun PATH: desktop tsc/Vite build PASS (2623 modules); warnings for large bundle and mixed static/dynamic import. Script then FAILS exit 127 because cargo is unavailable. Rust checks not run.
+- npm audit: 3 findings (2 critical, 1 moderate) in Vitest/tinypool/@vitest/mocker chain; reported fix is Vitest 4.1.11 major upgrade. No force-upgrade applied; needs reviewed upgrade and tests.
+- No product feature implemented/completed, DB tests not run, no production readiness claim.
+- Next: permanent supported Node setup, Rust/Cargo setup, reproducible Linux root lockfile repair, repeat startup verification, and address test-tool vulnerabilities before product scope.
+
+
+## 2026-10-12 — Development foundation completed and verified
+
+- Installed persistent Node 24.21.0 LTS under ~/.local/share/invoiceflow-toolchains and Rust/Cargo 1.99.0 under the standard user directories; Bun 1.4.3 confirmed. Bash PATH appended; repository scripts source scripts/dev-env.sh explicitly. Linux desktop libraries and PostgreSQL 18 are now available.
+- Rebuilt root npm lockfile with platform optional packages; pinned Vitest 4.1.11. Kept existing direct dependency versions except this intended upgrade; transitive resolution refreshed. Cargo.lock is no longer ignored.
+- init.sh now builds SaaS packages in dependency order, then type-checks, builds desktop and checks Rust with --locked; --saas supports web-only verification. Focused review caught and corrected typecheck-before-build on clean checkouts.
+- Added scripts/test-api-local.sh and made npm test use it: disposable loopback PostgreSQL cluster, restricted app role, explicit test settings, guaranteed exit cleanup. NODE_ENV=test skips local .env loading.
+- Fixed missing rust_decimal workspace dependency in flow-pdf; compilation failure reproduced before fix.
+- Verification: ./init.sh PASS; clean temporary checkout npm ci + ./init.sh --saas PASS; API suite 47/47 PASS in 3 files; root npm audit 0 advisories; shell syntax and scoped diff whitespace checks PASS.
+- Evidence: artifacts/foundation/{build.log,api-tests.log,clean-install.log,clean-build.log,npm-audit.json}; setup instructions: docs/development-setup.md.
+- Remaining: bundle-size/unused-code warnings, real browser journeys, CI/lint coverage, hosted auth/payment integrations, and product feature implementation. This is development readiness, not production launch approval.
+- User's pre-existing changes preserved. First product milestone remains sign-in/business onboarding/client management; initial invoice template scope is built-in templates with editing only.
+
+- Commit checkpoint: staged verified foundation changes; Git author name/email missing, so no commit or push. User identity requested. Graphify refresh is running; warnings mean the graph is navigation assistance, not verification evidence.
+
+- Commit follow-up: repository-local identity configured as Mohammed Jabir with user-supplied email. Final reviewed changes ready for commit. Graphify update was interrupted during processing; existing graph.json remains the older valid graph and analysis metadata is stale. Obsidian export was attempted against that graph; do not treat it as a fresh architecture audit. Graph refresh is a remaining documentation-tool limitation, separate from passed build/test checks.
+
+- Obsidian export completed (exit 0) using the retained older graph; fresh graph reconstruction remains pending.
