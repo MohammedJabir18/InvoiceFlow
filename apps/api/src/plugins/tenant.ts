@@ -62,6 +62,18 @@ export function requireOrganizationMembership(
       return;
     }
 
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(targetOrgId)) {
+      reply.status(400).send({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid organization ID format. Must be a valid UUID',
+        },
+      });
+      return;
+    }
+
     // Verify membership via secured stored function
     const membershipRole = await getUserMembership(db, request.user.id, targetOrgId);
 

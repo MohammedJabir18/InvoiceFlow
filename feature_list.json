@@ -96,19 +96,29 @@
       ],
       "status": "completed",
       "evidence": "2026-10-13: ./init.sh PASS; 66/66 API tests PASS across 4 files (test/migrations.test.ts, test/security-audit.test.ts, test/isolation.test.ts, test/clients.test.ts); Playwright E2E 3/3 browser journeys PASS with isolated PostgreSQL and system Chrome. See packages/db/src/migrations/004_create_clients_table.sql and apps/web/e2e/auth-and-journey.spec.ts."
+    },
+    {
+      "id": "feat-010b",
+      "name": "SaaS Client Hardening, Parameter Validation Resilience & CI Pipeline",
+      "description": "Unified archive/restore permission policy (FINANCE status alteration blocked with 403), strict UUID route param and query validation (400 on malformed UUID or repeated search params), deferred permanent deletion, bounded pagination, strict E2E test runner process/port checks, and SaaS GitHub Actions CI workflow",
+      "dependencies": [
+        "feat-010"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS across 4 files on disposable PostgreSQL 18; 3/3 Playwright browser journeys PASS with hardened scripts/test-e2e.sh; .github/workflows/saas-ci.yml added."
     }
   ],
   "latest_verification": {
     "date": "2026-10-13",
-    "status": "client_journey_and_foundation_passed",
+    "status": "client_hardening_and_regression_suite_passed",
     "command": "./init.sh, npm test, bash scripts/test-e2e.sh",
     "saas_build_and_typecheck": "pass",
     "desktop_build": "pass",
     "rust_workspace_locked": "pass",
-    "api_tests": "66 passed, 4 files, disposable PostgreSQL 18",
+    "api_tests": "75 passed, 4 files, disposable PostgreSQL 18",
     "browser_journeys": "3 passed (Bootstrap Org, Settings, Clients CRUD, Persistence, Cross-Tenant Isolation, Sign Out)",
     "npm_audit_root": "0 reported advisories",
-    "production_readiness": "not claimed (hosted Supabase/Stripe pending)"
+    "production_readiness": "not claimed (real hosted Supabase provider unverified; local dev token tests only)"
   },
   "latest_research": {
     "date": "2026-10-10",
@@ -123,5 +133,23 @@
     "foundation_commit": "4b33153",
     "feature_statuses_changed": true,
     "graph_status": "retained older graph; fresh rebuild pending"
+  },
+  "latest_review": {
+    "date": "2026-10-13",
+    "document": "brain/reviews/2026-10-13-antigravity-branch-review.md",
+    "local_commit": "a6cab19f",
+    "build": "pass",
+    "api_tests": "75 passed",
+    "browser_tests": "3 passed with local JWT injection",
+    "real_provider_login": "unverified (reported missing remote Supabase credentials)",
+    "review_status": "client hardening milestone completed and verified",
+    "confirmed_findings_resolved": [
+      "archive role inconsistency resolved: FINANCE status changes rejected with 403",
+      "malformed UUID and repeated search return stable 400 Bad Request",
+      "permanent deletion deferred with 400 Bad Request until retention policy is defined",
+      "bounded pagination added",
+      "E2E test runner hardened with port occupancy, PID liveness, and readiness timeout checks",
+      "SaaS GitHub Actions CI workflow added"
+    ]
   }
 }

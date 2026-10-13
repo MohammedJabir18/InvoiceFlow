@@ -15,7 +15,7 @@ Updated 12 October 2026 from source inspection and recorded verification. Start 
 
 Organizations contain legal/display name, country/tax identifier/address/contact details, timezone, locale, document_language, base_currency, reporting_currency and financial-year start. Membership roles are OWNER, ADMIN, FINANCE, VIEWER.
 
-Clients contain organization_id, name, email, phone, company, tax_identifier, address, country, currency, notes, and status (ACTIVE / ARCHIVED). Fail-closed Row-Level Security on `organization_id = get_current_org_id()` ensures strict multi-tenant boundary. OWNER, ADMIN, and FINANCE have mutation access; VIEWER has read-only access (403 Forbidden enforced server-side).
+Clients contain organization_id, name, email, phone, company, tax_identifier, address, country, currency, notes, and status (ACTIVE / ARCHIVED). Fail-closed Row-Level Security on `organization_id = get_current_org_id()` ensures strict multi-tenant boundary. Client creation and contact/billing detail updates are allowed for OWNER, ADMIN, and FINANCE. Lifecycle status changes (archive via DELETE or PATCH, restore via PATCH) are strictly restricted to OWNER and ADMIN; FINANCE status alteration attempts return 403 Forbidden. VIEWER has read-only access (403 Forbidden on all mutations). Destructive permanent deletion is disabled pending document retention rules (returns 400 Bad Request). Route parameters (`id`, `clientId`) and query parameters (`status`, `search`, `page`, `limit`) are strictly validated via Zod schemas, returning stable 400 Bad Request on malformed inputs without database error leakage. Bounded pagination (`limit` capped at 100) is enforced.
 
 Application membership checks precede tenant-scoped queries. Kysely transactions set app.current_org_id and, when provided, app.current_user_id using parameterized transaction-local set_config. RLS provides another boundary. Existing tests check organizations and clients tables.
 
@@ -31,9 +31,9 @@ Product direction: India-first with GCC expansion, tenant-owned business/client 
 
 Node 24.21.0 LTS, Bun 1.4.3 and Rust/Cargo 1.99.0 were used. PostgreSQL 18 is a disposable test environment, not a production database decision. .nvmrc and scripts/dev-env.sh select Node; Cargo.lock is retained. Root npm and separate desktop Bun lockfiles have distinct ownership. Vitest is pinned to 4.1.11.
 
-./init.sh builds SaaS packages in dependency order, type-checks, builds desktop and checks the locked Rust workspace. ./init.sh --saas checks SaaS only. npm test provisions its own local PostgreSQL cluster, applies fixtures/migrations and runs API suites. NODE_ENV=test does not load local .env credentials.
+./init.sh builds SaaS packages in dependency order, type-checks, builds desktop and checks the locked Rust workspace. ./init.sh --saas checks SaaS only. npm test provisions its own local PostgreSQL cluster, applies fixtures/migrations and runs 75 API tests across 4 suites. scripts/test-e2e.sh runs Playwright tests against an isolated loopback PostgreSQL cluster with port occupancy, process liveness, and timeout checks. `.github/workflows/saas-ci.yml` provides GitHub Actions CI for SaaS build, type-check, API tests, and browser journeys. NODE_ENV=test does not load local .env credentials.
 
-Recorded evidence: foundation commit 4b33153; full build checks and clean SaaS install/build passed; 47 API tests passed; root npm audit zero reported advisories. Browser journeys, hosted integrations, full security/load assessment and production deployment remain pending. See ../docs/development-setup.md and ../artifacts/foundation/.
+Recorded evidence: foundation commit 4b33153; full build checks and clean SaaS install/build passed; 75 API tests passed; root npm audit zero reported advisories; Playwright browser journeys passed. Hosted Supabase registration/login/refresh remains unverified (requires remote project credentials or live local instance). See ../docs/development-setup.md and ../artifacts/foundation/.
 
 ## Graph memory reliability
 

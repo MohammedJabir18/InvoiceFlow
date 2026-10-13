@@ -127,3 +127,35 @@
     3. Multi-tenant isolation: Bob in Org B cannot see Alice's Org A or Alice's clients.
 - Verification: `./init.sh` PASS (SaaS build, typecheck, desktop build, cargo locked check); `npm test` PASS (66 tests); `scripts/test-e2e.sh` PASS (3 browser journeys).
 - Next milestone: Cloud Quotation and Invoice domain models & linking (`feat-011`).
+
+
+## 2026-10-13 — Antigravity milestone and GitHub branch review
+- Live GitHub has main at f33e93f and SaaS feature at 336456d; local SaaS HEAD a6cab19 has 3 unpushed commits (4b33153, 59dc262, a6cab19). No PRs returned.
+- Independent verification: full init PASS, API 66/66 PASS, browser 3/3 PASS. Browser authentication uses injected local JWTs; real provider login remains unverified.
+- Disposable reproductions confirmed FINANCE archive permission inconsistency (DELETE 403, PATCH 200) and invalid UUID/repeated search inputs returning 500. OWNER permanent deletion also exists.
+- Decision: current SaaS branch is the correct work base; harden client/API/Auth/test harness and add CI before integration/new financial scope. No branches changed, product fixes implemented, or remote writes performed.
+- Detailed evidence and next Antigravity prompt: brain/reviews/2026-10-13-antigravity-branch-review.md.
+
+## 2026-10-13 — SaaS Client Hardening, Parameter Validation Resilience & CI Pipeline (feat-010b)
+
+- Reproductions confirmed and resolved via 9 new regression tests in `apps/api/test/clients.test.ts` (API test suite expanded to 75/75 PASS):
+  - **Unified Archive/Restore Permissions**: Enforced consistent policy across endpoints. `DELETE` soft-deletes/archives for OWNER and ADMIN. In `PATCH`, changing `status` (archiving or restoring) is strictly blocked for FINANCE with 403 `INSUFFICIENT_PERMISSIONS`. FINANCE retains access to update non-status client details (name, email, address, tax ID, notes) with 200.
+  - **Strict Request Validation**: Added Zod schemas for route parameters (`orgParamsSchema`, `clientParamsSchema`) and query parameters (`listClientsQuerySchema`). Malformed UUIDs in `:id` or `:clientId` and repeated or malformed search queries (`?search=a&search=b`) return clean, structured 400 `VALIDATION_ERROR` responses rather than unhandled 500 database errors.
+  - **Deferred Permanent Deletion**: Disabled destructive permanent deletion (`?permanent=true`) with 400 `PERMANENT_DELETION_DISABLED`, ensuring client records are preserved for auditability and document linking.
+  - **Bounded Pagination**: Added `page` (min 1) and `limit` (min 1, max 100) with total count and total pages metadata.
+- **Hardened E2E Test Runner (`scripts/test-e2e.sh`)**:
+  - Added port occupancy checks (`check_port_free`) on ports 3001 and 5173.
+  - Added process liveness polling (`kill -0`) and readiness timeout checks with log capture for both API and Web servers.
+  - Added `--strictPort` to Vite preview to eliminate port collisions.
+  - Added dynamic PostgreSQL binary detection fallback.
+- **SaaS CI Pipeline (`.github/workflows/saas-ci.yml`)**:
+  - Created GitHub Actions workflow running on push (`main`, `feat/**`) and pull requests.
+  - Executes full SaaS build, type-check, API tests on disposable PostgreSQL, and Playwright browser journeys.
+- **Real Supabase Provider Status Assessment**:
+  - Verified local configuration: `SUPABASE_URL` is set to `http://127.0.0.1:54321` (inactive) and no remote hosted project (`https://<project-ref>.supabase.co`) or `SUPABASE_JWKS_URL` is configured.
+  - Reported exactly what remains unverified (live user registration, email confirmation, password recovery, live JWT refresh).
+- **Verification Evidence**:
+  - `./init.sh`: PASS (SaaS build/typecheck, Desktop build, locked Rust workspace check).
+  - `npm test`: 75/75 tests PASS across 4 files on disposable PostgreSQL 18.
+  - `bash scripts/test-e2e.sh`: 3/3 Playwright browser journeys PASS in 4.7s.
+

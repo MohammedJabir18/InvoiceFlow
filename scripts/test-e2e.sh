@@ -4,7 +4,20 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source scripts/dev-env.sh
 
-pg_bin="${INVOICEFLOW_PG_BIN:-/usr/lib/postgresql/18/bin}"
+if [[ -z "${INVOICEFLOW_PG_BIN:-}" ]]; then
+  if [[ -x "/usr/lib/postgresql/18/bin/initdb" ]]; then
+    pg_bin="/usr/lib/postgresql/18/bin"
+  elif command -v pg_config >/dev/null 2>&1 && [[ -x "$(pg_config --bindir)/initdb" ]]; then
+    pg_bin="$(pg_config --bindir)"
+  elif [[ -d "/usr/lib/postgresql" ]]; then
+    pg_bin="$(find /usr/lib/postgresql -mindepth 1 -maxdepth 1 -name '[0-9]*' 2>/dev/null | sort -V | tail -n 1)/bin"
+  else
+    pg_bin="/usr/lib/postgresql/18/bin"
+  fi
+else
+  pg_bin="$INVOICEFLOW_PG_BIN"
+fi
+
 [[ -x "$pg_bin/initdb" ]] || { echo 'PostgreSQL binaries required; set INVOICEFLOW_PG_BIN.' >&2; exit 1; }
 
 echo "=== Building SaaS packages ==="
@@ -27,6 +40,56 @@ cleanup() {
   rm -rf "$scratch" 2>/dev/null || true
 }
 trap cleanup EXIT
+
+check_port_free() {
+  local port="$1"
+  local name="$2"
+  if ! node -e "const s = require('node:net').createServer(); s.once('error', () => process.exit(1)); s.listen($port, '127.0.0.1', () => { s.close(); process.exit(0); });" 2>/dev/null; then
+    echo "ERROR: Port $port for $name is already occupied. Terminate the conflicting process or choose another port." >&2
+    exit 1
+  fi
+}
+
+wait_for_service() {
+  local url="$1"
+  local pid="$2"
+  local name="$3"
+  local max_attempts=50
+  local delay=0.2
+
+  for ((i=1; i<=max_attempts; i++)); do
+    # 1. Check if process is still alive
+    if ! kill -0 "$pid" 2>/dev/null; then
+      echo "ERROR: $name process (PID $pid) terminated unexpectedly during startup." >&2
+      local logfile="$scratch/${name,,}.log"
+      if [[ -f "$logfile" ]]; then
+        echo "=== $name Startup Log ===" >&2
+        cat "$logfile" >&2
+      fi
+      exit 1
+    fi
+
+    # 2. Check HTTP endpoint
+    if curl -s -f "$url" >/dev/null 2>&1; then
+      echo "$name is ready at $url (PID $pid)."
+      return 0
+    fi
+
+    sleep "$delay"
+  done
+
+  echo "ERROR: Timed out waiting for $name to be ready at $url." >&2
+  local logfile="$scratch/${name,,}.log"
+  if [[ -f "$logfile" ]]; then
+    echo "=== $name Startup Log ===" >&2
+    cat "$logfile" >&2
+  fi
+  exit 1
+}
+
+# Verify required ports are free before startup
+check_port_free 3001 "API Server"
+check_port_free 5173 "Web Preview Server"
 
 echo "=== Initializing isolated PostgreSQL cluster on port $pg_port ==="
 "$pg_bin/initdb" -D "$scratch/data" -U postgres -A trust --encoding=UTF8 --no-locale > "$scratch/init.log"
@@ -52,28 +115,12 @@ node packages/db/dist/migrate.js
 echo "=== Starting API server on port 3001 ==="
 PORT=3001 HOST=127.0.0.1 node apps/api/dist/index.js > "$scratch/api.log" 2>&1 &
 api_pid=$!
-
-# Wait for API server to be responsive
-for i in {1..30}; do
-  if curl -s http://127.0.0.1:3001/health >/dev/null 2>&1; then
-    echo "API server ready."
-    break
-  fi
-  sleep 0.2
-done
+wait_for_service "http://127.0.0.1:3001/health" "$api_pid" "api"
 
 echo "=== Starting Web preview server on port 5173 ==="
-(cd apps/web && npx vite preview --port 5173 --host 127.0.0.1) > "$scratch/web.log" 2>&1 &
+(cd apps/web && npx vite preview --port 5173 --strictPort --host 127.0.0.1) > "$scratch/web.log" 2>&1 &
 web_pid=$!
-
-# Wait for Web server to be responsive
-for i in {1..30}; do
-  if curl -s http://127.0.0.1:5173 >/dev/null 2>&1; then
-    echo "Web server ready."
-    break
-  fi
-  sleep 0.2
-done
+wait_for_service "http://127.0.0.1:5173" "$web_pid" "web"
 
 echo "=== Running Playwright Browser Journey Tests ==="
 (cd apps/web && npx playwright test)

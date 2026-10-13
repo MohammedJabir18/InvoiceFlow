@@ -38,6 +38,22 @@ const updateClientSchema = z.object({
   status: z.enum(['ACTIVE', 'ARCHIVED']).optional(),
 });
 
+const orgParamsSchema = z.object({
+  id: z.string().uuid({ message: 'Organization ID must be a valid UUID' }),
+});
+
+const clientParamsSchema = z.object({
+  id: z.string().uuid({ message: 'Organization ID must be a valid UUID' }),
+  clientId: z.string().uuid({ message: 'Client ID must be a valid UUID' }),
+});
+
+const listClientsQuerySchema = z.object({
+  status: z.enum(['ACTIVE', 'ARCHIVED', 'ALL']).optional().default('ACTIVE'),
+  search: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1, 'Page must be at least 1').optional().default(1),
+  limit: z.coerce.number().int().min(1, 'Limit must be at least 1').max(100, 'Limit cannot exceed 100').optional().default(50),
+});
+
 function formatClientResponse(row: DbClient) {
   return {
     id: row.id,
@@ -68,24 +84,45 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
     { preHandler: [authenticateToken, requireOrganizationMembership(opts.db)] },
     async (request, reply) => {
       const orgId = request.organizationId!;
-      const queryParams = request.query as { status?: string; search?: string } | undefined;
+      const paramsResult = orgParamsSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid organization route parameters',
+            details: paramsResult.error.flatten(),
+          },
+        });
+      }
 
-      const clients = await request.withTenantContext!(async (tx) => {
-        let q = tx
+      const queryResult = listClientsQuerySchema.safeParse(request.query);
+      if (!queryResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid query parameters',
+            details: queryResult.error.flatten(),
+          },
+        });
+      }
+
+      const { status, search, page, limit } = queryResult.data;
+      const offset = (page - 1) * limit;
+
+      const [clients, totalCount] = await request.withTenantContext!(async (tx) => {
+        let baseQuery = tx
           .selectFrom('clients')
-          .selectAll()
           .where('organization_id', '=', orgId);
 
-        if (queryParams?.status && queryParams.status !== 'ALL') {
-          q = q.where('status', '=', queryParams.status as 'ACTIVE' | 'ARCHIVED');
-        } else if (!queryParams?.status) {
-          // Default to ACTIVE clients
-          q = q.where('status', '=', 'ACTIVE');
+        if (status !== 'ALL') {
+          baseQuery = baseQuery.where('status', '=', status);
         }
 
-        if (queryParams?.search && queryParams.search.trim().length > 0) {
-          const searchPattern = `%${queryParams.search.trim()}%`;
-          q = q.where((eb) =>
+        if (search && search.trim().length > 0) {
+          const searchPattern = `%${search.trim()}%`;
+          baseQuery = baseQuery.where((eb) =>
             eb.or([
               eb('name', 'ilike', searchPattern),
               eb('company', 'ilike', searchPattern),
@@ -94,12 +131,29 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
           );
         }
 
-        return await q.orderBy('created_at', 'desc').execute();
+        const countRes = await baseQuery
+          .select((eb) => eb.fn.countAll<number>().as('count'))
+          .executeTakeFirst();
+
+        const rows = await baseQuery
+          .selectAll()
+          .orderBy('created_at', 'desc')
+          .limit(limit)
+          .offset(offset)
+          .execute();
+
+        return [rows, Number(countRes?.count ?? 0)] as const;
       });
 
       return reply.status(200).send({
         success: true,
         data: clients.map(formatClientResponse),
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
       });
     }
   );
@@ -115,8 +169,19 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
     },
     async (request, reply) => {
       const orgId = request.organizationId!;
-      const parseResult = createClientSchema.safeParse(request.body);
+      const paramsResult = orgParamsSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid organization route parameters',
+            details: paramsResult.error.flatten(),
+          },
+        });
+      }
 
+      const parseResult = createClientSchema.safeParse(request.body);
       if (!parseResult.success) {
         return reply.status(400).send({
           success: false,
@@ -167,7 +232,18 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
     { preHandler: [authenticateToken, requireOrganizationMembership(opts.db)] },
     async (request, reply) => {
       const orgId = request.organizationId!;
-      const { clientId } = request.params as { clientId: string };
+      const paramsResult = clientParamsSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid client route parameters',
+            details: paramsResult.error.flatten(),
+          },
+        });
+      }
+      const { clientId } = paramsResult.data;
 
       const client = await request.withTenantContext!(async (tx) => {
         return await tx
@@ -206,9 +282,20 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
     },
     async (request, reply) => {
       const orgId = request.organizationId!;
-      const { clientId } = request.params as { clientId: string };
-      const parseResult = updateClientSchema.safeParse(request.body);
+      const paramsResult = clientParamsSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid client route parameters',
+            details: paramsResult.error.flatten(),
+          },
+        });
+      }
+      const { clientId } = paramsResult.data;
 
+      const parseResult = updateClientSchema.safeParse(request.body);
       if (!parseResult.success) {
         return reply.status(400).send({
           success: false,
@@ -221,6 +308,23 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
       }
 
       const updates = parseResult.data;
+
+      // Enforce unified archive/restore permission policy:
+      // Only OWNER and ADMIN can alter client status (archive or restore).
+      if (
+        updates.status !== undefined &&
+        request.membershipRole !== 'OWNER' &&
+        request.membershipRole !== 'ADMIN'
+      ) {
+        return reply.status(403).send({
+          success: false,
+          error: {
+            code: 'INSUFFICIENT_PERMISSIONS',
+            message: 'Only business owners and admins can archive or restore clients',
+          },
+        });
+      }
+
       const updateData: Record<string, any> = {
         updated_at: new Date(),
       };
@@ -267,7 +371,7 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
     }
   );
 
-  // 5. Archive or Delete client (Roles: OWNER, ADMIN)
+  // 5. Archive client (Roles: OWNER, ADMIN)
   app.delete(
     '/api/organizations/:id/clients/:clientId',
     {
@@ -278,61 +382,55 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
     },
     async (request, reply) => {
       const orgId = request.organizationId!;
-      const { clientId } = request.params as { clientId: string };
-      const query = request.query as { permanent?: string } | undefined;
-      const isPermanent = query?.permanent === 'true';
-
-      if (isPermanent) {
-        const deleted = await request.withTenantContext!(async (tx) => {
-          return await tx
-            .deleteFrom('clients')
-            .where('id', '=', clientId)
-            .where('organization_id', '=', orgId)
-            .returning('id')
-            .executeTakeFirst();
-        });
-
-        if (!deleted) {
-          return reply.status(404).send({
-            success: false,
-            error: {
-              code: 'NOT_FOUND',
-              message: 'Client not found in this organization',
-            },
-          });
-        }
-
-        return reply.status(200).send({
-          success: true,
-          data: { id: clientId, deleted: true },
-        });
-      } else {
-        // Soft delete / archive by default
-        const archived = await request.withTenantContext!(async (tx) => {
-          return await tx
-            .updateTable('clients')
-            .set({ status: 'ARCHIVED', updated_at: new Date() })
-            .where('id', '=', clientId)
-            .where('organization_id', '=', orgId)
-            .returningAll()
-            .executeTakeFirst();
-        });
-
-        if (!archived) {
-          return reply.status(404).send({
-            success: false,
-            error: {
-              code: 'NOT_FOUND',
-              message: 'Client not found in this organization',
-            },
-          });
-        }
-
-        return reply.status(200).send({
-          success: true,
-          data: formatClientResponse(archived),
+      const paramsResult = clientParamsSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid client route parameters',
+            details: paramsResult.error.flatten(),
+          },
         });
       }
+      const { clientId } = paramsResult.data;
+
+      const query = request.query as Record<string, unknown> | undefined;
+      if (query?.permanent === 'true' || query?.permanent === true) {
+        return reply.status(400).send({
+          success: false,
+          error: {
+            code: 'PERMANENT_DELETION_DISABLED',
+            message: 'Permanent client deletion is deferred until retention and document reference policies are defined. Use archiving instead.',
+          },
+        });
+      }
+
+      // Soft delete / archive by default
+      const archived = await request.withTenantContext!(async (tx) => {
+        return await tx
+          .updateTable('clients')
+          .set({ status: 'ARCHIVED', updated_at: new Date() })
+          .where('id', '=', clientId)
+          .where('organization_id', '=', orgId)
+          .returningAll()
+          .executeTakeFirst();
+      });
+
+      if (!archived) {
+        return reply.status(404).send({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Client not found in this organization',
+          },
+        });
+      }
+
+      return reply.status(200).send({
+        success: true,
+        data: formatClientResponse(archived),
+      });
     }
   );
 }

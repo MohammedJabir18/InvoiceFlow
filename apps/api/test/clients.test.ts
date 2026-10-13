@@ -482,4 +482,128 @@ describe('SaaS Client Management & Tenant Isolation Suite', () => {
       expect(res.rows.length).toBe(0);
     });
   });
+
+  describe('6. Hardening: Permissions, Validation & Deferral Regressions', () => {
+    let testClientId: string;
+
+    beforeAll(async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/organizations/${orgAId}/clients`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+        payload: {
+          name: 'Hardening Regression Client',
+          email: 'regression@hardening.com',
+        },
+      });
+      testClientId = JSON.parse(res.payload).data.id;
+    });
+
+    it('FINANCE can update client details (name, email) with 200', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/organizations/${orgAId}/clients/${testClientId}`,
+        headers: { authorization: `Bearer ${tokenFinance}` },
+        payload: { name: 'Finance Updated Name' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.payload).data.name).toBe('Finance Updated Name');
+    });
+
+    it('FINANCE is rejected with 403 when attempting to archive via PATCH', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/organizations/${orgAId}/clients/${testClientId}`,
+        headers: { authorization: `Bearer ${tokenFinance}` },
+        payload: { status: 'ARCHIVED' },
+      });
+      expect(res.statusCode).toBe(403);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('INSUFFICIENT_PERMISSIONS');
+    });
+
+    it('FINANCE is rejected with 403 when attempting to restore via PATCH', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/organizations/${orgAId}/clients/${testClientId}`,
+        headers: { authorization: `Bearer ${tokenFinance}` },
+        payload: { status: 'ACTIVE' },
+      });
+      expect(res.statusCode).toBe(403);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('INSUFFICIENT_PERMISSIONS');
+    });
+
+    it('rejects invalid client UUID in route param with 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgAId}/clients/not-a-uuid`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('rejects repeated search query parameters with 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgAId}/clients?search=alpha&search=beta`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('rejects invalid status filter with 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgAId}/clients?status=INVALID_STATUS`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('rejects permanent deletion with 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/organizations/${orgAId}/clients/${testClientId}?permanent=true`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('PERMANENT_DELETION_DISABLED');
+    });
+
+    it('supports bounded pagination with limit and page', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgAId}/clients?page=1&limit=2`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBeLessThanOrEqual(2);
+      expect(body.pagination).toBeDefined();
+      expect(body.pagination.page).toBe(1);
+      expect(body.pagination.limit).toBe(2);
+      expect(typeof body.pagination.total).toBe('number');
+    });
+
+    it('rejects out-of-bounds pagination parameters with 400 Bad Request', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/organizations/${orgAId}/clients?page=0&limit=500`,
+        headers: { authorization: `Bearer ${tokenAlice}` },
+      });
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.payload);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });
+

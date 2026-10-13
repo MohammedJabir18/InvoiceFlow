@@ -3,7 +3,19 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source scripts/dev-env.sh
-pg_bin="${INVOICEFLOW_PG_BIN:-/usr/lib/postgresql/18/bin}"
+if [[ -z "${INVOICEFLOW_PG_BIN:-}" ]]; then
+  if [[ -x "/usr/lib/postgresql/18/bin/initdb" ]]; then
+    pg_bin="/usr/lib/postgresql/18/bin"
+  elif command -v pg_config >/dev/null 2>&1 && [[ -x "$(pg_config --bindir)/initdb" ]]; then
+    pg_bin="$(pg_config --bindir)"
+  elif [[ -d "/usr/lib/postgresql" ]]; then
+    pg_bin="$(find /usr/lib/postgresql -mindepth 1 -maxdepth 1 -name '[0-9]*' 2>/dev/null | sort -V | tail -n 1)/bin"
+  else
+    pg_bin="/usr/lib/postgresql/18/bin"
+  fi
+else
+  pg_bin="$INVOICEFLOW_PG_BIN"
+fi
 [[ -x "$pg_bin/initdb" ]] || { echo 'PostgreSQL binaries required; set INVOICEFLOW_PG_BIN.' >&2; exit 1; }
 npm run build -w @invoiceflow/shared-types
 npm run build -w @invoiceflow/db

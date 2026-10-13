@@ -167,3 +167,44 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
   - **Automated E2E Test Harness:** Created `scripts/test-e2e.sh` spinning up an isolated loopback PostgreSQL 18 cluster with ephemeral port, starting API and Vite preview, and executing Playwright tests in system Chrome channel cleanly.
 - **Pending Tasks / Recommended Next Steps:**
   - Proceed with Milestone 1B: Quotation and Invoice domain models and linking (`feat-011`).
+
+
+## 2026-10-13 — Antigravity milestone and GitHub branch review
+- Live GitHub has main at f33e93f and SaaS feature at 336456d; local SaaS HEAD a6cab19 has 3 unpushed commits (4b33153, 59dc262, a6cab19). No PRs returned.
+- Independent verification: full init PASS, API 66/66 PASS, browser 3/3 PASS. Browser authentication uses injected local JWTs; real provider login remains unverified.
+- Disposable reproductions confirmed FINANCE archive permission inconsistency (DELETE 403, PATCH 200) and invalid UUID/repeated search inputs returning 500. OWNER permanent deletion also exists.
+- Decision: current SaaS branch is the correct work base; harden client/API/Auth/test harness and add CI before integration/new financial scope. No branches changed, product fixes implemented, or remote writes performed.
+- Detailed evidence and next Antigravity prompt: brain/reviews/2026-10-13-antigravity-branch-review.md.
+
+## 2026-10-13 — SaaS Client Hardening, Parameter Validation Resilience & CI Pipeline (feat-010b)
+
+- **Date:** 2026-10-13
+- **Lead AI:** Antigravity AI Pair Programmer
+- **Primary Goals:**
+  - Implement focused hardening milestone from `brain/reviews/2026-10-13-antigravity-branch-review.md`.
+  - Reproduce and resolve authorization inconsistency: FINANCE status change vs DELETE archiving.
+  - Reproduce and resolve request validation: malformed UUID params and repeated search query params returning 500.
+  - Defer destructive permanent deletion pending data retention rules.
+  - Add bounded pagination to client listings.
+  - Harden E2E runner (`scripts/test-e2e.sh`) against occupied ports, dead processes, and readiness timeouts.
+  - Establish SaaS CI via GitHub Actions workflow (`.github/workflows/saas-ci.yml`).
+  - Report exact status of real Supabase Auth configuration versus mock/local tokens.
+- **Completed Tasks:**
+  - [x] Reproductions confirmed with 8 failing tests before fix in `apps/api/test/clients.test.ts`.
+  - [x] Fixed permission inconsistency: `PATCH /api/organizations/:id/clients/:clientId` blocks altering `status` for FINANCE with 403 `INSUFFICIENT_PERMISSIONS`. Both DELETE and status changes in PATCH now strictly enforce OWNER and ADMIN role policy.
+  - [x] Fixed request validation in `apps/api/src/routes/clients.ts` and `apps/api/src/plugins/tenant.ts`: added Zod route param schemas (`orgParamsSchema`, `clientParamsSchema`) and query schema (`listClientsQuerySchema`). Returns structured 400 `VALIDATION_ERROR` on malformed UUID or repeated query params.
+  - [x] Deferred permanent deletion: disabled `?permanent=true` with 400 `PERMANENT_DELETION_DISABLED`.
+  - [x] Implemented bounded pagination (`page`, `limit` max 100) with total count and total pages.
+  - [x] Hardened `scripts/test-e2e.sh` with `check_port_free` (ports 3001, 5173), PID liveness checks, `--strictPort`, and dynamic PostgreSQL binary detection.
+  - [x] Created `.github/workflows/saas-ci.yml` running SaaS build, type-check, API tests on disposable PostgreSQL, and browser journeys.
+  - [x] Verified `./init.sh` PASS (exit 0), `npm test` PASS (75/75 tests in 4 files), and `scripts/test-e2e.sh` PASS (3/3 browser journeys).
+- **Decisions Made:**
+  - **Single Archive/Restore Permission Policy:** Only OWNER and ADMIN can alter client lifecycle status (archive or restore) across both DELETE and PATCH. FINANCE can edit client contact and billing details, but cannot deactivate or reactivate clients.
+  - **Permanent Deletion Deferred:** Deferring destructive permanent deletion protects foreign key relational integrity with upcoming quotations (`feat-011`) and invoices (`feat-012`).
+  - **E2E Liveness Guarantee:** E2E runner now fails fast if child processes exit or if ports are collided, preventing false positives from orphaned background processes.
+- **Auth Provider Reality Assessment:**
+  - Local environment does not have a live Supabase instance running on 54321 (`NOT_RUNNING`) and lacks remote hosted project credentials (`SUPABASE_URL=http://127.0.0.1:54321` with local dummy keys).
+  - Browser tests verify authenticated SaaS application mechanics via signed local development tokens, but real Supabase user registration, email confirmations, session refresh, and password recovery remain unverified until remote credentials or local Supabase CLI is provisioned.
+- **Pending Tasks / Recommended Next Steps:**
+  - Proceed with Milestone 1B: Quotation and Estimate Cloud Domain (`feat-011`).
+

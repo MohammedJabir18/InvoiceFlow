@@ -78,3 +78,15 @@ Last consolidated: 12 October 2026. Start here when restoring this conversation.
 - [[architecture-history-2026-10-12]] — preserved earlier architecture notes with known stale/future assertions.
 - ../docs/planning/2026-10-10-connected-invoicing-research.md — research sources and recommendations.
 - ../docs/development-setup.md — reproducible commands.
+
+
+## Latest review & hardening milestone — 13 October 2026
+Client hardening milestone (`feat-010b`) implemented and verified:
+- Archive/restore permissions unified: FINANCE status alterations blocked with 403 Forbidden across all endpoints; only OWNER and ADMIN can archive or restore clients.
+- Input validation hardened: Zod schemas on UUID route parameters and query parameters return structured 400 Bad Request on invalid IDs, out-of-bounds pagination, and repeated query parameters.
+- Permanent deletion deferred: disabled with 400 Bad Request to protect upcoming financial document references.
+- E2E test runner hardened: `scripts/test-e2e.sh` verifies port availability (3001, 5173), polls process liveness, enforces strict preview ports, and captures startup failure logs.
+- SaaS CI pipeline added: `.github/workflows/saas-ci.yml` runs build, typecheck, 75 API tests on disposable PostgreSQL, and Playwright journeys.
+- 75/75 API tests PASS, 3/3 Playwright browser journeys PASS, `./init.sh` PASS.
+- Real Supabase Auth: local environment lacks active Supabase on port 54321 and lacks remote hosted project credentials. Registration, email confirmation, and session refresh remain unverified against a live provider until remote credentials or local Supabase CLI is provisioned.
+- Next milestone: Cloud Quotation and Estimate domain (`feat-011`).
