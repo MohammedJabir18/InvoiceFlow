@@ -86,20 +86,29 @@
       "dependencies": [],
       "status": "completed",
       "evidence": "2026-10-12: ./init.sh passed; clean npm ci + SaaS build/typecheck passed; API 47/47 passed; root npm audit 0. See docs/development-setup.md and artifacts/foundation/."
+    },
+    {
+      "id": "feat-010",
+      "name": "Multi-Tenant SaaS Client Management & Customer Journey",
+      "description": "Tenant-scoped client directory with fail-closed PostgreSQL RLS, role authorization (OWNER/ADMIN/FINANCE write, VIEWER read), Zod validation, React Query UI, and Playwright E2E browser journey verification",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 66/66 API tests PASS across 4 files (test/migrations.test.ts, test/security-audit.test.ts, test/isolation.test.ts, test/clients.test.ts); Playwright E2E 3/3 browser journeys PASS with isolated PostgreSQL and system Chrome. See packages/db/src/migrations/004_create_clients_table.sql and apps/web/e2e/auth-and-journey.spec.ts."
     }
   ],
   "latest_verification": {
-    "date": "2026-10-12",
-    "status": "foundation_passed",
-    "command": "./init.sh",
+    "date": "2026-10-13",
+    "status": "client_journey_and_foundation_passed",
+    "command": "./init.sh, npm test, bash scripts/test-e2e.sh",
     "saas_build_and_typecheck": "pass",
     "desktop_build": "pass",
     "rust_workspace_locked": "pass",
-    "clean_checkout_npm_ci_and_saas": "pass",
-    "api_tests": "47 passed, 3 files, disposable PostgreSQL 18",
+    "api_tests": "66 passed, 4 files, disposable PostgreSQL 18",
+    "browser_journeys": "3 passed (Bootstrap Org, Settings, Clients CRUD, Persistence, Cross-Tenant Isolation, Sign Out)",
     "npm_audit_root": "0 reported advisories",
-    "browser_journeys": "not run",
-    "production_readiness": "not claimed"
+    "production_readiness": "not claimed (hosted Supabase/Stripe pending)"
   },
   "latest_research": {
     "date": "2026-10-10",
@@ -108,11 +117,11 @@
     "feature_statuses_changed": false
   },
   "latest_memory_save": {
-    "date": "2026-10-12",
+    "date": "2026-10-13",
     "summary": "brain/project-summary.md",
     "architecture": "brain/architecture.md",
     "foundation_commit": "4b33153",
-    "feature_statuses_changed": false,
+    "feature_statuses_changed": true,
     "graph_status": "retained older graph; fresh rebuild pending"
   }
 }

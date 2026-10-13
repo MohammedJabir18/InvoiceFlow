@@ -1,4 +1,5 @@
 import { useUIStore } from '../stores/ui-store.js';
+import type { Client, CreateClientDTO, UpdateClientDTO } from '@invoiceflow/shared-types';
 
 class ApiError extends Error {
   code: string;
@@ -130,5 +131,41 @@ export const api = {
       fetchWithAuth<{ success: boolean }>(`/api/organizations/${id}/members/${userId}`, {
         method: 'DELETE',
       }),
+  },
+
+  clients: {
+    list: (orgId: string, params?: { status?: string; search?: string }) => {
+      const sp = new URLSearchParams();
+      if (params?.status) sp.set('status', params.status);
+      if (params?.search) sp.set('search', params.search);
+      const qs = sp.toString() ? `?${sp.toString()}` : '';
+      return fetchWithAuth<Client[]>(`/api/organizations/${orgId}/clients${qs}`);
+    },
+
+    get: (orgId: string, clientId: string) =>
+      fetchWithAuth<Client>(`/api/organizations/${orgId}/clients/${clientId}`),
+
+    create: (orgId: string, payload: CreateClientDTO) =>
+      fetchWithAuth<Client>(`/api/organizations/${orgId}/clients`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+
+    update: (orgId: string, clientId: string, payload: UpdateClientDTO) =>
+      fetchWithAuth<Client>(`/api/organizations/${orgId}/clients/${clientId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }),
+
+    archive: (orgId: string, clientId: string) =>
+      fetchWithAuth<Client>(`/api/organizations/${orgId}/clients/${clientId}`, {
+        method: 'DELETE',
+      }),
+
+    deletePermanent: (orgId: string, clientId: string) =>
+      fetchWithAuth<{ id: string; deleted: boolean }>(
+        `/api/organizations/${orgId}/clients/${clientId}?permanent=true`,
+        { method: 'DELETE' }
+      ),
   },
 };

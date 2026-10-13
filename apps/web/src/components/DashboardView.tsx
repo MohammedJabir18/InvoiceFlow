@@ -39,6 +39,13 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center space-x-3">
             <button
               type="button"
+              onClick={() => setActiveTab('clients')}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 cursor-pointer shadow-xs"
+            >
+              Manage Clients
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('settings')}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
             >
@@ -47,7 +54,7 @@ export const DashboardView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('members')}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 cursor-pointer"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
             >
               Manage Team
             </button>

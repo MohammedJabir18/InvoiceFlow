@@ -8,6 +8,7 @@ import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { organizationRoutes } from './routes/organizations.js';
 import { memberRoutes } from './routes/members.js';
+import { clientRoutes } from './routes/clients.js';
 
 export interface BuildServerOptions {
   db?: Kysely<Database>;
@@ -48,6 +49,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   await app.register(authRoutes, { db });
   await app.register(organizationRoutes, { db });
   await app.register(memberRoutes, { db });
+  await app.register(clientRoutes, { db });
 
   return app;
 }

@@ -63,13 +63,13 @@ Last consolidated: 12 October 2026. Start here when restoring this conversation.
 
 ## Remaining work / next session
 1. Read this summary, sessions.md, architecture.md and feature_list.json, then run ./init.sh.
-2. Reconcile the PRD/backlog with current user scope and actual source; don't create conflicting duplicate requirements.
-3. Next recommended product milestone: browser verification and completion of sign-in -> business onboarding -> client creation, including tenant isolation.
-4. Cloud invoices/quotations/payment endpoints and full domains still need implementation; registered API route groups currently cover health/auth/organizations/members.
-5. Add CI/lint coverage, browser journeys, hosted auth/payment verification, monitoring/backups/restore, and launch gates. Existing release workflow is desktop-oriented.
+2. Completed Milestone: First customer journey (sign-in -> business workspace -> settings -> client management -> reload persistence -> sign out) fully implemented and verified via automated Playwright tests (scripts/test-e2e.sh) and API suite (66 tests).
+3. Next recommended product milestone: Cloud Quotations and Invoices domain models & linking (feat-011).
+4. Cloud invoices/quotations/payment endpoints and full domains need implementation; registered API route groups cover health, auth, organizations, members, clients.
+5. Add CI/lint coverage, hosted auth/payment verification, monitoring/backups/restore, and launch gates.
 6. Resolve gateway/merchant incorporation and initial country support, exact template edit fields, deposit/progress billing policy, plan price/quotas.
 7. Laya integration/evaluation remains future work.
-8. Refresh Graphify carefully: last update was interrupted; retained graph is old, analysis metadata stale. Obsidian export completed from the retained graph, not a newly verified architecture. SQL parser missing and some TSX extraction partial. Generated skill files dominate broad graph counts; verify findings against source.
+8. Refresh Graphify carefully: last update was interrupted; retained graph is old, analysis metadata stale.
 9. Existing large-bundle and unused-code warnings are non-blocking but remain visible.
 
 ## Memory links

@@ -93,3 +93,60 @@ export function useRemoveMember(orgId: string) {
     },
   });
 }
+
+export function useClients(orgId: string | null, params?: { status?: string; search?: string }) {
+  const token = useUIStore((state) => state.token);
+  return useQuery({
+    queryKey: ['organization', orgId, 'clients', params?.status ?? 'ACTIVE', params?.search ?? ''],
+    queryFn: () => api.clients.list(orgId!, params),
+    enabled: Boolean(token && orgId),
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useClient(orgId: string | null, clientId: string | null) {
+  const token = useUIStore((state) => state.token);
+  return useQuery({
+    queryKey: ['organization', orgId, 'clients', clientId],
+    queryFn: () => api.clients.get(orgId!, clientId!),
+    enabled: Boolean(token && orgId && clientId),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreateClient(orgId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: any) => api.clients.create(orgId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organization', orgId, 'clients'] });
+    },
+  });
+}
+
+export function useUpdateClient(orgId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ clientId, data }: { clientId: string; data: any }) =>
+      api.clients.update(orgId, clientId, data),
+    onSuccess: (_updated, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['organization', orgId, 'clients'] });
+      queryClient.invalidateQueries({
+        queryKey: ['organization', orgId, 'clients', variables.clientId],
+      });
+    },
+  });
+}
+
+export function useArchiveClient(orgId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (clientId: string) => api.clients.archive(orgId, clientId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organization', orgId, 'clients'] });
+    },
+  });
+}

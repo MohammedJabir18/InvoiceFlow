@@ -98,3 +98,59 @@ export interface ApiResponse<T> {
     details?: unknown;
   };
 }
+
+export type ClientStatus = 'ACTIVE' | 'ARCHIVED';
+
+export interface Client {
+  id: string;
+  organizationId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  taxIdentifier: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  stateProvince: string | null;
+  postalCode: string | null;
+  country: string | null;
+  currency: string | null;
+  notes: string | null;
+  status: ClientStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateClientDTO {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  taxIdentifier?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  stateProvince?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateClientDTO {
+  name?: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  taxIdentifier?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  stateProvince?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  notes?: string | null;
+  status?: ClientStatus;
+}

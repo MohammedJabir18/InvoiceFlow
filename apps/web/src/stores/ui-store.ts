@@ -3,8 +3,8 @@ import { create } from 'zustand';
 interface UIState {
   currentOrganizationId: string | null;
   setCurrentOrganizationId: (orgId: string | null) => void;
-  activeTab: 'overview' | 'settings' | 'members';
-  setActiveTab: (tab: 'overview' | 'settings' | 'members') => void;
+  activeTab: 'overview' | 'clients' | 'settings' | 'members';
+  setActiveTab: (tab: 'overview' | 'clients' | 'settings' | 'members') => void;
   isCreateOrgModalOpen: boolean;
   setCreateOrgModalOpen: (open: boolean) => void;
   token: string | null;

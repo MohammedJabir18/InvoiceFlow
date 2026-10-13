@@ -102,3 +102,28 @@
 - Next: browser validation/completion of sign-in/business onboarding/client management; fresh Graphify rebuild remains pending and old graph must not be treated as current.
 
 - Memory-save verification: ./init.sh completed successfully (exit 0); required memory files and feature JSON validated. Evidence: artifacts/foundation/brain-save-startup.log. Graph retained unchanged because this task updates narrative memory; no fresh graph coverage claim.
+
+
+## 2026-10-13 — Multi-Tenant SaaS Client Management & First Customer Journey (feat-010)
+
+- Implemented forward migration `packages/db/src/migrations/004_create_clients_table.sql` with fail-closed Row Level Security (`organization_id = public.get_current_org_id()`) and role grants for `invoiceflow_app`.
+- Updated `@invoiceflow/db` with `ClientsTable`, `DbClient`, `NewDbClient`, and `ClientUpdate`.
+- Updated `@invoiceflow/shared-types` with `Client`, `ClientStatus`, `CreateClientDTO`, and `UpdateClientDTO`.
+- Implemented Fastify client routes in `apps/api/src/routes/clients.ts`:
+  - `GET /api/organizations/:id/clients` (listing with search & status filters, all roles)
+  - `POST /api/organizations/:id/clients` (Zod validation, OWNER/ADMIN/FINANCE)
+  - `GET /api/organizations/:id/clients/:clientId` (single client details, tenant-scoped)
+  - `PATCH /api/organizations/:id/clients/:clientId` (update, OWNER/ADMIN/FINANCE)
+  - `DELETE /api/organizations/:id/clients/:clientId` (archive/soft-delete by default, permanent delete option, OWNER/ADMIN)
+- Registered `clientRoutes` in `apps/api/src/server.ts`.
+- Added 18 comprehensive integration & security tests in `apps/api/test/clients.test.ts` and updated migration tests in `apps/api/test/migrations.test.ts`:
+  - 66/66 API tests PASS across 4 files on disposable PostgreSQL 18.
+- Built React 19 UI in `apps/web/src/components/ClientsView.tsx` with search, active/archived filters, add client modal, edit client modal, and role-aware UI feedback.
+- Integrated Clients subnav tab in `DashboardShell.tsx` and quick action in `DashboardView.tsx`.
+- Updated `apps/web/e2e/auth-and-journey.spec.ts` and added reproducible test runner `scripts/test-e2e.sh`:
+  - 3/3 browser journeys PASS in system Chrome with isolated PostgreSQL 18:
+    1. Error transparency when Supabase Auth is unreachable.
+    2. Bootstrap Org -> Update orthogonal Settings -> Clients CRUD & Edit -> Reload persistence across session -> Sign Out.
+    3. Multi-tenant isolation: Bob in Org B cannot see Alice's Org A or Alice's clients.
+- Verification: `./init.sh` PASS (SaaS build, typecheck, desktop build, cargo locked check); `npm test` PASS (66 tests); `scripts/test-e2e.sh` PASS (3 browser journeys).
+- Next milestone: Cloud Quotation and Invoice domain models & linking (`feat-011`).

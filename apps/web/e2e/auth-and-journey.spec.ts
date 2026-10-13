@@ -149,7 +149,47 @@ test.describe('Milestone 1A Browser Journey & Security Boundaries', () => {
     await expect(currencySelect).toHaveValue('INR');
     await expect(timezoneSelect).toHaveValue('Asia/Kolkata');
 
-    // 6. Sign Out and verify session termination & cache purge
+    // 6. Navigate to Clients tab and manage clients
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('h1:has-text("Client Directory")')).toBeVisible({ timeout: 10000 });
+
+    // Empty state should be visible
+    await expect(page.locator('text=No clients found')).toBeVisible({ timeout: 10000 });
+
+    // Click "Add Client"
+    await page.click('button:has-text("Add Client")');
+    await expect(page.locator('h2:has-text("Add New Client")')).toBeVisible({ timeout: 10000 });
+
+    // Fill client form
+    await page.fill('input[placeholder="e.g. Acme Corporation"]', 'Acme Enterprises India');
+    await page.fill('input[placeholder="e.g. Acme Group"]', 'Acme Global');
+    await page.fill('input[placeholder="billing@client.com"]', 'billing@acme.in');
+    await page.fill('input[placeholder="+91 98765 43210"]', '+91 98765 43210');
+    await page.fill('input[placeholder="e.g. 27ABCDE1234F1Z5"]', '29AABCU9603R1ZM');
+    await page.fill('input[placeholder="Address Line 1"]', '100 MG Road');
+    await page.fill('input[placeholder="City"]', 'Bengaluru');
+    await page.fill('input[placeholder="Postal Code / PIN"]', '560001');
+
+    await page.click('button[type="submit"]:has-text("Create Client")');
+
+    // Client should now appear in the directory table
+    await expect(page.locator('text=Acme Enterprises India').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('span:has-text("ACTIVE")').first()).toBeVisible({ timeout: 10000 });
+
+    // Edit Client
+    await page.click('button:has-text("Edit")');
+    await expect(page.locator('h2:has-text("Edit Client Details")')).toBeVisible({ timeout: 10000 });
+    await page.fill('input[value="Acme Global"]', 'Acme Global Private Limited');
+    await page.click('button[type="submit"]:has-text("Save Changes")');
+    await expect(page.locator('text=Acme Global Private Limited')).toBeVisible({ timeout: 10000 });
+
+    // 7. Reload and verify persistence of client and org across page reload
+    await page.reload();
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('text=Acme Enterprises India').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Acme Global Private Limited')).toBeVisible({ timeout: 10000 });
+
+    // 8. Sign Out and verify session termination & cache purge
     await page.click('button:has-text("Sign Out")');
 
     // Must be redirected back to the login screen
@@ -210,5 +250,10 @@ test.describe('Milestone 1A Browser Journey & Security Boundaries', () => {
     const orgSelector = page.locator('select:has(option:has-text("Apex Consulting"))');
     await expect(orgSelector).toBeVisible({ timeout: 10000 });
     await expect(page.locator('option:has-text("Atlas Tech")')).not.toBeAttached();
+
+    // Verify Bob's clients directory does NOT contain Alice's client
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('text=No clients found')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Acme Enterprises India')).not.toBeAttached();
   });
 });

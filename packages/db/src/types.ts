@@ -43,10 +43,32 @@ export interface OrganizationMembershipsTable {
   updated_at: Generated<Date>;
 }
 
+export interface ClientsTable {
+  id: Generated<string>;
+  organization_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  tax_identifier: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state_province: string | null;
+  postal_code: string | null;
+  country: string | null;
+  currency: string | null;
+  notes: string | null;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   organizations: OrganizationsTable;
   organization_memberships: OrganizationMembershipsTable;
+  clients: ClientsTable;
 }
 
 export type DbUser = Selectable<UsersTable>;
@@ -56,3 +78,6 @@ export type NewDbOrganization = Insertable<OrganizationsTable>;
 export type OrganizationUpdate = Updateable<OrganizationsTable>;
 export type DbMembership = Selectable<OrganizationMembershipsTable>;
 export type NewDbMembership = Insertable<OrganizationMembershipsTable>;
+export type DbClient = Selectable<ClientsTable>;
+export type NewDbClient = Insertable<ClientsTable>;
+export type ClientUpdate = Updateable<ClientsTable>;

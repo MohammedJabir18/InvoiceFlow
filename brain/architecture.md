@@ -4,20 +4,22 @@ Updated 12 October 2026 from source inspection and recorded verification. Start 
 
 ## Implemented repository structure
 
-- apps/web: React/TypeScript/Vite SaaS shell. Recorded Vite build 6.4.4; TanStack Query for server state, Zustand for transient UI, React Router and Tailwind.
-- apps/api: Fastify 5 API; Zod validation, jose JWT verification, pg/Kysely access. Registered groups: health, auth, organizations, members. Hosted production auth requires asymmetric JWKS; local test auth uses an explicitly configured development secret.
-- packages/db: Kysely types and PostgreSQL access, migrations 001–003, standalone auth fixtures. Declared business tables: users, organizations, organization_memberships; migration ledger _migrations.
-- packages/shared-types: shared TypeScript contracts.
+- apps/web: React/TypeScript/Vite SaaS shell. Recorded Vite build 6.4.4; TanStack Query for server state, Zustand for transient UI, React Router and Tailwind. Views: Dashboard overview, Clients directory, Business settings, Team & access.
+- apps/api: Fastify 5 API; Zod validation, jose JWT verification, pg/Kysely access. Registered groups: health, auth, organizations, members, clients. Hosted production auth requires asymmetric JWKS; local test auth uses an explicitly configured development secret.
+- packages/db: Kysely types and PostgreSQL access, migrations 001–004, standalone auth fixtures. Declared business tables: users, organizations, organization_memberships, clients; migration ledger _migrations.
+- packages/shared-types: shared TypeScript contracts (User, Organization, Client, MembershipRole, DTOs).
 - apps/desktop: React/Vite frontend (recorded Vite 6.4.1) and Tauri v2 Rust shell.
 - crates/flow-core, flow-db, flow-invoice, flow-analytics, flow-pdf: desktop domain/core, SQLite access, calculations/numbering, analytics, PDF support. Exact rendering capabilities should be verified before adding templates.
 
 ## Tenant data and security
 
-Organizations contain legal/display name, country/tax identifier/address/contact details, timezone, locale, document_language, base_currency, reporting_currency and financial-year start. Membership roles are OWNER, ADMIN, FINANCE, VIEWER, not the historical lowercase role set.
+Organizations contain legal/display name, country/tax identifier/address/contact details, timezone, locale, document_language, base_currency, reporting_currency and financial-year start. Membership roles are OWNER, ADMIN, FINANCE, VIEWER.
 
-Application membership checks precede tenant-scoped queries. Kysely transactions set app.current_org_id and, when provided, app.current_user_id using parameterized transaction-local set_config. RLS provides another boundary. Existing tests check this foundation, not all future financial tables.
+Clients contain organization_id, name, email, phone, company, tax_identifier, address, country, currency, notes, and status (ACTIVE / ARCHIVED). Fail-closed Row-Level Security on `organization_id = get_current_org_id()` ensures strict multi-tenant boundary. OWNER, ADMIN, and FINANCE have mutation access; VIEWER has read-only access (403 Forbidden enforced server-side).
 
-Migration runner records applied names in public._migrations and applies migration SQL in transactions. It does not currently record SHA-256 migration checksums. Standalone auth.users fixture is test-only.
+Application membership checks precede tenant-scoped queries. Kysely transactions set app.current_org_id and, when provided, app.current_user_id using parameterized transaction-local set_config. RLS provides another boundary. Existing tests check organizations and clients tables.
+
+Migration runner records applied names in public._migrations and applies migration SQL in transactions. Forward migrations 001–004 tested on clean setup and incremental upgrade paths.
 
 ## Product boundaries / planned work
 

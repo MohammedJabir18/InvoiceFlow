@@ -4,9 +4,10 @@ import { useOrganizations } from '../hooks/queries.js';
 import { Navbar } from './Navbar.js';
 import { OnboardingModal } from './OnboardingModal.js';
 import { DashboardView } from './DashboardView.js';
+import { ClientsView } from './ClientsView.js';
 import { SettingsView } from './SettingsView.js';
 import { MembersView } from './MembersView.js';
-import { LayoutDashboard, Settings, Users, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, UserCheck, Settings, Users, PlusCircle } from 'lucide-react';
 
 export const DashboardShell: React.FC = () => {
   const currentOrgId = useUIStore((state) => state.currentOrganizationId);
@@ -68,6 +69,18 @@ export const DashboardShell: React.FC = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab('clients')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center cursor-pointer transition-colors ${
+                  activeTab === 'clients'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
+                Clients
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('settings')}
                 className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center cursor-pointer transition-colors ${
                   activeTab === 'settings'
@@ -94,6 +107,7 @@ export const DashboardShell: React.FC = () => {
 
             {/* Tab Body */}
             {activeTab === 'overview' && <DashboardView />}
+            {activeTab === 'clients' && <ClientsView />}
             {activeTab === 'settings' && <SettingsView />}
             {activeTab === 'members' && <MembersView />}
           </div>

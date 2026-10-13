@@ -137,3 +137,33 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
 - Next: browser validation/completion of sign-in/business onboarding/client management; fresh Graphify rebuild remains pending and old graph must not be treated as current.
 
 - Memory-save verification: ./init.sh completed successfully (exit 0); required memory files and feature JSON validated. Evidence: artifacts/foundation/brain-save-startup.log. Graph retained unchanged because this task updates narrative memory; no fresh graph coverage claim.
+
+
+## 2026-10-13 — Multi-Tenant SaaS Client Management & First Customer Journey (feat-010)
+
+- **Date:** 2026-10-13
+- **Lead AI:** Antigravity AI Pair Programmer
+- **Primary Goals:**
+  - Context restoration & baseline verification
+  - Complete first customer journey: Sign in -> create/select business workspace -> save business details -> create a client -> view/edit that client -> reload persistence -> sign out
+  - Forward migration 004 with fail-closed RLS for clients
+  - Fastify client endpoints with role-based authorization
+  - React 19 Client Directory UI with modals, filters, and loading/error states
+  - Automated browser journey verification with Playwright
+- **Completed Tasks:**
+  - [x] Verified baseline: `./init.sh` PASS (SaaS build/typecheck, desktop build, cargo check), 47/47 API tests PASS, root npm audit 0.
+  - [x] Implemented `packages/db/src/migrations/004_create_clients_table.sql` with fail-closed RLS on `organization_id = get_current_org_id()` and role permissions.
+  - [x] Added `ClientsTable`, `DbClient`, `NewDbClient`, and `ClientUpdate` to `packages/db/src/types.ts`.
+  - [x] Added `Client`, `ClientStatus`, `CreateClientDTO`, and `UpdateClientDTO` to `packages/shared-types`.
+  - [x] Implemented `apps/api/src/routes/clients.ts` with Zod validation, search/status filtering, and role-based permissions (OWNER, ADMIN, FINANCE write, VIEWER read).
+  - [x] Registered client routes in `apps/api/src/server.ts`.
+  - [x] Added 18 comprehensive integration & security tests in `apps/api/test/clients.test.ts` and updated migration upgrade tests in `apps/api/test/migrations.test.ts` (API suite expanded to 66/66 PASS).
+  - [x] Implemented `apps/web/src/components/ClientsView.tsx`, integrated subnav tab in `DashboardShell.tsx`, and added shortcut in `DashboardView.tsx`.
+  - [x] Created `scripts/test-e2e.sh` and updated `apps/web/e2e/auth-and-journey.spec.ts` (3/3 Playwright browser journeys PASS).
+  - [x] Verified `./init.sh` full build and typecheck passes with 0 errors.
+- **Decisions Made:**
+  - **Client Archiving vs Deletion:** Default deletion performs soft delete / archiving (`status = 'ARCHIVED'`), preserving auditability and avoiding breaking foreign key constraints when linked to future quotes/invoices. Permanent deletion is available via query flag.
+  - **Role-Based Authorization:** Strict server-side enforcement: OWNER, ADMIN, and FINANCE can create/edit clients; VIEWER has read-only access with server-side 403 Forbidden.
+  - **Automated E2E Test Harness:** Created `scripts/test-e2e.sh` spinning up an isolated loopback PostgreSQL 18 cluster with ephemeral port, starting API and Vite preview, and executing Playwright tests in system Chrome channel cleanly.
+- **Pending Tasks / Recommended Next Steps:**
+  - Proceed with Milestone 1B: Quotation and Invoice domain models and linking (`feat-011`).
