@@ -116,17 +116,27 @@
       ],
       "status": "completed",
       "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS; 5/5 Playwright browser journeys PASS (including FINANCE contact editing without 403 and 52-client directory pagination/filtering). See apps/web/e2e/auth-and-journey.spec.ts, apps/web/src/components/ClientsView.tsx, and .github/workflows/saas-ci.yml."
+    },
+    {
+      "id": "feat-010d",
+      "name": "Workspace Switch Isolation & Scoped Placeholder Data",
+      "description": "Restricted useClients placeholder data reuse strictly to the exact same organization (clearing old clients on org switch), remounted ClientsView with org-keyed rendering in DashboardShell, cleared modal/editing/filter states, added distinct loading spinner during workspace transition, disabled stale action buttons during placeholder states, and added permanent Playwright Test 6 regression verifying zero cross-workspace client or action leaks under delayed fetches",
+      "dependencies": [
+        "feat-010c"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS; 6/6 Playwright browser journeys PASS in scripts/test-e2e.sh (including delayed workspace-switch barrier regression in Test 6). See apps/web/src/hooks/queries.ts, apps/web/src/components/ClientsView.tsx, and apps/web/e2e/auth-and-journey.spec.ts."
     }
   ],
   "latest_verification": {
     "date": "2026-10-13",
-    "status": "frontend_integration_and_pagination_hardening_passed",
+    "status": "workspace_switch_isolation_and_all_regressions_passed",
     "command": "./init.sh, npm test, bash scripts/test-e2e.sh",
     "saas_build_and_typecheck": "pass",
     "desktop_build": "pass",
     "rust_workspace_locked": "pass",
     "api_tests": "75 passed, 4 files, disposable PostgreSQL 18",
-    "browser_journeys": "5 passed (Auth unreachable fallback, Bootstrap Org/Settings/CRUD/Persistence/Signout, Cross-Tenant Isolation, FINANCE contact edit with guarded lifecycle, 52-client pagination/filter reset)",
+    "browser_journeys": "6 passed (Auth unreachable fallback, Bootstrap Org/Settings/CRUD/Persistence/Signout, Cross-Tenant Isolation, FINANCE contact edit with guarded lifecycle, 52-client pagination/filter reset, Workspace Switch Isolation under delayed fetch)",
     "npm_audit_root": "0 reported advisories",
     "production_readiness": "not claimed (real hosted Supabase provider unverified; local dev token tests only)"
   },
@@ -146,21 +156,18 @@
   },
   "latest_review": {
     "date": "2026-10-13",
-    "document": "brain/reviews/2026-10-13-antigravity-hardening-followup.md",
+    "document": "brain/reviews/2026-10-13-antigravity-integration-review.md",
     "local_commit": "pending",
     "build": "pass",
     "api_tests": "75 passed",
-    "browser_tests": "5 passed with local JWT injection",
-    "previous_backend_findings": "resolved and independently reproduced",
-    "review_status": "frontend integration findings resolved",
-    "findings": [
-      "Finance UI contact editing fixed (omits status, guards controls, verified via E2E)",
-      "client directory pagination completed (typed contracts, query caching, footer controls, reset/clamping, verified with 52 clients)",
-      "deterministic CI browser provisioning configured in saas-ci.yml and test-e2e.sh"
-    ],
-    "ci": "workflow updated with chromium install and artifact upload, actual GitHub execution pending PR push",
+    "browser_tests": "6 passed with local JWT injection",
+    "previous_frontend_findings": "resolved",
+    "review_status": "all integration and workspace isolation findings resolved",
+    "confirmed_issue": "Resolved: Org A client rows no longer rendered when Org B selected; loading state shown; actions disabled/cleared",
+    "reproduction": "Permanent Test 6 regression active in apps/web/e2e/auth-and-journey.spec.ts",
+    "ci": "Chromium setup present; actual GitHub execution unverified",
     "real_provider_login": "unverified",
-    "remote_feature_commits_behind_local": 4
+    "remote_feature_commits_behind_local": 5
   },
   "skill_policy": {
     "confirmed_date": "2026-10-13",

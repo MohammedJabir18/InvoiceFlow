@@ -204,3 +204,35 @@
     4. (NEW) FINANCE Role contact editing without 403 and lifecycle controls guarded.
     5. (NEW) Complete client directory pagination (>50 clients) with navigation and search filter reset.
 
+
+
+## 2026-10-13 — Frontend integration review of 3c26cd56
+- Finance edits, full client pagination and explicit CI Chromium setup are present; independent full init PASS, API 75/75 PASS, browser 5/5 PASS.
+- Focused reviewer flagged cross-workspace keepPreviousData reuse. Temporary browser reproduction confirmed old Org A row remains visible under selected Org B while B response is delayed; this is UI data mixing, not demonstrated server auth bypass. Temporary test removed from normal suite and retained in ignored artifacts.
+- Next small task: constrain placeholder reuse to same org, clear old editing/selection state on org switch, add a permanent delayed-response regression. Then authorized draft PR publication/actual CI review; real Auth remains unverified and must be exercised before customer launch.
+- Local feature branch is 5 commits ahead of last confirmed remote; no PRs returned, no push/merge performed.
+- Detailed review: brain/reviews/2026-10-13-antigravity-integration-review.md. No product implementation changes made in this review.
+
+
+## 2026-10-13 — Workspace Switch Isolation & Scoped Placeholder Data (feat-010d)
+
+- **Scoped Placeholder Data in `useClients` (`apps/web/src/hooks/queries.ts`)**:
+  - Replaced unconditional `placeholderData: keepPreviousData` with scoped function: `previousQuery?.queryKey?.[1] === orgId ? previousData : undefined`.
+  - Guarantees previous pagination and filter data are reused strictly within the same organization; switching workspaces immediately yields `undefined` data and enters the loading state.
+- **Clean Workspace Remounting & State Reset**:
+  - `apps/web/src/components/DashboardShell.tsx`: Passed `key={currentOrgId || 'none'}` to `<ClientsView />` ensuring React unmounts stale instances and mounts a fresh component on workspace changes.
+  - `apps/web/src/components/ClientsView.tsx`: Added explicit `useEffect` on `currentOrgId` resetting `page`, `searchTerm`, `statusFilter`, modals (`isCreateOpen`, `editingClient`), and form feedback alerts.
+  - Rendered explicit spinner loading state with `data-testid="clients-loading-state"` during workspace transitions.
+  - Disabled table row action buttons (`Edit`, `Archive`, `View Details`) during placeholder states (`disabled={isPlaceholderData}`).
+- **Permanent Browser Regression Test (Test 6 in `auth-and-journey.spec.ts`)**:
+  - Sets up user owning two organizations (`Workspace Alpha` and `Workspace Beta`) with a client in Alpha.
+  - Delays network response for Beta clients (`page.route`).
+  - Switches organization dropdown to Beta; asserts while Beta fetch is in-flight:
+    1. Alpha client row is NOT visible.
+    2. Table action buttons are NOT visible.
+    3. Loading state `[data-testid="clients-loading-state"]` IS visible.
+  - Releases barrier; asserts Beta empty state renders cleanly with zero client leaks.
+- **Verification Evidence**:
+  - `./init.sh`: PASS (SaaS build, typecheck, desktop build, locked Cargo check).
+  - `npm test`: 75/75 API tests PASS on disposable PostgreSQL 18.
+  - `bash scripts/test-e2e.sh`: 6/6 Playwright browser journeys PASS in 10.1s.

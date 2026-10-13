@@ -29,12 +29,23 @@ export const ClientsView: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  // Reset page when search term, status filter, or active organization changes
+  // Clear modal, editing, error, and filter states on workspace change
   React.useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusFilter, currentOrgId]);
+    setSearchTerm('');
+    setStatusFilter('ACTIVE');
+    setIsCreateOpen(false);
+    setEditingClient(null);
+    setFormError(null);
+    setFormSuccess(null);
+  }, [currentOrgId]);
 
-  const { data: clientsData, isLoading, error } = useClients(currentOrgId, {
+  // Reset page when search term or status filter changes within current org
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const { data: clientsData, isLoading, isPlaceholderData, error } = useClients(currentOrgId, {
     status: statusFilter,
     search: searchTerm,
     page,
@@ -296,7 +307,11 @@ export const ClientsView: React.FC = () => {
 
       {/* Main Content Area */}
       {isLoading ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500">
+        <div
+          data-testid="clients-loading-state"
+          className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500"
+        >
+          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           Loading client directory...
         </div>
       ) : error ? (
@@ -425,8 +440,9 @@ export const ClientsView: React.FC = () => {
                         <>
                           <button
                             type="button"
+                            disabled={isPlaceholderData}
                             onClick={() => handleOpenEdit(client)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
+                            className="inline-flex items-center px-2.5 py-1.5 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             title="Edit Client"
                           >
                             <Pencil className="w-3.5 h-3.5 mr-1" />
@@ -435,8 +451,9 @@ export const ClientsView: React.FC = () => {
                           {canManageLifecycle && client.status === 'ACTIVE' && (
                             <button
                               type="button"
+                              disabled={isPlaceholderData}
                               onClick={() => handleArchive(client)}
-                              className="inline-flex items-center px-2.5 py-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors"
+                              className="inline-flex items-center px-2.5 py-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               title="Archive Client"
                             >
                               <Archive className="w-3.5 h-3.5 mr-1" />
@@ -447,8 +464,9 @@ export const ClientsView: React.FC = () => {
                       ) : (
                         <button
                           type="button"
+                          disabled={isPlaceholderData}
                           onClick={() => handleOpenEdit(client)}
-                          className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                          className="text-gray-500 hover:text-gray-700 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           View Details
                         </button>

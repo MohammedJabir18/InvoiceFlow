@@ -107,7 +107,7 @@ export const DashboardShell: React.FC = () => {
 
             {/* Tab Body */}
             {activeTab === 'overview' && <DashboardView />}
-            {activeTab === 'clients' && <ClientsView />}
+            {activeTab === 'clients' && <ClientsView key={currentOrgId || 'none'} />}
             {activeTab === 'settings' && <SettingsView />}
             {activeTab === 'members' && <MembersView />}
           </div>

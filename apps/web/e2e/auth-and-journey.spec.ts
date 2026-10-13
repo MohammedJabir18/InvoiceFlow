@@ -468,4 +468,133 @@ test.describe('Milestone 1A Browser Journey & Security Boundaries', () => {
     await expect(pageIndicator).toContainText('Page 1 of 2');
     await expect(rows).toHaveCount(50);
   });
+
+  // ============================================================================
+  // Test 6: Workspace Switch Isolation: No Cross-Workspace Client Leak on Delayed Fetch
+  // ============================================================================
+  test('6. Workspace Switch Isolation: Switching orgs immediately clears old client rows and shows loading during delayed fetch', async ({
+    page,
+  }) => {
+    const gregId = '11111111-2222-4333-a444-555555555551';
+    const gregEmail = 'greg.workspace@test.com';
+    const orgAlphaId = '11111111-2222-4333-a444-aaaaaaaaaaaa';
+    const orgBetaId = '11111111-2222-4333-a444-bbbbbbbbbbbb';
+    const clientAlphaId = '11111111-2222-4333-a444-cccccccccccc';
+
+    // Cleanup any existing data
+    await pgClient.query(`DELETE FROM public.clients WHERE organization_id IN ($1, $2)`, [orgAlphaId, orgBetaId]);
+    await pgClient.query(
+      `DELETE FROM public.organization_memberships WHERE organization_id IN ($1, $2)`,
+      [orgAlphaId, orgBetaId]
+    );
+    await pgClient.query(`DELETE FROM public.organizations WHERE id IN ($1, $2)`, [orgAlphaId, orgBetaId]);
+    await pgClient.query(`DELETE FROM public.users WHERE id = $1`, [gregId]);
+    await pgClient.query(`DELETE FROM auth.users WHERE id = $1`, [gregId]);
+
+    // Insert user
+    await pgClient.query(`INSERT INTO auth.users (id, email) VALUES ($1, $2)`, [gregId, gregEmail]);
+    await pgClient.query(
+      `INSERT INTO public.users (id, email, full_name) VALUES ($1, $2, 'Greg Switcher')`,
+      [gregId, gregEmail]
+    );
+
+    // Insert both organizations
+    await pgClient.query(
+      `
+      INSERT INTO public.organizations (id, legal_name, display_name, business_country, address_line1, city, postal_code, contact_email)
+      VALUES
+        ($1, 'Workspace Alpha Corp', 'Workspace Alpha', 'IN', '10 Alpha Way', 'Bengaluru', '560001', 'billing@alpha.com'),
+        ($2, 'Workspace Beta Corp', 'Workspace Beta', 'IN', '20 Beta Ave', 'Mumbai', '400001', 'billing@beta.com')
+    `,
+      [orgAlphaId, orgBetaId]
+    );
+
+    // Insert memberships (OWNER of both)
+    await pgClient.query(
+      `
+      INSERT INTO public.organization_memberships (organization_id, user_id, role)
+      VALUES
+        ($1, $3, 'OWNER'),
+        ($2, $3, 'OWNER')
+    `,
+      [orgAlphaId, orgBetaId, gregId]
+    );
+
+    // Insert client ONLY in Workspace Alpha
+    await pgClient.query(
+      `
+      INSERT INTO public.clients (id, organization_id, name, email, phone, status)
+      VALUES ($1, $2, 'ALPHA EXCLUSIVE CLIENT', 'client@alpha-exclusive.com', '+91 91111 22222', 'ACTIVE')
+    `,
+      [clientAlphaId, orgAlphaId]
+    );
+
+    const gregToken = await createE2EToken(gregId, gregEmail);
+
+    // 1. Visit app with Workspace Alpha active
+    await page.goto('/');
+    await page.evaluate(
+      ({ token, activeOrgId }) => {
+        window.localStorage.setItem('invoiceflow_jwt_token', token);
+        window.localStorage.setItem('invoiceflow_active_org_id', activeOrgId);
+      },
+      { token: gregToken, activeOrgId: orgAlphaId }
+    );
+    await page.reload();
+
+    // Verify Workspace Alpha is active
+    await expect(page.locator('h1:has-text("Workspace Alpha")')).toBeVisible({ timeout: 10000 });
+
+    // Open Clients tab
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('h1:has-text("Client Directory")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=ALPHA EXCLUSIVE CLIENT')).toBeVisible({ timeout: 10000 });
+
+    // 2. Setup route interception on Beta's client list endpoint with barrier delay
+    let releaseBarrier: (() => void) | undefined;
+    const barrierPromise = new Promise<void>((resolve) => {
+      releaseBarrier = resolve;
+    });
+
+    try {
+      await page.route(`**/api/organizations/${orgBetaId}/clients*`, async (route) => {
+        await barrierPromise;
+        await route.continue();
+      });
+
+      // 3. Switch to Workspace Beta via the organization selector
+      const orgSelector = page.locator('select:has(option:has-text("Workspace Beta"))');
+      await expect(orgSelector).toBeVisible({ timeout: 5000 });
+
+      const clientRequestPromise = page.waitForRequest((req) =>
+        req.url().includes(`/api/organizations/${orgBetaId}/clients`)
+      );
+
+      await orgSelector.selectOption(orgBetaId);
+      await clientRequestPromise;
+
+      // Verify selector changed to Workspace Beta
+      await expect(orgSelector).toHaveValue(orgBetaId);
+
+      // 4. CRITICAL ISOLATION ASSERTIONS (While Beta response is DELAYED / in-flight):
+      // - Old client 'ALPHA EXCLUSIVE CLIENT' must NOT be visible!
+      // - Edit or Archive action buttons from Alpha must NOT be visible!
+      // - Appropriate loading state must be shown for the new organization!
+      await expect(page.locator('text=ALPHA EXCLUSIVE CLIENT')).not.toBeVisible();
+      await expect(page.locator('table button:has-text("Archive")')).not.toBeVisible();
+      await expect(page.locator('table button:has-text("Edit")')).not.toBeVisible();
+      await expect(page.locator('[data-testid="clients-loading-state"]')).toBeVisible({ timeout: 5000 });
+
+      // 5. Release the barrier to let Workspace Beta's client response resolve
+      releaseBarrier?.();
+
+      // 6. After Beta response arrives:
+      // Beta has no clients, so empty state should appear with NO Alpha clients leaked
+      await expect(page.locator('[data-testid="clients-loading-state"]')).not.toBeVisible({ timeout: 10000 });
+      await expect(page.locator('text=No clients found')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('text=ALPHA EXCLUSIVE CLIENT')).not.toBeVisible();
+    } finally {
+      releaseBarrier?.();
+    }
+  });
 });

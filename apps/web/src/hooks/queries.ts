@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client.js';
 import { useUIStore } from '../stores/ui-store.js';
 
@@ -107,7 +107,13 @@ export function useClients(orgId: string | null, params?: ListClientsParams) {
     queryKey: ['organization', orgId, 'clients', status, search, page, limit],
     queryFn: () => api.clients.list(orgId!, { status, search, page, limit }),
     enabled: Boolean(token && orgId),
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) => {
+      // Reuse previous pagination/filter data only within the exact same organization
+      if (previousQuery?.queryKey?.[1] === orgId) {
+        return previousData;
+      }
+      return undefined;
+    },
     staleTime: 15 * 1000,
   });
 }

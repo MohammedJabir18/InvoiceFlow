@@ -4,6 +4,39 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
 
 ---
 
+## Session 2026-10-13: Workspace Switch Isolation & Scoped Placeholder Data (feat-010d)
+
+- **Date:** 2026-10-13
+- **Lead AI:** Antigravity AI Pair Programmer (Gemini 3.8 Flash High)
+- **Primary Goals:**
+  - Address remaining workspace-switch UI data leak identified in `brain/reviews/2026-10-13-antigravity-integration-review.md`:
+    - Ensure `useClients` reuses previous pagination data only within the exact same organization.
+    - Clear old client rows, modals, editing state, and filters upon workspace switch.
+    - Display explicit loading spinner state during new organization client fetches.
+    - Disable stale row actions during placeholder data states.
+    - Keep same-organization page navigation smooth and responsive.
+    - Add a permanent Playwright Test 6 browser regression with delayed response.
+- **Completed Tasks:**
+  - [x] Updated `apps/web/src/hooks/queries.ts`: scoped `placeholderData` in `useClients` to `previousQuery?.queryKey?.[1] === orgId ? previousData : undefined`.
+  - [x] Updated `apps/web/src/components/DashboardShell.tsx`: keyed `<ClientsView key={currentOrgId || 'none'} />` ensuring complete component remount on workspace switch.
+  - [x] Updated `apps/web/src/components/ClientsView.tsx`:
+    - Added explicit `useEffect` on `currentOrgId` to clear modals, editing state, and form alerts.
+    - Rendered explicit spinner loading state with `data-testid="clients-loading-state"`.
+    - Added `disabled={isPlaceholderData}` to row action buttons (`Edit`, `Archive`, `View Details`).
+  - [x] Added Playwright E2E Test 6 in `apps/web/e2e/auth-and-journey.spec.ts`: verifies user switching from Workspace Alpha to Workspace Beta with delayed Beta fetch immediately clears Alpha rows, shows loading state, hides Alpha actions, and renders Beta empty state cleanly upon response release.
+  - [x] Verified `./init.sh` PASS (full build, typecheck, cargo check).
+  - [x] Verified `npm test` PASS (75/75 API tests on disposable PostgreSQL 18).
+  - [x] Verified `bash scripts/test-e2e.sh` PASS (6/6 Playwright browser journeys in 10.1s).
+- **Decisions Made:**
+  - **Scoped Placeholder Scoping:** Constrained TanStack Query's placeholder data to identical tenant keys (`previousQuery.queryKey[1] === orgId`), maintaining smooth intra-organization pagination without leaking cross-workspace data.
+  - **Keyed Remount Defense:** Keyed `ClientsView` on `currentOrgId` in `DashboardShell` to guarantee fresh local state across tenant switches in addition to reactive hook cleanup.
+- **Pending Tasks / Recommended Next Steps:**
+  - Review diff and prepare draft PR for Milestone 1A foundation and client management into `main`.
+  - Verify live Supabase Auth against hosted project or local Supabase CLI when credentials are provisioned.
+  - Begin Milestone 1B: Quotations & Estimates domain models and linking.
+
+---
+
 ## Session 2026-10-13: SaaS Client Frontend Integration Completion, Hardened Pagination & Deterministic CI (feat-010c)
 
 - **Date:** 2026-10-13
@@ -294,3 +327,11 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
 - Additional global user skills: archify, karpathy-guidelines, i-have-adhd; bundled system/helpers and enabled/cached plugin families classified separately.
 - Added brain/agent-skill-policy.md, brain/installed-skills.md and brain/skill-inventory-2026-10-13.json; appended concise routing preference to AGENTS.md and project summary. Existing AGENTS edits preserved.
 - No skill installation/update/removal and no product feature change. Next task remains Finance edit/pagination frontend completion and deterministic CI/Auth verification.
+
+
+## 2026-10-13 — Frontend integration review of 3c26cd56
+- Finance edits, full client pagination and explicit CI Chromium setup are present; independent full init PASS, API 75/75 PASS, browser 5/5 PASS.
+- Focused reviewer flagged cross-workspace keepPreviousData reuse. Temporary browser reproduction confirmed old Org A row remains visible under selected Org B while B response is delayed; this is UI data mixing, not demonstrated server auth bypass. Temporary test removed from normal suite and retained in ignored artifacts.
+- Next small task: constrain placeholder reuse to same org, clear old editing/selection state on org switch, add a permanent delayed-response regression. Then authorized draft PR publication/actual CI review; real Auth remains unverified and must be exercised before customer launch.
+- Local feature branch is 5 commits ahead of last confirmed remote; no PRs returned, no push/merge performed.
+- Detailed review: brain/reviews/2026-10-13-antigravity-integration-review.md. No product implementation changes made in this review.
