@@ -256,4 +256,216 @@ test.describe('Milestone 1A Browser Journey & Security Boundaries', () => {
     await expect(page.locator('text=No clients found')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Acme Enterprises India')).not.toBeAttached();
   });
+
+  // ============================================================================
+  // Test 4: FINANCE Role Contact Editing & Lifecycle Controls Guard
+  // ============================================================================
+  test('4. FINANCE Role: Can edit contact info in UI without 403; lifecycle controls guarded', async ({
+    page,
+  }) => {
+    const ownerId = '88888888-8888-4888-a888-888888888881';
+    const financeId = '88888888-8888-4888-a888-888888888882';
+    const orgId = '88888888-8888-4888-a888-888888888880';
+    const clientId = '88888888-8888-4888-a888-888888888883';
+
+    await pgClient.query(`DELETE FROM public.clients WHERE organization_id = $1`, [orgId]);
+    await pgClient.query(`DELETE FROM public.organization_memberships WHERE organization_id = $1`, [orgId]);
+    await pgClient.query(`DELETE FROM public.organizations WHERE id = $1`, [orgId]);
+    await pgClient.query(`DELETE FROM public.users WHERE id IN ($1, $2)`, [ownerId, financeId]);
+    await pgClient.query(`DELETE FROM auth.users WHERE id IN ($1, $2)`, [ownerId, financeId]);
+
+    await pgClient.query(`INSERT INTO auth.users (id, email) VALUES ($1, $2), ($3, $4)`, [
+      ownerId,
+      'owner.delta@test.com',
+      financeId,
+      'finance.delta@test.com',
+    ]);
+    await pgClient.query(
+      `INSERT INTO public.users (id, email, full_name) VALUES ($1, $2, 'Dana Owner'), ($3, $4, 'Fiona Finance')`,
+      [ownerId, 'owner.delta@test.com', financeId, 'finance.delta@test.com']
+    );
+    await pgClient.query(
+      `INSERT INTO public.organizations (id, legal_name, display_name, business_country, address_line1, city, postal_code, contact_email)
+       VALUES ($1, 'Delta Global Corp', 'Delta Global', 'US', '100 Pine St', 'Seattle', '98101', 'billing@deltaglobal.com')`,
+      [orgId]
+    );
+    await pgClient.query(
+      `INSERT INTO public.organization_memberships (organization_id, user_id, role)
+       VALUES ($1, $2, 'OWNER'), ($1, $3, 'FINANCE')`,
+      [orgId, ownerId, financeId]
+    );
+    await pgClient.query(
+      `INSERT INTO public.clients (id, organization_id, name, email, phone, notes, status)
+       VALUES ($1, $2, 'Delta Client One', 'client@deltaclient.com', '+1 555 123 4567', 'Initial client note', 'ACTIVE')`,
+      [clientId, orgId]
+    );
+
+    const fionaToken = await createE2EToken(financeId, 'finance.delta@test.com');
+
+    // Sign in as Fiona (FINANCE role)
+    await page.goto('/');
+    await page.evaluate(
+      ({ token, activeOrgId }) => {
+        window.localStorage.setItem('invoiceflow_jwt_token', token);
+        window.localStorage.setItem('invoiceflow_active_org_id', activeOrgId);
+      },
+      { token: fionaToken, activeOrgId: orgId }
+    );
+    await page.reload();
+
+    // Verify organization is Delta Global
+    await expect(page.locator('h1:has-text("Delta Global")')).toBeVisible({ timeout: 10000 });
+
+    // Open Clients tab
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('h1:has-text("Client Directory")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Delta Client One')).toBeVisible({ timeout: 10000 });
+
+    // 1. Verify Archive action button in table is NOT visible for FINANCE member
+    await expect(page.locator('table button:has-text("Archive")')).not.toBeVisible();
+
+    // 2. Click Edit to open edit modal
+    await page.click('button:has-text("Edit")');
+    await expect(page.locator('h2:has-text("Edit Client Details")')).toBeVisible({ timeout: 10000 });
+
+    // 3. Verify Status field is read-only badge for FINANCE
+    await expect(
+      page.locator('text=Lifecycle status can only be modified by Owners and Admins')
+    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('select:has(option[value="ARCHIVED"])')).not.toBeVisible();
+
+    // 4. Update contact details (phone and notes)
+    await page.fill('input[value="+1 555 123 4567"]', '+1 555 999 8888');
+    await page.fill('textarea', 'Updated by Fiona in Finance');
+
+    // 5. Submit form
+    await page.click('button[type="submit"]:has-text("Save Changes")');
+
+    // 6. Verify modal closes cleanly without 403 error
+    await expect(page.locator('h2:has-text("Edit Client Details")')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Forbidden')).not.toBeVisible();
+    await expect(page.locator('text=permission to modify client lifecycle status')).not.toBeVisible();
+
+    // 7. Verify updated phone is visible in table
+    await expect(page.locator('text=+1 555 999 8888')).toBeVisible({ timeout: 5000 });
+
+    // 8. Reload page and verify persistence across reload
+    await page.reload();
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('text=+1 555 999 8888')).toBeVisible({ timeout: 10000 });
+
+    await page.click('button:has-text("Edit")');
+    await expect(page.locator('textarea')).toHaveValue('Updated by Fiona in Finance');
+    await page.click('button:has-text("Cancel")');
+  });
+
+  // ============================================================================
+  // Test 5: Client Directory Pagination & Filter Reset Journey (>50 clients)
+  // ============================================================================
+  test('5. Complete Pagination: Directory handles >50 clients with navigation and filter reset', async ({
+    page,
+  }) => {
+    const peterId = '99999999-9999-4999-a999-999999999991';
+    const peterEmail = 'peter.pagination@test.com';
+    const paginationOrgId = '99999999-9999-4999-a999-999999999990';
+
+    await pgClient.query(`DELETE FROM public.clients WHERE organization_id = $1`, [paginationOrgId]);
+    await pgClient.query(`DELETE FROM public.organization_memberships WHERE organization_id = $1`, [paginationOrgId]);
+    await pgClient.query(`DELETE FROM public.organizations WHERE id = $1`, [paginationOrgId]);
+    await pgClient.query(`DELETE FROM public.users WHERE id = $1`, [peterId]);
+    await pgClient.query(`DELETE FROM auth.users WHERE id = $1`, [peterId]);
+
+    await pgClient.query(`INSERT INTO auth.users (id, email) VALUES ($1, $2)`, [peterId, peterEmail]);
+    await pgClient.query(
+      `INSERT INTO public.users (id, email, full_name) VALUES ($1, $2, 'Peter Pagination')`,
+      [peterId, peterEmail]
+    );
+    await pgClient.query(
+      `INSERT INTO public.organizations (id, legal_name, display_name, business_country, address_line1, city, postal_code, contact_email)
+       VALUES ($1, 'Pagination Enterprises', 'Pagination Org', 'US', '200 Main St', 'Austin', '78701', 'billing@pagination.com')`,
+      [paginationOrgId]
+    );
+    await pgClient.query(
+      `INSERT INTO public.organization_memberships (organization_id, user_id, role)
+       VALUES ($1, $2, 'OWNER')`,
+      [paginationOrgId, peterId]
+    );
+
+    // Seed 52 clients with distinct created_at timestamps
+    // Client 52 is newest, Client 01 is oldest
+    const baseTime = Date.now() - 52 * 60 * 1000;
+    for (let i = 1; i <= 52; i++) {
+      const pad = String(i).padStart(2, '0');
+      const clientId = `99999999-9999-4999-b999-${pad.padStart(12, '0')}`;
+      const createdAt = new Date(baseTime + i * 60 * 1000).toISOString();
+      await pgClient.query(
+        `INSERT INTO public.clients (id, organization_id, name, email, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $5)`,
+        [clientId, paginationOrgId, `Paginated Client ${pad}`, `client${pad}@test.com`, createdAt]
+      );
+    }
+
+    const peterToken = await createE2EToken(peterId, peterEmail);
+
+    // Sign in as Peter
+    await page.goto('/');
+    await page.evaluate(
+      ({ token, activeOrgId }) => {
+        window.localStorage.setItem('invoiceflow_jwt_token', token);
+        window.localStorage.setItem('invoiceflow_active_org_id', activeOrgId);
+      },
+      { token: peterToken, activeOrgId: paginationOrgId }
+    );
+    await page.reload();
+
+    // Verify organization
+    await expect(page.locator('h1:has-text("Pagination Org")')).toBeVisible({ timeout: 10000 });
+
+    // Open Clients directory
+    await page.click('button:has-text("Clients")');
+    await expect(page.locator('h1:has-text("Client Directory")')).toBeVisible({ timeout: 10000 });
+
+    // 1. Verify Page 1 controls: Showing 1 to 50 of 52 clients, Page 1 of 2
+    const paginationInfo = page.locator('[data-testid="pagination-info"]');
+    const pageIndicator = page.locator('[data-testid="pagination-page-indicator"]');
+    const prevBtn = page.locator('[data-testid="pagination-prev"]');
+    const nextBtn = page.locator('[data-testid="pagination-next"]');
+
+    await expect(paginationInfo).toContainText('Showing 1 to 50 of 52 clients', { timeout: 10000 });
+    await expect(pageIndicator).toContainText('Page 1 of 2');
+    await expect(prevBtn).toBeDisabled();
+    await expect(nextBtn).toBeEnabled();
+
+    // Verify 50 rows on page 1
+    const rows = page.locator('tbody tr');
+    await expect(rows).toHaveCount(50);
+
+    // Because of descending order (created_at desc, id desc), newest Client 52 is on page 1, Client 01 is on page 2
+    await expect(page.locator('text=Paginated Client 52')).toBeVisible();
+    await expect(page.locator('text=Paginated Client 01')).not.toBeVisible();
+
+    // 2. Click Next to go to Page 2
+    await nextBtn.click();
+    await expect(paginationInfo).toContainText('Showing 51 to 52 of 52 clients', { timeout: 10000 });
+    await expect(pageIndicator).toContainText('Page 2 of 2');
+    await expect(prevBtn).toBeEnabled();
+    await expect(nextBtn).toBeDisabled();
+
+    // Verify exactly 2 rows on page 2
+    await expect(rows).toHaveCount(2);
+    await expect(page.locator('text=Paginated Client 01')).toBeVisible();
+
+    // 3. Search while on Page 2: filter query must automatically reset page back to 1
+    await page.fill('input[placeholder="Search by name, company, email..."]', 'Client 01');
+    await expect(paginationInfo).toContainText('Showing 1 to 1 of 1 clients', { timeout: 10000 });
+    await expect(pageIndicator).toContainText('Page 1 of 1');
+    await expect(rows).toHaveCount(1);
+    await expect(page.locator('text=Paginated Client 01')).toBeVisible();
+
+    // 4. Clear search query: should return to Page 1 showing 50 items
+    await page.fill('input[placeholder="Search by name, company, email..."]', '');
+    await expect(paginationInfo).toContainText('Showing 1 to 50 of 52 clients', { timeout: 10000 });
+    await expect(pageIndicator).toContainText('Page 1 of 2');
+    await expect(rows).toHaveCount(50);
+  });
 });

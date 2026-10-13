@@ -24,13 +24,41 @@ export const ClientsView: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(50);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  const { data: clients, isLoading, error } = useClients(currentOrgId, {
+  // Reset page when search term, status filter, or active organization changes
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, currentOrgId]);
+
+  const { data: clientsData, isLoading, error } = useClients(currentOrgId, {
     status: statusFilter,
     search: searchTerm,
+    page,
+    limit,
   });
+
+  const clients = clientsData?.items ?? [];
+  const pagination = clientsData?.pagination ?? {
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
+  };
+
+  // Clamp page if records decrease (e.g. after archiving)
+  React.useEffect(() => {
+    if (
+      clientsData?.pagination &&
+      clientsData.pagination.totalPages > 0 &&
+      page > clientsData.pagination.totalPages
+    ) {
+      setPage(clientsData.pagination.totalPages);
+    }
+  }, [page, clientsData?.pagination?.totalPages]);
 
   const createMutation = useCreateClient(currentOrgId || '');
   const updateMutation = useUpdateClient(currentOrgId || '');
@@ -69,6 +97,7 @@ export const ClientsView: React.FC = () => {
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   const isEditable = org?.role === 'OWNER' || org?.role === 'ADMIN' || org?.role === 'FINANCE';
+  const canManageLifecycle = org?.role === 'OWNER' || org?.role === 'ADMIN';
 
   const handleOpenCreate = () => {
     setCreateForm({
@@ -150,22 +179,28 @@ export const ClientsView: React.FC = () => {
     }
 
     try {
+      const payload: any = {
+        name: editForm.name.trim(),
+        email: editForm.email.trim() || null,
+        phone: editForm.phone.trim() || null,
+        company: editForm.company.trim() || null,
+        taxIdentifier: editForm.taxIdentifier.trim() || null,
+        addressLine1: editForm.addressLine1.trim() || null,
+        city: editForm.city.trim() || null,
+        postalCode: editForm.postalCode.trim() || null,
+        country: editForm.country.trim() || null,
+        currency: editForm.currency.trim() || null,
+        notes: editForm.notes.trim() || null,
+      };
+
+      // Lifecycle status alteration is restricted to OWNER and ADMIN; omit from ordinary FINANCE edits
+      if (canManageLifecycle && editForm.status !== editingClient.status) {
+        payload.status = editForm.status;
+      }
+
       await updateMutation.mutateAsync({
         clientId: editingClient.id,
-        data: {
-          name: editForm.name.trim(),
-          email: editForm.email.trim() || null,
-          phone: editForm.phone.trim() || null,
-          company: editForm.company.trim() || null,
-          taxIdentifier: editForm.taxIdentifier.trim() || null,
-          addressLine1: editForm.addressLine1.trim() || null,
-          city: editForm.city.trim() || null,
-          postalCode: editForm.postalCode.trim() || null,
-          country: editForm.country.trim() || null,
-          currency: editForm.currency.trim() || null,
-          notes: editForm.notes.trim() || null,
-          status: editForm.status,
-        },
+        data: payload,
       });
 
       setEditingClient(null);
@@ -397,7 +432,7 @@ export const ClientsView: React.FC = () => {
                             <Pencil className="w-3.5 h-3.5 mr-1" />
                             Edit
                           </button>
-                          {client.status === 'ACTIVE' && (
+                          {canManageLifecycle && client.status === 'ACTIVE' && (
                             <button
                               type="button"
                               onClick={() => handleArchive(client)}
@@ -423,6 +458,42 @@ export const ClientsView: React.FC = () => {
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {pagination.total > 0 && (
+              <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600">
+                <div data-testid="pagination-info">
+                  Showing <span className="font-semibold text-gray-900">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+                  <span className="font-semibold text-gray-900">
+                    {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  </span>{' '}
+                  of <span className="font-semibold text-gray-900">{pagination.total}</span> clients
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    data-testid="pagination-prev"
+                    disabled={pagination.page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-2 font-medium text-gray-700" data-testid="pagination-page-indicator">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="pagination-next"
+                    disabled={pagination.page >= pagination.totalPages}
+                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -804,15 +875,32 @@ export const ClientsView: React.FC = () => {
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                   Status
                 </label>
-                <select
-                  disabled={!isEditable}
-                  value={editForm.status}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="ARCHIVED">ARCHIVED</option>
-                </select>
+                {canManageLifecycle ? (
+                  <select
+                    disabled={!isEditable}
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="ARCHIVED">ARCHIVED</option>
+                  </select>
+                ) : (
+                  <div className="flex items-center space-x-2 pt-1">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                        editForm.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300'
+                      }`}
+                    >
+                      {editForm.status}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      (Lifecycle status can only be modified by Owners and Admins)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>

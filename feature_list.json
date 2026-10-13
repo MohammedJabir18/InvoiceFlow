@@ -106,17 +106,27 @@
       ],
       "status": "completed",
       "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS across 4 files on disposable PostgreSQL 18; 3/3 Playwright browser journeys PASS with hardened scripts/test-e2e.sh; .github/workflows/saas-ci.yml added."
+    },
+    {
+      "id": "feat-010c",
+      "name": "SaaS Client Frontend Integration Completion & Deterministic CI Browser Provisioning",
+      "description": "FINANCE role contact editing with lifecycle controls guarded (omitting lifecycle status from FINANCE payloads to prevent 403), complete paginated client UI with server metadata contract, TanStack Query placeholderData, stable secondary sorting tie-breaker (id desc), page reset/clamping, explicit Playwright Chromium installation in GitHub Actions CI with report artifact upload, and 5/5 Playwright browser journeys",
+      "dependencies": [
+        "feat-010b"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS; 5/5 Playwright browser journeys PASS (including FINANCE contact editing without 403 and 52-client directory pagination/filtering). See apps/web/e2e/auth-and-journey.spec.ts, apps/web/src/components/ClientsView.tsx, and .github/workflows/saas-ci.yml."
     }
   ],
   "latest_verification": {
     "date": "2026-10-13",
-    "status": "client_hardening_and_regression_suite_passed",
+    "status": "frontend_integration_and_pagination_hardening_passed",
     "command": "./init.sh, npm test, bash scripts/test-e2e.sh",
     "saas_build_and_typecheck": "pass",
     "desktop_build": "pass",
     "rust_workspace_locked": "pass",
     "api_tests": "75 passed, 4 files, disposable PostgreSQL 18",
-    "browser_journeys": "3 passed (Bootstrap Org, Settings, Clients CRUD, Persistence, Cross-Tenant Isolation, Sign Out)",
+    "browser_journeys": "5 passed (Auth unreachable fallback, Bootstrap Org/Settings/CRUD/Persistence/Signout, Cross-Tenant Isolation, FINANCE contact edit with guarded lifecycle, 52-client pagination/filter reset)",
     "npm_audit_root": "0 reported advisories",
     "production_readiness": "not claimed (real hosted Supabase provider unverified; local dev token tests only)"
   },
@@ -136,20 +146,29 @@
   },
   "latest_review": {
     "date": "2026-10-13",
-    "document": "brain/reviews/2026-10-13-antigravity-branch-review.md",
-    "local_commit": "a6cab19f",
+    "document": "brain/reviews/2026-10-13-antigravity-hardening-followup.md",
+    "local_commit": "pending",
     "build": "pass",
     "api_tests": "75 passed",
-    "browser_tests": "3 passed with local JWT injection",
-    "real_provider_login": "unverified (reported missing remote Supabase credentials)",
-    "review_status": "client hardening milestone completed and verified",
-    "confirmed_findings_resolved": [
-      "archive role inconsistency resolved: FINANCE status changes rejected with 403",
-      "malformed UUID and repeated search return stable 400 Bad Request",
-      "permanent deletion deferred with 400 Bad Request until retention policy is defined",
-      "bounded pagination added",
-      "E2E test runner hardened with port occupancy, PID liveness, and readiness timeout checks",
-      "SaaS GitHub Actions CI workflow added"
-    ]
+    "browser_tests": "5 passed with local JWT injection",
+    "previous_backend_findings": "resolved and independently reproduced",
+    "review_status": "frontend integration findings resolved",
+    "findings": [
+      "Finance UI contact editing fixed (omits status, guards controls, verified via E2E)",
+      "client directory pagination completed (typed contracts, query caching, footer controls, reset/clamping, verified with 52 clients)",
+      "deterministic CI browser provisioning configured in saas-ci.yml and test-e2e.sh"
+    ],
+    "ci": "workflow updated with chromium install and artifact upload, actual GitHub execution pending PR push",
+    "real_provider_login": "unverified",
+    "remote_feature_commits_behind_local": 4
+  },
+  "skill_policy": {
+    "confirmed_date": "2026-10-13",
+    "policy": "brain/agent-skill-policy.md",
+    "catalog": "brain/installed-skills.md",
+    "inventory": "brain/skill-inventory-2026-10-13.json",
+    "user_requested_repositories": 17,
+    "selection": "task-relevant skills across development and UI",
+    "product_feature_status_changed": false
   }
 }

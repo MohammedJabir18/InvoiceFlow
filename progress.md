@@ -159,3 +159,48 @@
   - `npm test`: 75/75 tests PASS across 4 files on disposable PostgreSQL 18.
   - `bash scripts/test-e2e.sh`: 3/3 Playwright browser journeys PASS in 4.7s.
 
+
+
+## 2026-10-13 — Review of Antigravity hardening commit 4e077b2f
+- Independently verified full init PASS, 75 API tests PASS, 3 local-token browser journeys PASS. Earlier role/validation/permanent-delete findings reproduced as resolved.
+- New integration findings: FINANCE frontend edits always send status and receive 403 even for contact-only changes; API pagination defaults to 50 but UI/API client discard metadata and provide no page controls. Reproduced UI-shaped request and 52-client pagination fixture on disposable DB.
+- SaaS CI exists locally but no Actions result is verified and explicit browser provisioning is missing. Real provider Auth remains unverified. Current local feature branch is 4 commits ahead of confirmed remote feature.
+- Next: focused Finance edit + pagination frontend task, deterministic CI browser setup, then authorized PR publication/CI observation and real Auth verification before financial feature expansion.
+- Details: brain/reviews/2026-10-13-antigravity-hardening-followup.md. No product code, branch checkout, push or merge performed.
+
+
+## 2026-10-13 — Installed skill inventory and persistent usage preference
+- User requested memory of 17 installed skill repositories and use throughout development/UI work.
+- Inspected global Codex, shared project skill folders, known Antigravity global locations and plugin cache/config metadata without exposing secrets. Found 31 global skill files, 166 project files per identical mirror, 145 unique project names, 176 global/project unique names (fixtures excluded).
+- Additional global user skills: archify, karpathy-guidelines, i-have-adhd; bundled system/helpers and enabled/cached plugin families classified separately.
+- Added brain/agent-skill-policy.md, brain/installed-skills.md and brain/skill-inventory-2026-10-13.json; appended concise routing preference to AGENTS.md and project summary. Existing AGENTS edits preserved.
+- No skill installation/update/removal and no product feature change. Next task remains Finance edit/pagination frontend completion and deterministic CI/Auth verification.
+
+
+## 2026-10-13 — SaaS Client Frontend Integration Completion & Deterministic CI Browser Provisioning (feat-010c)
+
+- **FINANCE Role Contact Editing & Lifecycle Controls**:
+  - `apps/web/src/components/ClientsView.tsx`: Extracted `canManageLifecycle = org?.role === 'OWNER' || org?.role === 'ADMIN'`.
+  - In `handleEditSubmit`: strictly omit lifecycle `status` from payloads when user lacks `canManageLifecycle` or status is unchanged, eliminating the 403 Forbidden error on contact/billing edits while preserving server-side authorization.
+  - In Edit Modal: rendered `status` as a clean read-only badge with informational note for non-lifecycle managers; rendered `<select>` dropdown only for OWNER/ADMIN.
+  - In Directory Table: hidden "Archive" action button for non-lifecycle managers.
+- **Client Directory Pagination & Response Contract**:
+  - `packages/shared-types/src/index.ts`: Added `PaginationMetadata`, `PaginatedResult<T>`, and `ListClientsParams`.
+  - `apps/api/src/routes/clients.ts`: Added secondary deterministic tie-breaker `.orderBy('id', 'desc')` to `.orderBy('created_at', 'desc')` ensuring stable ordering across page boundaries.
+  - `apps/web/src/lib/api-client.ts`: Added `fetchWithAuthEnvelope` preserving both `data` and top-level `pagination` metadata; updated `api.clients.list` to return `PaginatedResult<Client>`.
+  - `apps/web/src/hooks/queries.ts`: Updated `useClients` to accept `ListClientsParams`, cache on `[orgId, status, search, page, limit]`, and use `placeholderData: keepPreviousData`.
+  - `apps/web/src/components/ClientsView.tsx`: Added pagination state, footer controls ("Showing X to Y of Z clients", Previous/Next, "Page X of Y"), search/filter page reset, and clamping to `totalPages`.
+- **Deterministic CI Browser Setup**:
+  - `apps/web/playwright.config.ts`: Configured `channel` to be optional (defaults to Playwright's managed Chromium when `PLAYWRIGHT_CHANNEL` is unset), and added HTML report generation in CI.
+  - `scripts/test-e2e.sh`: Default `PLAYWRIGHT_CHANNEL="chrome"` only if `/usr/bin/google-chrome` is present, `PLAYWRIGHT_CHANNEL` is unset, and `CI` is not set.
+  - `.github/workflows/saas-ci.yml`: Added `npx playwright install --with-deps chromium` and uploaded `playwright-report` test artifacts with `if: ${{ !cancelled() }}`.
+- **Verification Evidence**:
+  - `./init.sh`: PASS (SaaS build, typecheck, desktop build, locked Cargo check).
+  - `npm test`: 75/75 API tests PASS across 4 files on disposable PostgreSQL 18.
+  - `bash scripts/test-e2e.sh`: 5/5 Playwright browser journeys PASS:
+    1. Error transparency when Supabase Auth is unreachable.
+    2. Bootstrap Org -> Update Settings -> Reload Persistence -> Clients CRUD -> Sign Out.
+    3. Multi-tenant isolation between Org A and Org B.
+    4. (NEW) FINANCE Role contact editing without 403 and lifecycle controls guarded.
+    5. (NEW) Complete client directory pagination (>50 clients) with navigation and search filter reset.
+

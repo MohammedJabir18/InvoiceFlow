@@ -154,3 +154,23 @@ export interface UpdateClientDTO {
   notes?: string | null;
   status?: ClientStatus;
 }
+
+export interface PaginationMetadata {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  pagination: PaginationMetadata;
+}
+
+export interface ListClientsParams {
+  status?: 'ACTIVE' | 'ARCHIVED' | 'ALL';
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+

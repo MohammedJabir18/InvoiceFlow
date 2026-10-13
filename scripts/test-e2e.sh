@@ -20,6 +20,11 @@ fi
 
 [[ -x "$pg_bin/initdb" ]] || { echo 'PostgreSQL binaries required; set INVOICEFLOW_PG_BIN.' >&2; exit 1; }
 
+# In local environments with Google Chrome installed, default to chrome channel unless explicitly overridden or running in CI
+if [[ -z "${PLAYWRIGHT_CHANNEL:-}" && -z "${CI:-}" && -x "/usr/bin/google-chrome" ]]; then
+  export PLAYWRIGHT_CHANNEL="chrome"
+fi
+
 echo "=== Building SaaS packages ==="
 npm run build -w @invoiceflow/shared-types
 npm run build -w @invoiceflow/db

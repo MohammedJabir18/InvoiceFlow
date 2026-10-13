@@ -4,6 +4,76 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
 
 ---
 
+## Session 2026-10-13: SaaS Client Frontend Integration Completion, Hardened Pagination & Deterministic CI (feat-010c)
+
+- **Date:** 2026-10-13
+- **Lead AI:** Antigravity AI Pair Programmer (Gemini 3.8 Flash High)
+- **Primary Goals:**
+  - Address remaining integration findings from `brain/reviews/2026-10-13-antigravity-hardening-followup.md`:
+    1. FINANCE contact editing: Omit lifecycle `status` from FINANCE payloads to prevent 403 Forbidden; guard archive/restore UI controls to OWNER/ADMIN; add browser regression test.
+    2. Complete client directory pagination: Pass `page`/`limit` through typed API and query cache keys (`keepPreviousData`), add pagination footer controls with total count and page navigation, ensure secondary sorting tie-breaker (`id desc`), and verify with >50 clients fixture.
+    3. Deterministic CI browser setup: Explicit `npx playwright install --with-deps chromium` in GitHub Actions, optional `channel` in config, and report artifact upload.
+- **Completed Tasks:**
+  - [x] Added `PaginationMetadata`, `PaginatedResult<T>`, and `ListClientsParams` to `packages/shared-types/src/index.ts`.
+  - [x] Added deterministic secondary tie-breaker `.orderBy('id', 'desc')` in `apps/api/src/routes/clients.ts`.
+  - [x] Added `fetchWithAuthEnvelope` in `apps/web/src/lib/api-client.ts` preserving both `data` and top-level `pagination` metadata; updated `api.clients.list` to return `PaginatedResult<Client>`.
+  - [x] Updated `useClients` in `apps/web/src/hooks/queries.ts` with `placeholderData: keepPreviousData` and cache keys `[orgId, status, search, page, limit]`.
+  - [x] Updated `ClientsView.tsx`:
+    - Extracted `canManageLifecycle = org?.role === 'OWNER' || org?.role === 'ADMIN'`.
+    - Omitted `status` from payload unless `canManageLifecycle` and status changed.
+    - Rendered `status` in Edit Modal as read-only badge with helper note for non-lifecycle managers.
+    - Hid "Archive" action button for non-lifecycle managers.
+    - Added pagination footer controls ("Showing X to Y of Z clients", Previous/Next, "Page X of Y").
+    - Added automatic page reset on search/filter/org changes and page clamping to `totalPages`.
+  - [x] Configured `apps/web/playwright.config.ts` to make `channel` optional (matching bundled Chromium in CI) and generate HTML reports in CI.
+  - [x] Updated `scripts/test-e2e.sh` to default `PLAYWRIGHT_CHANNEL="chrome"` only in non-CI environments with Google Chrome present.
+  - [x] Updated `.github/workflows/saas-ci.yml` with `playwright install --with-deps chromium` and test report artifact upload.
+  - [x] Added Playwright E2E Test 4 (FINANCE contact editing regression & guarded lifecycle controls) and Test 5 (Directory pagination with 52 clients, page 1 to 2 navigation, and search filter reset).
+  - [x] Verified `./init.sh` PASS (full build/typecheck/cargo check).
+  - [x] Verified `npm test` PASS (75/75 API tests on isolated PostgreSQL 18).
+  - [x] Verified `bash scripts/test-e2e.sh` PASS (5/5 browser journeys in 8.5s).
+- **Decisions Made:**
+  - **Payload Hygiene Over Server Permissiveness:** Maintained strict server-side authorization (blocking FINANCE from modifying lifecycle status) by fixing the UI payload instead of weakening backend security boundaries.
+  - **Deterministic Pagination Ordering:** Added secondary sort on primary key `id DESC` after `created_at DESC` to eliminate row jumps across page boundaries when timestamps coincide.
+  - **Non-Destructive Query Transitions:** Used TanStack Query's `keepPreviousData` and conditional clamping to prevent premature reset to page 1 during query fetches.
+- **Pending Tasks / Recommended Next Steps:**
+  - Create and push PR for `feat/milestone-1a-saas-foundation` into `main` when authorized.
+  - Verify real Supabase authentication against hosted project or local Supabase CLI instance.
+  - Begin Milestone 1B: Quotation and Invoice domain models and linking.
+
+---
+
+## Session 2026-10-13: Local Installation of Advanced Skills Suites (Security, Mental Models, Anti-Slop, XIAS Design Systems)
+
+- **Date:** 2026-10-13
+- **Lead AI:** Lead AI Pair Programmer (Gemini 3.8 Flash High)
+- **Primary Goals:**
+  - Install requested skill suites locally into `.agents/skills/` and `.claude/skills/`:
+    1. `plugin87/ux-ui-agent-skills` (XIAS)
+    2. `tjboudreaux/cc-thinking-skills`
+    3. `cloudflare/security-audit-skill`
+    4. `miqdadbadjuber/anti-slop`
+  - Ensure zero collision with existing skills (`brandkit`, `prototype`).
+  - Set up full supporting design tokens, specs, rules, and scripts for XIAS.
+
+- **Completed Tasks:**
+  - [x] Cloned and verified all 4 repositories from GitHub.
+  - [x] Installed `cloudflare/security-audit-skill` (`security-audit` skill + attack-class modules + audit validators) into `.agents/skills/security-audit/` and `.claude/skills/security-audit/`.
+  - [x] Installed all 28 `tjboudreaux/cc-thinking-skills` (`thinking-first-principles`, `thinking-systems`, `thinking-pre-mortem`, etc.) into `.agents/skills/` and `.claude/skills/`.
+  - [x] Installed all 6 `miqdadbadjuber/anti-slop` skills (`antislop`, `antislop-ui`, `antislop-copywriting`, `antislop-code`, `antislop-human`, `antislop-layoutmobile`) into `.agents/skills/` and `.claude/skills/`.
+  - [x] Installed `plugin87/ux-ui-agent-skills` (XIAS):
+    - 25 runnable skills (`a11y-audit`, `apply-aesthetic`, `ux-brandkit`, `critique`, `data-dashboard`, `design-code`, `design-component`, `design-doctrine`, `design-qa`, `design-review`, `design-screen`, `design-tokens`, `figma-integration`, `gate`, `governance`, `grill-me`, `image-to-code`, `migrate-design-system`, `performance`, `ux-prototype`, `redesign`, `scaffold-project`, `ship`, `token-build`, `ux-writing`).
+    - Supporting design kit: `tokens/` (DTCG format), `taste/`, `design-systems/` (138 brand specs), `components/` (52 specs), `accessibility/`, `workflows/`, `content/`, `frameworks/`, `examples/`, `.claude/rules/`, and auditing scripts.
+    - Preserved existing `brandkit` image generator and `prototype` variant generator by namespacing the XIAS versions as `ux-brandkit` and `ux-prototype`.
+  - [x] Updated `.graphifyignore` to keep code AST indexing fast and exclude raw design examples.
+  - [x] Updated `AGENTS.md` registering the newly installed skill suites.
+
+- **Decisions Made:**
+  - **Skill Coexistence:** Preserved existing `brandkit` (image prompt generator) and `prototype` (Emil Kowalski variant picker) by naming XIAS's token system generator `ux-brandkit` and fidelity ladder `ux-prototype`.
+  - **Dual-Harness Discovery:** Mirrored all skills across both `.agents/skills/` (Antigravity IDE native) and `.claude/skills/` (Claude Code native) so all agent harnesses discover them seamlessly.
+
+---
+
 ## Session 2026-10-10: Second Brain Architecture & Persistent Knowledge Graph Initialization
 
 - **Date:** 2026-10-10
@@ -208,3 +278,19 @@ Welcome to the InvoiceFlow Session Log. This file tracks our development progres
 - **Pending Tasks / Recommended Next Steps:**
   - Proceed with Milestone 1B: Quotation and Estimate Cloud Domain (`feat-011`).
 
+
+
+## 2026-10-13 — Review of Antigravity hardening commit 4e077b2f
+- Independently verified full init PASS, 75 API tests PASS, 3 local-token browser journeys PASS. Earlier role/validation/permanent-delete findings reproduced as resolved.
+- New integration findings: FINANCE frontend edits always send status and receive 403 even for contact-only changes; API pagination defaults to 50 but UI/API client discard metadata and provide no page controls. Reproduced UI-shaped request and 52-client pagination fixture on disposable DB.
+- SaaS CI exists locally but no Actions result is verified and explicit browser provisioning is missing. Real provider Auth remains unverified. Current local feature branch is 4 commits ahead of confirmed remote feature.
+- Next: focused Finance edit + pagination frontend task, deterministic CI browser setup, then authorized PR publication/CI observation and real Auth verification before financial feature expansion.
+- Details: brain/reviews/2026-10-13-antigravity-hardening-followup.md. No product code, branch checkout, push or merge performed.
+
+
+## 2026-10-13 — Installed skill inventory and persistent usage preference
+- User requested memory of 17 installed skill repositories and use throughout development/UI work.
+- Inspected global Codex, shared project skill folders, known Antigravity global locations and plugin cache/config metadata without exposing secrets. Found 31 global skill files, 166 project files per identical mirror, 145 unique project names, 176 global/project unique names (fixtures excluded).
+- Additional global user skills: archify, karpathy-guidelines, i-have-adhd; bundled system/helpers and enabled/cached plugin families classified separately.
+- Added brain/agent-skill-policy.md, brain/installed-skills.md and brain/skill-inventory-2026-10-13.json; appended concise routing preference to AGENTS.md and project summary. Existing AGENTS edits preserved.
+- No skill installation/update/removal and no product feature change. Next task remains Finance edit/pagination frontend completion and deterministic CI/Auth verification.

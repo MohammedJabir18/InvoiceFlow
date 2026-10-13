@@ -1,5 +1,12 @@
 import { useUIStore } from '../stores/ui-store.js';
-import type { Client, CreateClientDTO, UpdateClientDTO } from '@invoiceflow/shared-types';
+import type {
+  Client,
+  CreateClientDTO,
+  UpdateClientDTO,
+  PaginationMetadata,
+  PaginatedResult,
+  ListClientsParams,
+} from '@invoiceflow/shared-types';
 
 class ApiError extends Error {
   code: string;
@@ -13,7 +20,15 @@ class ApiError extends Error {
   }
 }
 
-async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+interface ApiResponseEnvelope<T> {
+  data: T;
+  pagination?: PaginationMetadata;
+}
+
+async function fetchWithAuthEnvelope<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<ApiResponseEnvelope<T>> {
   const token = useUIStore.getState().token;
   const currentOrgId = useUIStore.getState().currentOrganizationId;
 
@@ -48,7 +63,15 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
     throw new ApiError(errorMsg, errorCode, data?.error?.details);
   }
 
-  return data.data;
+  return {
+    data: data.data,
+    pagination: data.pagination,
+  };
+}
+
+async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const envelope = await fetchWithAuthEnvelope<T>(endpoint, options);
+  return envelope.data;
 }
 
 export const api = {
@@ -134,12 +157,30 @@ export const api = {
   },
 
   clients: {
-    list: (orgId: string, params?: { status?: string; search?: string }) => {
+    list: async (
+      orgId: string,
+      params?: ListClientsParams
+    ): Promise<PaginatedResult<Client>> => {
       const sp = new URLSearchParams();
       if (params?.status) sp.set('status', params.status);
       if (params?.search) sp.set('search', params.search);
+      if (params?.page) sp.set('page', String(params.page));
+      if (params?.limit) sp.set('limit', String(params.limit));
       const qs = sp.toString() ? `?${sp.toString()}` : '';
-      return fetchWithAuth<Client[]>(`/api/organizations/${orgId}/clients${qs}`);
+
+      const res = await fetchWithAuthEnvelope<Client[]>(`/api/organizations/${orgId}/clients${qs}`);
+      const limit = params?.limit ?? 50;
+      const page = params?.page ?? 1;
+
+      return {
+        items: res.data ?? [],
+        pagination: res.pagination ?? {
+          page,
+          limit,
+          total: res.data?.length ?? 0,
+          totalPages: Math.ceil((res.data?.length ?? 0) / limit) || 1,
+        },
+      };
     },
 
     get: (orgId: string, clientId: string) =>
@@ -161,11 +202,5 @@ export const api = {
       fetchWithAuth<Client>(`/api/organizations/${orgId}/clients/${clientId}`, {
         method: 'DELETE',
       }),
-
-    deletePermanent: (orgId: string, clientId: string) =>
-      fetchWithAuth<{ id: string; deleted: boolean }>(
-        `/api/organizations/${orgId}/clients/${clientId}?permanent=true`,
-        { method: 'DELETE' }
-      ),
   },
 };

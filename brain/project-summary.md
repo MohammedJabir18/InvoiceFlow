@@ -90,3 +90,15 @@ Client hardening milestone (`feat-010b`) implemented and verified:
 - 75/75 API tests PASS, 3/3 Playwright browser journeys PASS, `./init.sh` PASS.
 - Real Supabase Auth: local environment lacks active Supabase on port 54321 and lacks remote hosted project credentials. Registration, email confirmation, and session refresh remain unverified against a live provider until remote credentials or local Supabase CLI is provisioned.
 - Next milestone: Cloud Quotation and Estimate domain (`feat-011`).
+
+
+## Latest integration milestone — 13 October 2026 (feat-010c)
+Frontend integration findings from [[reviews/2026-10-13-antigravity-hardening-followup]] resolved and verified:
+- Finance UI contact editing: `ClientsView.tsx` omits lifecycle status from FINANCE payloads to prevent 403 Forbidden; renders status as read-only badge with helper note; hides Archive button for non-lifecycle managers; verified via Playwright Test 4.
+- Client directory pagination: full contract wired with `PaginationMetadata`, `ListClientsParams`, TanStack Query cache (`keepPreviousData`), secondary stable sort (`id desc`), footer controls ("Showing X to Y of Z clients", Previous/Next, "Page X of Y"), search/filter page reset, and totalPages clamping; verified via Playwright Test 5 with 52 clients.
+- Deterministic CI: `.github/workflows/saas-ci.yml` installs Playwright Chromium with deps and uploads test report artifacts; `scripts/test-e2e.sh` and `playwright.config.ts` configure optional browser channels.
+- Verification: `./init.sh` PASS; 75/75 API tests PASS; 5/5 Playwright browser journeys PASS. Real provider Auth remains unverified until remote Supabase credentials or local CLI is provisioned. PR ready to push and open when authorized.
+
+
+## Skill usage preference — 13 October 2026
+User wants the installed skill suites used throughout UI design, implementation, review, security and maintenance in Codex/Antigravity. Read [[agent-skill-policy]] and [[installed-skills]]. The 17 supplied repositories are recorded, plus additional discovered skills/plugin families. Apply task-relevant skills with a coherent design direction; skill invocation does not replace verification. Inventory excludes fixtures and treats mirrored folders and plugin caches separately.

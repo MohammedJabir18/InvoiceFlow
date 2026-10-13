@@ -138,6 +138,7 @@ export async function clientRoutes(app: FastifyInstance, opts: { db: Kysely<Data
         const rows = await baseQuery
           .selectAll()
           .orderBy('created_at', 'desc')
+          .orderBy('id', 'desc')
           .limit(limit)
           .offset(offset)
           .execute();

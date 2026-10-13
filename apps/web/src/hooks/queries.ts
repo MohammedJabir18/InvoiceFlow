@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api } from '../lib/api-client.js';
 import { useUIStore } from '../stores/ui-store.js';
 
@@ -94,12 +94,20 @@ export function useRemoveMember(orgId: string) {
   });
 }
 
-export function useClients(orgId: string | null, params?: { status?: string; search?: string }) {
+import type { ListClientsParams } from '@invoiceflow/shared-types';
+
+export function useClients(orgId: string | null, params?: ListClientsParams) {
   const token = useUIStore((state) => state.token);
+  const status = params?.status ?? 'ACTIVE';
+  const search = params?.search ?? '';
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 50;
+
   return useQuery({
-    queryKey: ['organization', orgId, 'clients', params?.status ?? 'ACTIVE', params?.search ?? ''],
-    queryFn: () => api.clients.list(orgId!, params),
+    queryKey: ['organization', orgId, 'clients', status, search, page, limit],
+    queryFn: () => api.clients.list(orgId!, { status, search, page, limit }),
     enabled: Boolean(token && orgId),
+    placeholderData: keepPreviousData,
     staleTime: 15 * 1000,
   });
 }
