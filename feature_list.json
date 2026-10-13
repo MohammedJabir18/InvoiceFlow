@@ -12,7 +12,9 @@
       "id": "feat-002",
       "name": "Midday Invoicing Engine & Slide-Over Sheet",
       "description": "Interactive KPI metrics cards, slide-over details drawer with multi-tab view (overview, items, client, internal notes, activity log), and full invoice editing with line-item tax and discounts",
-      "dependencies": ["feat-001"],
+      "dependencies": [
+        "feat-001"
+      ],
       "status": "completed",
       "evidence": "InvoiceDetailsSheet.tsx, InvoiceMetricsCards.tsx, InvoiceEditor.tsx verified; 0 build errors"
     },
@@ -20,7 +22,9 @@
       "id": "feat-003",
       "name": "Quotations & Estimates Module with Print",
       "description": "Quotation pipeline tracking, multi-line item estimator, formal corporate printable contract with dual signature blocks, and 1-click conversion to invoice",
-      "dependencies": ["feat-002"],
+      "dependencies": [
+        "feat-002"
+      ],
       "status": "completed",
       "evidence": "src/pages/Quotations.tsx, QuotationPrintModal.tsx, QuotationEditor.tsx verified; converted QUO-2026-001 to INV-2026-005"
     },
@@ -28,7 +32,9 @@
       "id": "feat-004",
       "name": "Monthly Financial Reports & Tax Statements",
       "description": "Monthly and annual financial statement, executive KPIs, statutory 18% tax/VAT provisions, client revenue contribution ranking, and printable accountant ledger",
-      "dependencies": ["feat-002"],
+      "dependencies": [
+        "feat-002"
+      ],
       "status": "completed",
       "evidence": "src/pages/MonthlyReport.tsx verified; audited statements render with 0 errors"
     },
@@ -36,7 +42,9 @@
       "id": "feat-005",
       "name": "Shareable Payment Links & Public Pay Portal",
       "description": "Shareable checkout URLs (/pay/:id), dynamic vector SVG QR codes, 1-click WhatsApp/email sharing, and simulated instant settlement receipts",
-      "dependencies": ["feat-002"],
+      "dependencies": [
+        "feat-002"
+      ],
       "status": "completed",
       "evidence": "PaymentLinkModal.tsx, PaymentLinkView.tsx verified; settled INV-2026-002 on mobile viewport"
     },
@@ -44,7 +52,9 @@
       "id": "feat-006",
       "name": "Tabby BNPL Integration through Custom MCP Server",
       "description": "Custom Model Context Protocol (MCP) server conforming to JSON-RPC 2.0 with tool schemas for 4-installment schedule calculations and merchant configuration",
-      "dependencies": ["feat-005"],
+      "dependencies": [
+        "feat-005"
+      ],
       "status": "completed",
       "evidence": "mcp-servers/tabby/ schemas active, tabby.ts calculation service integrated into checkout"
     },
@@ -52,7 +62,9 @@
       "id": "feat-007",
       "name": "Subscription SaaS Licensing & Quota Management",
       "description": "Starter ($19), Pro ($49), and Enterprise ($99) tiers, quota usage meters, annual 20% discount switch, and offline cryptographic client license activation",
-      "dependencies": ["feat-002"],
+      "dependencies": [
+        "feat-002"
+      ],
       "status": "completed",
       "evidence": "src/store/subscriptionStore.ts, src/pages/Subscription.tsx verified"
     },
@@ -60,9 +72,110 @@
       "id": "feat-008",
       "name": "Mobile Smartphone Responsiveness & LAN Network Binding",
       "description": "Mobile viewport optimization, sticky bottom navigation, mobile header drawer, and Vite host 0.0.0.0 binding for Wi-Fi mobile testing",
-      "dependencies": ["feat-001", "feat-002"],
+      "dependencies": [
+        "feat-001",
+        "feat-002"
+      ],
       "status": "completed",
       "evidence": "MobileBottomNav.tsx, MobileHeader.tsx, MobileMenuDrawer.tsx verified in Playwright (390x844)"
+    },
+    {
+      "id": "feat-009",
+      "name": "Reproducible development foundation",
+      "description": "Node 24/Rust setup, Linux dependency lock repair, Vitest update, explicit startup checks and isolated API test runner",
+      "dependencies": [],
+      "status": "completed",
+      "evidence": "2026-10-12: ./init.sh passed; clean npm ci + SaaS build/typecheck passed; API 47/47 passed; root npm audit 0. See docs/development-setup.md and artifacts/foundation/."
+    },
+    {
+      "id": "feat-010",
+      "name": "Multi-Tenant SaaS Client Management & Customer Journey",
+      "description": "Tenant-scoped client directory with fail-closed PostgreSQL RLS, role authorization (OWNER/ADMIN/FINANCE write, VIEWER read), Zod validation, React Query UI, and Playwright E2E browser journey verification",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 66/66 API tests PASS across 4 files (test/migrations.test.ts, test/security-audit.test.ts, test/isolation.test.ts, test/clients.test.ts); Playwright E2E 3/3 browser journeys PASS with isolated PostgreSQL and system Chrome. See packages/db/src/migrations/004_create_clients_table.sql and apps/web/e2e/auth-and-journey.spec.ts."
+    },
+    {
+      "id": "feat-010b",
+      "name": "SaaS Client Hardening, Parameter Validation Resilience & CI Pipeline",
+      "description": "Unified archive/restore permission policy (FINANCE status alteration blocked with 403), strict UUID route param and query validation (400 on malformed UUID or repeated search params), deferred permanent deletion, bounded pagination, strict E2E test runner process/port checks, and SaaS GitHub Actions CI workflow",
+      "dependencies": [
+        "feat-010"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS across 4 files on disposable PostgreSQL 18; 3/3 Playwright browser journeys PASS with hardened scripts/test-e2e.sh; .github/workflows/saas-ci.yml added."
+    },
+    {
+      "id": "feat-010c",
+      "name": "SaaS Client Frontend Integration Completion & Deterministic CI Browser Provisioning",
+      "description": "FINANCE role contact editing with lifecycle controls guarded (omitting lifecycle status from FINANCE payloads to prevent 403), complete paginated client UI with server metadata contract, TanStack Query placeholderData, stable secondary sorting tie-breaker (id desc), page reset/clamping, explicit Playwright Chromium installation in GitHub Actions CI with report artifact upload, and 5/5 Playwright browser journeys",
+      "dependencies": [
+        "feat-010b"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS; 5/5 Playwright browser journeys PASS (including FINANCE contact editing without 403 and 52-client directory pagination/filtering). See apps/web/e2e/auth-and-journey.spec.ts, apps/web/src/components/ClientsView.tsx, and .github/workflows/saas-ci.yml."
+    },
+    {
+      "id": "feat-010d",
+      "name": "Workspace Switch Isolation & Scoped Placeholder Data",
+      "description": "Restricted useClients placeholder data reuse strictly to the exact same organization (clearing old clients on org switch), remounted ClientsView with org-keyed rendering in DashboardShell, cleared modal/editing/filter states, added distinct loading spinner during workspace transition, disabled stale action buttons during placeholder states, and added permanent Playwright Test 6 regression verifying zero cross-workspace client or action leaks under delayed fetches",
+      "dependencies": [
+        "feat-010c"
+      ],
+      "status": "completed",
+      "evidence": "2026-10-13: ./init.sh PASS; 75/75 API tests PASS; 6/6 Playwright browser journeys PASS in scripts/test-e2e.sh (including delayed workspace-switch barrier regression in Test 6). See apps/web/src/hooks/queries.ts, apps/web/src/components/ClientsView.tsx, and apps/web/e2e/auth-and-journey.spec.ts."
     }
-  ]
+  ],
+  "latest_verification": {
+    "date": "2026-10-13",
+    "status": "workspace_switch_isolation_and_all_regressions_passed",
+    "command": "./init.sh, npm test, bash scripts/test-e2e.sh",
+    "saas_build_and_typecheck": "pass",
+    "desktop_build": "pass",
+    "rust_workspace_locked": "pass",
+    "api_tests": "75 passed, 4 files, disposable PostgreSQL 18",
+    "browser_journeys": "6 passed (Auth unreachable fallback, Bootstrap Org/Settings/CRUD/Persistence/Signout, Cross-Tenant Isolation, FINANCE contact edit with guarded lifecycle, 52-client pagination/filter reset, Workspace Switch Isolation under delayed fetch)",
+    "npm_audit_root": "0 reported advisories",
+    "production_readiness": "not claimed (real hosted Supabase provider unverified; local dev token tests only)"
+  },
+  "latest_research": {
+    "date": "2026-10-10",
+    "document": "docs/planning/2026-10-10-connected-invoicing-research.md",
+    "status": "recommendations_pending_scope_decisions",
+    "feature_statuses_changed": false
+  },
+  "latest_memory_save": {
+    "date": "2026-10-13",
+    "summary": "brain/project-summary.md",
+    "architecture": "brain/architecture.md",
+    "foundation_commit": "4b33153",
+    "feature_statuses_changed": true,
+    "graph_status": "retained older graph; fresh rebuild pending"
+  },
+  "latest_review": {
+    "date": "2026-10-13",
+    "document": "brain/reviews/2026-10-13-antigravity-integration-review.md",
+    "local_commit": "pending",
+    "build": "pass",
+    "api_tests": "75 passed",
+    "browser_tests": "6 passed with local JWT injection",
+    "previous_frontend_findings": "resolved",
+    "review_status": "all integration and workspace isolation findings resolved",
+    "confirmed_issue": "Resolved: Org A client rows no longer rendered when Org B selected; loading state shown; actions disabled/cleared",
+    "reproduction": "Permanent Test 6 regression active in apps/web/e2e/auth-and-journey.spec.ts",
+    "ci": "Chromium setup present; actual GitHub execution unverified",
+    "real_provider_login": "unverified",
+    "remote_feature_commits_behind_local": 5
+  },
+  "skill_policy": {
+    "confirmed_date": "2026-10-13",
+    "policy": "brain/agent-skill-policy.md",
+    "catalog": "brain/installed-skills.md",
+    "inventory": "brain/skill-inventory-2026-10-13.json",
+    "user_requested_repositories": 17,
+    "selection": "task-relevant skills across development and UI",
+    "product_feature_status_changed": false
+  }
 }

@@ -1,0 +1,40 @@
+# InvoiceFlow — current architecture
+
+Updated 12 October 2026 from source inspection and recorded verification. Start with [[project-summary]] for product requirements. Earlier architecture notes are preserved in [[architecture-history-2026-10-12]]; their Vite 8, schema, checksum and unimplemented endpoint claims are not current implementation evidence.
+
+## Implemented repository structure
+
+- apps/web: React/TypeScript/Vite SaaS shell. Recorded Vite build 6.4.4; TanStack Query for server state, Zustand for transient UI, React Router and Tailwind. Views: Dashboard overview, Clients directory, Business settings, Team & access.
+- apps/api: Fastify 5 API; Zod validation, jose JWT verification, pg/Kysely access. Registered groups: health, auth, organizations, members, clients. Hosted production auth requires asymmetric JWKS; local test auth uses an explicitly configured development secret.
+- packages/db: Kysely types and PostgreSQL access, migrations 001–004, standalone auth fixtures. Declared business tables: users, organizations, organization_memberships, clients; migration ledger _migrations.
+- packages/shared-types: shared TypeScript contracts (User, Organization, Client, MembershipRole, DTOs).
+- apps/desktop: React/Vite frontend (recorded Vite 6.4.1) and Tauri v2 Rust shell.
+- crates/flow-core, flow-db, flow-invoice, flow-analytics, flow-pdf: desktop domain/core, SQLite access, calculations/numbering, analytics, PDF support. Exact rendering capabilities should be verified before adding templates.
+
+## Tenant data and security
+
+Organizations contain legal/display name, country/tax identifier/address/contact details, timezone, locale, document_language, base_currency, reporting_currency and financial-year start. Membership roles are OWNER, ADMIN, FINANCE, VIEWER.
+
+Clients contain organization_id, name, email, phone, company, tax_identifier, address, country, currency, notes, and status (ACTIVE / ARCHIVED). Fail-closed Row-Level Security on `organization_id = get_current_org_id()` ensures strict multi-tenant boundary. Client creation and contact/billing detail updates are allowed for OWNER, ADMIN, and FINANCE. Lifecycle status changes (archive via DELETE or PATCH, restore via PATCH) are strictly restricted to OWNER and ADMIN; FINANCE status alteration attempts return 403 Forbidden. The web UI omits status from FINANCE edit payloads and renders status as read-only, preventing spurious 403 errors while preserving server-side authorization. VIEWER has read-only access (403 Forbidden on all mutations). Destructive permanent deletion is disabled pending document retention rules (returns 400 Bad Request). Route parameters (`id`, `clientId`) and query parameters (`status`, `search`, `page`, `limit`) are strictly validated via Zod schemas, returning stable 400 Bad Request on malformed inputs without database error leakage. Bounded pagination (`limit` capped at 100) with deterministic secondary sorting (`id DESC`) and top-level metadata (`page`, `limit`, `total`, `totalPages`) is wired through the API client, TanStack Query cache, and UI pagination controls.
+
+Application membership checks precede tenant-scoped queries. Kysely transactions set app.current_org_id and, when provided, app.current_user_id using parameterized transaction-local set_config. RLS provides another boundary. Existing tests check organizations and clients tables.
+
+Migration runner records applied names in public._migrations and applies migration SQL in transactions. Forward migrations 001–004 tested on clean setup and incremental upgrade paths.
+
+## Product boundaries / planned work
+
+Cloud client/invoice/quotation/payment domains, provider webhook routes, subscription billing and analytics are planned; do not infer completion from desktop screens or historical feature flags. Desktop payment settlement and AI paths include simulation/stub behavior. No production payment or Laya integration was verified in this conversation.
+
+Product direction: India-first with GCC expansion, tenant-owned business/client records, one monthly/yearly subscription plan, linked quote/invoice documents, built-in editable invoice templates and minimal filtered dashboard. Detailed lifecycle/finance/Laya recommendations remain subject to requirements reconciliation; see [[project-summary]].
+
+## Development harness
+
+Node 24.21.0 LTS, Bun 1.4.3 and Rust/Cargo 1.99.0 were used. PostgreSQL 18 is a disposable test environment, not a production database decision. .nvmrc and scripts/dev-env.sh select Node; Cargo.lock is retained. Root npm and separate desktop Bun lockfiles have distinct ownership. Vitest is pinned to 4.1.11.
+
+./init.sh builds SaaS packages in dependency order, type-checks, builds desktop and checks the locked Rust workspace. ./init.sh --saas checks SaaS only. npm test provisions its own local PostgreSQL cluster, applies fixtures/migrations and runs 75 API tests across 4 suites. scripts/test-e2e.sh runs Playwright tests against an isolated loopback PostgreSQL cluster with port occupancy, process liveness, and timeout checks. `.github/workflows/saas-ci.yml` provides GitHub Actions CI with explicit Playwright Chromium installation, artifact upload, and test execution for SaaS build, type-check, API tests, and 5 browser journeys. NODE_ENV=test does not load local .env credentials.
+
+Recorded evidence: foundation commit 4b33153; full build checks and clean SaaS install/build passed; 75 API tests passed; root npm audit zero reported advisories; Playwright browser journeys passed. Hosted Supabase registration/login/refresh remains unverified (requires remote project credentials or live local instance). See ../docs/development-setup.md and ../artifacts/foundation/.
+
+## Graph memory reliability
+
+brain/graph.json remains the retained older graph; the interrupted update did not produce a verified replacement. Obsidian export completed from that retained graph. Missing SQL parser, partial TSX extraction and indexing of installed skill code limit graph coverage/relevance. Graph relationships assist navigation; source and runtime evidence determine implementation status.

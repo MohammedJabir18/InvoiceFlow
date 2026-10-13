@@ -1,0 +1,23 @@
+{
+  "name": "@invoiceflow/db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "migrate": "node dist/migrate.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "kysely": "^0.29.6",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.0"
+  }
+}
